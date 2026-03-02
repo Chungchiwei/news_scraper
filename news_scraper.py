@@ -532,7 +532,7 @@ class NewsEmailSender:
         try:
             tpe_time = run_time.astimezone(timezone(timedelta(hours=8)))
             subject  = (
-                f"🚢 航運情報快遞 | 發現 {total} 則動態 "
+                f"Maritime Intel News Alert - {total} News Matched "
                 f"({tpe_time.strftime('%m/%d %H:%M')})"
             )
             msg            = MIMEMultipart('alternative')
@@ -775,22 +775,12 @@ class NewsEmailSender:
             <tr><td align="center">
                 <font size="7" color="#ffffff">🚢</font><br><br>
                 <font face="Microsoft JhengHei,Arial,sans-serif" size="5" color="#f8fafc">
-                    <b>航運安全暨地緣政治新聞快報</b>
+                    <b>Maritime Intel News Alert</b>
                 </font><br><br>
                 <font face="Arial,sans-serif" size="2" color="#94a3b8">
-                    GitHub Actions 自動監控 v4.3
                     &nbsp;|&nbsp;
                     {tpe_str} (台北時間)
                 </font><br><br>
-                <table border="0" cellpadding="6" cellspacing="0" bgcolor="#1e293b">
-                <tr><td>
-                    <font face="Arial,sans-serif" size="2" color="#94a3b8">
-                        監控來源 {len(RSS_SOURCES)} 個
-                        &nbsp;|&nbsp;
-                        關鍵字 {len(ALL_KEYWORDS)} 個（繁簡雙語）
-                    </font>
-                </td></tr>
-                </table>
             </td></tr>
             </table>
         </td>
