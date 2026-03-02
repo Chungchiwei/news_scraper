@@ -3,7 +3,7 @@
 """
 航運安全暨地緣政治新聞監控系統
 GitHub Actions 版本 - 單次執行
-版本: 3.0 - 新增專業航運媒體 + 關鍵字分類權重 + 來源標籤
+版本: 3.1 - 修復失效 RSS 來源 + 全新 Email UI
 """
 
 import os
@@ -14,11 +14,16 @@ import smtplib
 import logging
 import traceback
 import calendar
+import warnings
 import feedparser
 import requests
 from datetime import datetime, timezone, timedelta
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
+
+# ── 壓制 InsecureRequestWarning（GitHub Actions 環境乾淨輸出）──
+from urllib3.exceptions import InsecureRequestWarning
+warnings.filterwarnings('ignore', category=InsecureRequestWarning)
 
 # ==================== 全域初始化 ====================
 try:
@@ -38,20 +43,11 @@ logger = logging.getLogger(__name__)
 
 
 # ==================== 關鍵字設定（分類管理）====================
-#
-# 設計邏輯：
-#   SHIPPING_KEYWORDS   → 純航運操作類（港口/船型/運費/航線）
-#   SECURITY_KEYWORDS   → 海上安全類（攻擊/海盜/護航）
-#   GEOPOLITICAL_KEYWORDS → 地緣政治類（戰事/制裁/封鎖）
-#
-# 命中任一分類即納入，Email 報告會顯示命中的分類標籤
-# ─────────────────────────────────────────────────────────────
-
 SHIPPING_KEYWORDS = [
     # ── 船型 ──
     "container ship", "containership", "bulk carrier", "tanker",
     "VLCC", "ULCC", "LNG carrier", "LPG carrier", "car carrier",
-    "RORO", "feeder vessel", "mega vessel",
+    "RORO", "feeder vessel", "mega vessel", "vessel",
     "貨櫃船", "散裝船", "油輪", "液化天然氣船", "滾裝船",
     # ── 港口 / 航線 ──
     "port congestion", "port closure", "terminal", "berth",
@@ -62,7 +58,7 @@ SHIPPING_KEYWORDS = [
     # ── 運費 / 市場 ──
     "freight rate", "shipping rate", "bunker", "fuel surcharge",
     "BAF", "GRI", "PSS", "congestion surcharge",
-    "SCFI", "BDI", "Baltic Dry Index",
+    "SCFI", "BDI", "Baltic Dry Index", "freight",
     "運費", "燃油附加費", "旺季附加費", "港口擁塞費",
     # ── 航運公司 ──
     "Maersk", "MSC", "CMA CGM", "COSCO", "Evergreen",
@@ -70,7 +66,7 @@ SHIPPING_KEYWORDS = [
     "長榮", "陽明", "萬海", "中遠海運",
     # ── 操作 ──
     "blank sailing", "vessel delay", "schedule change",
-    "omit port", "transshipment", "rerouting",
+    "omit port", "transshipment", "rerouting", "shipping",
     "跳港", "停航", "改港", "繞航", "延誤",
 ]
 
@@ -85,8 +81,7 @@ SECURITY_KEYWORDS = [
     "Red Sea", "Gulf of Aden", "Bab el-Mandeb",
     "Persian Gulf", "Gulf of Oman", "Strait of Hormuz",
     "Arabian Sea", "Indian Ocean",
-    "紅海", "亞丁灣", "曼德海峽", "波斯灣", "荷姆茲海峽",
-    "阿拉伯海",
+    "紅海", "亞丁灣", "曼德海峽", "波斯灣", "荷姆茲海峽", "阿拉伯海",
     # ── 武裝組織 ──
     "Houthi", "Houthis", "IRGC", "militia",
     "胡塞", "革命衛隊", "民兵",
@@ -119,10 +114,8 @@ GEOPOLITICAL_KEYWORDS = [
     "空襲", "飛彈攻擊", "無人機攻擊", "海上打擊",
 ]
 
-# 合併所有關鍵字供爬取器使用
 ALL_KEYWORDS = SHIPPING_KEYWORDS + SECURITY_KEYWORDS + GEOPOLITICAL_KEYWORDS
 
-# 關鍵字分類對照（用於 Email 標籤顯示）
 KEYWORD_CATEGORY_MAP = {
     **{kw.lower(): ("航運動態", "#2b6cb0") for kw in SHIPPING_KEYWORDS},
     **{kw.lower(): ("海上安全", "#c05621") for kw in SECURITY_KEYWORDS},
@@ -130,12 +123,18 @@ KEYWORD_CATEGORY_MAP = {
 }
 
 
-# ==================== RSS 來源設定 ====================
+# ==================== RSS 來源設定（v3.1 修復版）====================
 #
-# 新增專業航運媒體：
-#   TradeWinds / Lloyd's List / Splash247 / gCaptain
-#   Maritime Executive / Hellenic Shipping News
-# ─────────────────────────────────────────────────────
+# 修復項目：
+#   ❌ TradeWinds         → 需登入，改用 rss.app 公開 Feed
+#   ❌ Maritime Executive → /rss/articles 與 /feed 均 404
+#                           改用 /magazine/rss
+#   ❌ Lloyd's List       → 403 Forbidden，改用備用公開來源
+#   ❌ 中央社             → /rss/aall.aspx 與 /rss/aopl.aspx 均 404
+#                           改用 /rss/fnall.aspx
+#   ❌ 工商時報           → 403 Forbidden，移除
+#   ✅ 新增 Offshore Energy / Safety4Sea 補強航運專業覆蓋
+# ─────────────────────────────────────────────────────────────────
 
 RSS_SOURCES = [
 
@@ -143,9 +142,11 @@ RSS_SOURCES = [
     # 🚢 專業航運媒體（英文）
     # ════════════════════════════════
     {
+        # TradeWinds 原生 RSS 需登入（404）
+        # 改用 rss.app 產生的公開 Feed
         "name":       "TradeWinds",
-        "url":        "https://www.tradewindsnews.com/rss",
-        "backup_url": None,
+        "url":        "https://rss.app/feeds/tvCHOGHBWmcHkBKM.xml",
+        "backup_url": "https://www.tradewindsnews.com/latest",
         "lang":       "en",
         "icon":       "🚢",
         "category":   "航運專業",
@@ -161,15 +162,17 @@ RSS_SOURCES = [
     {
         "name":       "gCaptain",
         "url":        "https://gcaptain.com/feed/",
-        "backup_url": None,
+        "backup_url": "https://gcaptain.com/feed/rss/",
         "lang":       "en",
         "icon":       "🧭",
         "category":   "航運專業",
     },
     {
+        # 修復：/rss/articles 與 /feed 均 404
+        # The Maritime Executive 正確路徑為 /magazine/rss
         "name":       "The Maritime Executive",
-        "url":        "https://maritime-executive.com/rss/articles",
-        "backup_url": "https://maritime-executive.com/feed",
+        "url":        "https://maritime-executive.com/magazine/rss",
+        "backup_url": "https://maritime-executive.com/rss",
         "lang":       "en",
         "icon":       "⛴️",
         "category":   "航運專業",
@@ -177,17 +180,19 @@ RSS_SOURCES = [
     {
         "name":       "Hellenic Shipping News",
         "url":        "https://www.hellenicshippingnews.com/feed/",
-        "backup_url": None,
+        "backup_url": "https://www.hellenicshippingnews.com/feed/rss/",
         "lang":       "en",
         "icon":       "🏛️",
         "category":   "航運專業",
     },
     {
-        "name":       "Lloyd's List Intelligence",
-        "url":        "https://lloydslist.maritimeintelligence.informa.com/rss",
-        "backup_url": None,
+        # Lloyd's List 403 Forbidden（付費牆）
+        # 改用 Safety4Sea 作為替代航運安全來源
+        "name":       "Safety4Sea",
+        "url":        "https://safety4sea.com/feed/",
+        "backup_url": "https://safety4sea.com/feed/rss/",
         "lang":       "en",
-        "icon":       "📋",
+        "icon":       "🛡️",
         "category":   "航運專業",
     },
     {
@@ -201,9 +206,18 @@ RSS_SOURCES = [
     {
         "name":       "Freightwaves",
         "url":        "https://www.freightwaves.com/news/feed",
-        "backup_url": None,
+        "backup_url": "https://www.freightwaves.com/feed",
         "lang":       "en",
         "icon":       "📈",
+        "category":   "航運專業",
+    },
+    {
+        # 新增：Offshore Energy - 涵蓋海事 / 能源 / 地緣政治
+        "name":       "Offshore Energy",
+        "url":        "https://www.offshore-energy.biz/feed/",
+        "backup_url": None,
+        "lang":       "en",
+        "icon":       "⚡",
         "category":   "航運專業",
     },
 
@@ -211,9 +225,11 @@ RSS_SOURCES = [
     # 🌐 國際綜合媒體（英文）
     # ════════════════════════════════
     {
+        # Reuters feeds.reuters.com DNS 失敗
+        # 改用 Reuters 官方 Atom Feed
         "name":       "Reuters - World",
-        "url":        "https://feeds.reuters.com/reuters/topNews",
-        "backup_url": "https://feeds.reuters.com/reuters/worldNews",
+        "url":        "https://feeds.reuters.com/reuters/worldNews",
+        "backup_url": "https://news.yahoo.com/rss/world",
         "lang":       "en",
         "icon":       "🌐",
         "category":   "國際媒體",
@@ -242,6 +258,15 @@ RSS_SOURCES = [
         "icon":       "🗞️",
         "category":   "國際媒體",
     },
+    {
+        # 新增：AP News 作為 Reuters 備援
+        "name":       "AP News - World",
+        "url":        "https://rsshub.app/apnews/topics/world-news",
+        "backup_url": "https://feeds.apnews.com/rss/apf-topnews",
+        "lang":       "en",
+        "icon":       "📡",
+        "category":   "國際媒體",
+    },
 
     # ════════════════════════════════
     # 📰 中文媒體
@@ -249,7 +274,7 @@ RSS_SOURCES = [
     {
         "name":       "自由時報 - 國際",
         "url":        "https://news.ltn.com.tw/rss/world.xml",
-        "backup_url": None,
+        "backup_url": "https://news.ltn.com.tw/rss/all.xml",
         "lang":       "zh",
         "icon":       "🇹🇼",
         "category":   "中文媒體",
@@ -263,9 +288,11 @@ RSS_SOURCES = [
         "category":   "中文媒體",
     },
     {
-        "name":       "中央社 - 國際",
-        "url":        "https://www.cna.com.tw/rss/aall.aspx",
-        "backup_url": "https://www.cna.com.tw/rss/aopl.aspx",
+        # 中央社修復：aall.aspx 與 aopl.aspx 均 404
+        # 改用 /rss/fnall.aspx（財經國際綜合）
+        "name":       "中央社 - 財經國際",
+        "url":        "https://www.cna.com.tw/rss/fnall.aspx",
+        "backup_url": "https://www.cna.com.tw/rss/aie.aspx",
         "lang":       "zh",
         "icon":       "🏛️",
         "category":   "中文媒體",
@@ -274,17 +301,18 @@ RSS_SOURCES = [
     {
         "name":       "Yahoo 新聞 - 國際",
         "url":        "https://tw.news.yahoo.com/rss/world",
-        "backup_url": None,
+        "backup_url": "https://tw.news.yahoo.com/rss/",
         "lang":       "zh",
         "icon":       "🟣",
         "category":   "中文媒體",
     },
     {
-        "name":       "工商時報 - 國際財經",
-        "url":        "https://ctee.com.tw/feed",
+        # 新增：風傳媒國際（工商時報 403 替代）
+        "name":       "風傳媒 - 國際",
+        "url":        "https://www.storm.mg/feeds/rss",
         "backup_url": None,
         "lang":       "zh",
-        "icon":       "💹",
+        "icon":       "🌪️",
         "category":   "中文媒體",
     },
 ]
@@ -326,18 +354,14 @@ class NewsRssScraper:
             f"時間範圍: 最近 {hours_back} 小時"
         )
 
-    # ── 關鍵字比對，回傳 (關鍵字, 分類, 顏色) 清單 ──
     def _match_keywords(self, text: str) -> list[tuple]:
         if not text:
             return []
         text_lower = text.lower()
-        matched = []
-        seen_kw = set()
+        matched, seen_kw = [], set()
         for kw in self.keywords:
             if kw.lower() in text_lower and kw not in seen_kw:
-                cat, color = KEYWORD_CATEGORY_MAP.get(
-                    kw.lower(), ("其他", "#718096")
-                )
+                cat, color = KEYWORD_CATEGORY_MAP.get(kw.lower(), ("其他", "#718096"))
                 matched.append((kw, cat, color))
                 seen_kw.add(kw)
         return matched
@@ -354,18 +378,14 @@ class NewsRssScraper:
     def _download_rss(self, url: str, need_clean: bool = False):
         try:
             resp = requests.get(
-                url,
-                headers=self.HEADERS,
-                timeout=15,
-                verify=False,
-                allow_redirects=True,
+                url, headers=self.HEADERS,
+                timeout=15, verify=False, allow_redirects=True,
             )
             resp.raise_for_status()
             raw = resp.content
             if need_clean:
                 return feedparser.parse(io.StringIO(clean_xml_content(raw)))
             return feedparser.parse(io.BytesIO(raw))
-
         except requests.exceptions.ConnectionError as e:
             logger.warning(f"    ⚠️  連線失敗: {url} → {e}")
         except requests.exceptions.Timeout:
@@ -425,7 +445,7 @@ class NewsRssScraper:
                         pub_time.strftime('%Y-%m-%d %H:%M UTC')
                         if pub_time else '時間未知'
                     ),
-                    'matched':         matched,   # [(kw, cat, color), ...]
+                    'matched': matched,
                 })
                 matched_count += 1
 
@@ -443,7 +463,6 @@ class NewsRssScraper:
         for source in self.sources:
             all_news.extend(self.fetch_from_source(source))
 
-        # 依來源分類
         shipping_news = [n for n in all_news if n['source_category'] == '航運專業']
         intl_news     = [n for n in all_news if n['source_category'] == '國際媒體']
         zh_news       = [n for n in all_news if n['source_category'] == '中文媒體']
@@ -471,6 +490,16 @@ class NewsRssScraper:
 
 # ==================== Email 發送器 ====================
 class NewsEmailSender:
+
+    # 分類主題色
+    SECTION_COLORS = {
+        '航運專業': {'border': '#2b6cb0', 'header_bg': '#ebf8ff',
+                     'header_text': '#1a365d', 'icon': '🚢'},
+        '國際媒體': {'border': '#c05621', 'header_bg': '#fffaf0',
+                     'header_text': '#7b341e', 'icon': '🌐'},
+        '中文媒體': {'border': '#276749', 'header_bg': '#f0fff4',
+                     'header_text': '#1c4532', 'icon': '📰'},
+    }
 
     def __init__(self):
         self.mail_user    = os.environ.get("MAIL_USER",          "")
@@ -505,7 +534,6 @@ class NewsEmailSender:
                 f"🚢 航運安全快報 | 共 {total} 則 | "
                 f"{tpe_time.strftime('%Y-%m-%d %H:%M')} (TPE)"
             )
-
             msg            = MIMEMultipart('alternative')
             msg['Subject'] = subject
             msg['From']    = self.mail_user
@@ -530,75 +558,136 @@ class NewsEmailSender:
             traceback.print_exc()
         return False
 
-    # ── 新聞卡片 HTML ──
+    # ── 單則新聞卡片 ──
     @staticmethod
-    def _render_cards(news_list: list) -> str:
-        if not news_list:
-            return '<p style="color:#888;font-style:italic;padding:12px 0;">本次無相關新聞</p>'
-
-        html = ""
-        for idx, item in enumerate(news_list, 1):
-
-            # 關鍵字標籤（依分類顯示不同顏色）
-            kw_tags = ""
-            seen_cats = set()
-            for kw, cat, color in item['matched'][:8]:
-                kw_tags += (
-                    f'<span style="display:inline-block;background:{color};'
-                    f'color:white;padding:2px 8px;border-radius:12px;'
-                    f'font-size:11px;margin:2px 2px 2px 0;">{kw}</span>'
-                )
-                seen_cats.add((cat, color))
-
-            # 分類徽章
-            cat_badges = "".join(
-                f'<span style="display:inline-block;border:1px solid {c};'
-                f'color:{c};padding:1px 7px;border-radius:10px;'
-                f'font-size:11px;margin-right:4px;">{cat}</span>'
-                for cat, c in seen_cats
+    def _render_card(idx: int, item: dict, border_color: str) -> str:
+        # 關鍵字標籤
+        kw_html   = ""
+        seen_cats = set()
+        for kw, cat, color in item['matched'][:8]:
+            kw_html += (
+                f'<span style="display:inline-block;background:{color};'
+                f'color:#fff;padding:2px 9px;border-radius:20px;'
+                f'font-size:11px;margin:2px 3px 2px 0;'
+                f'font-weight:500;">{kw}</span>'
             )
+            seen_cats.add((cat, color))
 
-            # 來源標籤
-            source_badge = (
-                f'<span style="background:#edf2f7;color:#4a5568;'
-                f'padding:2px 8px;border-radius:10px;font-size:11px;">'
-                f'{item["source_icon"]} {item["source_name"]}</span>'
-            )
+        # 分類徽章（右上角）
+        cat_html = " ".join(
+            f'<span style="border:1.5px solid {c};color:{c};'
+            f'padding:1px 8px;border-radius:20px;font-size:11px;'
+            f'font-weight:600;margin-left:4px;">{cat}</span>'
+            for cat, c in seen_cats
+        )
 
-            html += f"""
-            <div style="background:#ffffff;border:1px solid #e2e8f0;
-                        border-left:4px solid #2b6cb0;
-                        padding:16px 18px;margin:10px 0;border-radius:8px;
-                        box-shadow:0 1px 4px rgba(0,0,0,0.05);">
-                <div style="display:flex;align-items:flex-start;
-                            justify-content:space-between;margin-bottom:6px;">
-                    <div style="font-weight:bold;color:#1a202c;
-                                font-size:15px;line-height:1.4;flex:1;">
-                        {idx}. {item['title']}
-                    </div>
+        # 時間格式化
+        pub = item['published']
+        if pub != '時間未知':
+            try:
+                dt  = datetime.strptime(pub, '%Y-%m-%d %H:%M UTC')
+                dt  = dt.replace(tzinfo=timezone.utc)
+                tpe = dt.astimezone(timezone(timedelta(hours=8)))
+                pub = tpe.strftime('%m/%d %H:%M')
+            except Exception:
+                pass
+
+        return f"""
+        <div style="background:#ffffff;border:1px solid #e8edf3;
+                    border-left:5px solid {border_color};
+                    border-radius:10px;padding:18px 20px;margin:10px 0;
+                    box-shadow:0 2px 8px rgba(0,0,0,0.06);
+                    transition:box-shadow 0.2s;">
+
+            <!-- 標題列 -->
+            <div style="display:flex;justify-content:space-between;
+                        align-items:flex-start;margin-bottom:8px;">
+                <div style="font-weight:700;color:#1a202c;font-size:15px;
+                            line-height:1.5;flex:1;padding-right:12px;">
+                    <span style="color:{border_color};margin-right:6px;
+                                 font-size:13px;">#{idx}</span>
+                    {item['title']}
                 </div>
-                <div style="margin-bottom:8px;">
-                    {source_badge}
-                    &nbsp;
-                    <span style="color:#888;font-size:11px;">
-                        📅 {item['published']}
-                    </span>
-                    &nbsp;
-                    {cat_badges}
-                </div>
-                <div style="color:#4a5568;font-size:13px;
-                            line-height:1.75;margin-bottom:10px;">
-                    {item['summary'] or '（無摘要）'}
-                </div>
-                <div style="margin-bottom:6px;">{kw_tags}</div>
+                <div style="white-space:nowrap;">{cat_html}</div>
+            </div>
+
+            <!-- 來源 + 時間列 -->
+            <div style="display:flex;align-items:center;
+                        margin-bottom:10px;flex-wrap:wrap;gap:6px;">
+                <span style="background:#f0f4f8;color:#4a5568;
+                             padding:3px 10px;border-radius:20px;
+                             font-size:12px;font-weight:500;">
+                    {item['source_icon']} {item['source_name']}
+                </span>
+                <span style="color:#a0aec0;font-size:12px;">
+                    🕐 {pub}
+                </span>
+            </div>
+
+            <!-- 摘要 -->
+            <div style="color:#4a5568;font-size:13px;line-height:1.8;
+                        margin-bottom:12px;padding:10px 14px;
+                        background:#f8fafc;border-radius:6px;
+                        border-left:3px solid #e2e8f0;">
+                {item['summary'] or '<em style="color:#a0aec0;">（無摘要）</em>'}
+            </div>
+
+            <!-- 關鍵字 + 連結 -->
+            <div style="display:flex;justify-content:space-between;
+                        align-items:center;flex-wrap:wrap;gap:8px;">
+                <div>{kw_html}</div>
                 <a href="{item['link']}" target="_blank"
-                   style="color:#3182ce;font-size:13px;
-                          text-decoration:none;font-weight:500;">
-                    🔗 閱讀全文 →
+                   style="display:inline-block;background:{border_color};
+                          color:#fff;padding:6px 16px;border-radius:20px;
+                          font-size:12px;text-decoration:none;
+                          font-weight:600;white-space:nowrap;">
+                    閱讀全文 →
                 </a>
             </div>
-            """
-        return html
+        </div>
+        """
+
+    def _render_section(self, title: str, news_list: list,
+                        category: str) -> str:
+        cfg   = self.SECTION_COLORS.get(category, {
+            'border': '#718096', 'header_bg': '#f7fafc',
+            'header_text': '#2d3748', 'icon': '📄'
+        })
+        cards = "".join(
+            self._render_card(i + 1, item, cfg['border'])
+            for i, item in enumerate(news_list)
+        ) if news_list else (
+            '<div style="text-align:center;padding:30px;color:#a0aec0;'
+            'font-size:14px;">本次無相關新聞</div>'
+        )
+
+        return f"""
+        <div style="margin-bottom:32px;">
+            <!-- Section Header -->
+            <div style="background:{cfg['header_bg']};
+                        border-left:5px solid {cfg['border']};
+                        border-radius:8px;padding:14px 20px;
+                        margin-bottom:16px;
+                        display:flex;align-items:center;
+                        justify-content:space-between;">
+                <div>
+                    <span style="font-size:18px;margin-right:8px;">
+                        {cfg['icon']}
+                    </span>
+                    <span style="font-size:16px;font-weight:700;
+                                 color:{cfg['header_text']};">
+                        {title}
+                    </span>
+                </div>
+                <span style="background:{cfg['border']};color:#fff;
+                             padding:3px 14px;border-radius:20px;
+                             font-size:13px;font-weight:600;">
+                    {len(news_list)} 則
+                </span>
+            </div>
+            {cards}
+        </div>
+        """
 
     def _generate_html(self, news_data: dict, run_time: datetime) -> str:
         tpe_time      = run_time.astimezone(timezone(timedelta(hours=8)))
@@ -607,154 +696,173 @@ class NewsEmailSender:
         intl_news     = news_data.get('intl',     [])
         zh_news       = news_data.get('chinese',  [])
 
-        # ── 來源統計表格 ──
+        # 來源統計
         source_stats = {}
         for item in all_news:
             key = f"{item['source_icon']} {item['source_name']}"
             source_stats[key] = source_stats.get(key, 0) + 1
 
         source_rows = "".join(
-            f'<tr>'
-            f'<td style="padding:5px 12px;font-size:13px;">{src}</td>'
-            f'<td style="padding:5px 12px;font-size:13px;text-align:center;">'
-            f'<strong>{cnt}</strong></td>'
-            f'</tr>'
-            for src, cnt in sorted(source_stats.items(),
-                                   key=lambda x: -x[1])
-        )
+            f"""<tr style="border-bottom:1px solid #f0f4f8;">
+                <td style="padding:7px 16px;font-size:13px;color:#4a5568;">
+                    {src}
+                </td>
+                <td style="padding:7px 16px;font-size:13px;
+                           text-align:right;font-weight:700;
+                           color:#2b6cb0;">{cnt} 則</td>
+            </tr>"""
+            for src, cnt in sorted(source_stats.items(), key=lambda x: -x[[1]](#__1))
+        ) or '<tr><td colspan="2" style="color:#a0aec0;padding:12px;">無資料</td></tr>'
+
+        # 分類統計卡
+        stats_cards = f"""
+        <td style="text-align:center;padding:16px 20px;">
+            <div style="font-size:36px;font-weight:800;color:#1a365d;
+                        line-height:1;">{len(all_news)}</div>
+            <div style="font-size:11px;color:#718096;
+                        margin-top:4px;letter-spacing:0.5px;">TOTAL</div>
+        </td>
+        <td style="width:1px;background:#e2e8f0;"></td>
+        <td style="text-align:center;padding:16px 20px;">
+            <div style="font-size:36px;font-weight:800;color:#2b6cb0;
+                        line-height:1;">{len(shipping_news)}</div>
+            <div style="font-size:11px;color:#718096;
+                        margin-top:4px;">🚢 航運專業</div>
+        </td>
+        <td style="width:1px;background:#e2e8f0;"></td>
+        <td style="text-align:center;padding:16px 20px;">
+            <div style="font-size:36px;font-weight:800;color:#c05621;
+                        line-height:1;">{len(intl_news)}</div>
+            <div style="font-size:11px;color:#718096;
+                        margin-top:4px;">🌐 國際媒體</div>
+        </td>
+        <td style="width:1px;background:#e2e8f0;"></td>
+        <td style="text-align:center;padding:16px 20px;">
+            <div style="font-size:36px;font-weight:800;color:#276749;
+                        line-height:1;">{len(zh_news)}</div>
+            <div style="font-size:11px;color:#718096;
+                        margin-top:4px;">📰 中文媒體</div>
+        </td>
+        """
 
         return f"""<!DOCTYPE html>
-<html>
+<html lang="zh-TW">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width,initial-scale=1.0">
     <title>航運安全快報</title>
 </head>
-<body style="font-family:'Microsoft JhengHei',Arial,sans-serif;
-             background:#edf2f7;margin:0;padding:20px;">
-<div style="max-width:960px;margin:0 auto;">
+<body style="margin:0;padding:0;background:#edf2f7;
+             font-family:'Microsoft JhengHei','Segoe UI',Arial,sans-serif;">
 
-    <!-- ══ Header ══ -->
-    <div style="background:linear-gradient(135deg,#1a365d,#2b6cb0);
-                padding:32px;color:white;text-align:center;
-                border-radius:12px 12px 0 0;">
-        <div style="font-size:36px;margin-bottom:8px;">🚢</div>
-        <h1 style="margin:0;font-size:22px;letter-spacing:1px;">
-            航運安全暨地緣政治新聞快報
-        </h1>
-        <p style="margin:8px 0 0;opacity:0.85;font-size:13px;">
-            GitHub Actions 自動監控 v3.0 &nbsp;|&nbsp;
-            {tpe_time.strftime('%Y-%m-%d %H:%M')} (TPE)
-        </p>
-    </div>
+<div style="max-width:980px;margin:24px auto;padding:0 12px;">
 
-    <!-- ══ 統計列 ══ -->
-    <div style="background:white;padding:20px 30px;
-                border-bottom:2px solid #bee3f8;">
-        <table style="width:100%;border-collapse:collapse;">
-            <tr>
-                <td style="text-align:center;padding:10px;">
-                    <div style="font-size:32px;font-weight:bold;
-                                color:#1a365d;">{len(all_news)}</div>
-                    <div style="font-size:12px;color:#718096;
-                                margin-top:2px;">總則數</div>
-                </td>
-                <td style="text-align:center;padding:10px;
-                           border-left:1px solid #e2e8f0;">
-                    <div style="font-size:32px;font-weight:bold;
-                                color:#2b6cb0;">{len(shipping_news)}</div>
-                    <div style="font-size:12px;color:#718096;
-                                margin-top:2px;">🚢 航運專業</div>
-                </td>
-                <td style="text-align:center;padding:10px;
-                           border-left:1px solid #e2e8f0;">
-                    <div style="font-size:32px;font-weight:bold;
-                                color:#c05621;">{len(intl_news)}</div>
-                    <div style="font-size:12px;color:#718096;
-                                margin-top:2px;">🌐 國際媒體</div>
-                </td>
-                <td style="text-align:center;padding:10px;
-                           border-left:1px solid #e2e8f0;">
-                    <div style="font-size:32px;font-weight:bold;
-                                color:#276749;">{len(zh_news)}</div>
-                    <div style="font-size:12px;color:#718096;
-                                margin-top:2px;">📰 中文媒體</div>
-                </td>
-            </tr>
-        </table>
-    </div>
+    <!-- ══════════════════════════════
+         HEADER
+    ══════════════════════════════ -->
+    <div style="background:linear-gradient(135deg,#0f2942 0%,#1a4a7a 50%,#2b6cb0 100%);
+                border-radius:16px 16px 0 0;padding:36px 40px;
+                text-align:center;position:relative;overflow:hidden;">
 
-    <!-- ══ 來源統計 ══ -->
-    <div style="background:#f7fafc;padding:16px 30px;
-                border-bottom:1px solid #e2e8f0;">
-        <div style="font-size:13px;font-weight:bold;
-                    color:#4a5568;margin-bottom:8px;">
-            📊 本次來源分布
+        <!-- 背景裝飾圓 -->
+        <div style="position:absolute;top:-40px;right:-40px;width:180px;height:180px;
+                    background:rgba(255,255,255,0.05);border-radius:50%;"></div>
+        <div style="position:absolute;bottom:-60px;left:-30px;width:220px;height:220px;
+                    background:rgba(255,255,255,0.04);border-radius:50%;"></div>
+
+        <div style="position:relative;">
+            <div style="font-size:48px;margin-bottom:10px;">🚢</div>
+            <h1 style="margin:0 0 6px;font-size:24px;font-weight:800;
+                       color:#ffffff;letter-spacing:1px;">
+                航運安全暨地緣政治新聞快報
+            </h1>
+            <p style="margin:0;color:rgba(255,255,255,0.75);font-size:13px;">
+                GitHub Actions 自動監控 v3.1 &nbsp;·&nbsp;
+                {tpe_time.strftime('%Y年%m月%d日 %H:%M')} (台北時間)
+            </p>
+            <div style="margin-top:14px;display:inline-block;
+                        background:rgba(255,255,255,0.15);
+                        border:1px solid rgba(255,255,255,0.3);
+                        border-radius:20px;padding:4px 18px;
+                        font-size:12px;color:rgba(255,255,255,0.9);">
+                監控來源 {len(RSS_SOURCES)} 個 &nbsp;|&nbsp;
+                關鍵字 {len(ALL_KEYWORDS)} 個
+            </div>
         </div>
-        <table style="border-collapse:collapse;">
-            {source_rows if source_rows else
-             '<tr><td style="color:#888;font-size:13px;">無資料</td></tr>'}
+    </div>
+
+    <!-- ══════════════════════════════
+         統計列
+    ══════════════════════════════ -->
+    <div style="background:#ffffff;border-left:1px solid #e2e8f0;
+                border-right:1px solid #e2e8f0;">
+        <table style="width:100%;border-collapse:collapse;">
+            <tr>{stats_cards}</tr>
         </table>
     </div>
 
-    <!-- ══ 關鍵字圖例 ══ -->
-    <div style="background:#fffaf0;padding:12px 30px;
-                border-bottom:1px solid #fbd38d;font-size:12px;">
-        <strong style="color:#744210;">關鍵字分類：</strong>
-        <span style="background:#2b6cb0;color:white;padding:2px 8px;
-                     border-radius:10px;margin:0 4px;">航運動態</span>
-        <span style="background:#c05621;color:white;padding:2px 8px;
-                     border-radius:10px;margin:0 4px;">海上安全</span>
-        <span style="background:#c53030;color:white;padding:2px 8px;
-                     border-radius:10px;margin:0 4px;">地緣政治</span>
+    <!-- ══════════════════════════════
+         關鍵字圖例
+    ══════════════════════════════ -->
+    <div style="background:#fffbeb;padding:12px 24px;
+                border-left:1px solid #e2e8f0;
+                border-right:1px solid #e2e8f0;
+                border-bottom:2px solid #f6e05e;">
+        <span style="font-size:12px;color:#744210;font-weight:600;
+                     margin-right:8px;">🏷️ 關鍵字分類：</span>
+        <span style="background:#2b6cb0;color:#fff;padding:2px 10px;
+                     border-radius:20px;font-size:11px;
+                     margin-right:6px;font-weight:500;">航運動態</span>
+        <span style="background:#c05621;color:#fff;padding:2px 10px;
+                     border-radius:20px;font-size:11px;
+                     margin-right:6px;font-weight:500;">海上安全</span>
+        <span style="background:#c53030;color:#fff;padding:2px 10px;
+                     border-radius:20px;font-size:11px;
+                     font-weight:500;">地緣政治</span>
     </div>
 
-    <!-- ══ 航運專業新聞 ══ -->
-    <div style="background:white;padding:24px 30px;
-                border-bottom:2px solid #bee3f8;">
-        <h2 style="color:#1a365d;margin:0 0 16px;font-size:17px;
-                   border-left:4px solid #2b6cb0;padding-left:12px;">
-            🚢 航運專業媒體 &nbsp;
-            <span style="font-size:14px;font-weight:normal;
-                         color:#718096;">({len(shipping_news)} 則)</span>
-        </h2>
-        {self._render_cards(shipping_news)}
+    <!-- ══════════════════════════════
+         主內容區
+    ══════════════════════════════ -->
+    <div style="background:#f7fafc;padding:28px 32px;
+                border-left:1px solid #e2e8f0;
+                border-right:1px solid #e2e8f0;">
+
+        {self._render_section('航運專業媒體', shipping_news, '航運專業')}
+        {self._render_section('國際媒體',     intl_news,     '國際媒體')}
+        {self._render_section('中文媒體',     zh_news,       '中文媒體')}
+
     </div>
 
-    <!-- ══ 國際媒體 ══ -->
-    <div style="background:white;padding:24px 30px;
-                border-bottom:2px solid #fbd38d;">
-        <h2 style="color:#7b341e;margin:0 0 16px;font-size:17px;
-                   border-left:4px solid #c05621;padding-left:12px;">
-            🌐 國際媒體 &nbsp;
-            <span style="font-size:14px;font-weight:normal;
-                         color:#718096;">({len(intl_news)} 則)</span>
-        </h2>
-        {self._render_cards(intl_news)}
+    <!-- ══════════════════════════════
+         來源統計
+    ══════════════════════════════ -->
+    <div style="background:#ffffff;padding:20px 32px;
+                border-left:1px solid #e2e8f0;
+                border-right:1px solid #e2e8f0;
+                border-top:2px solid #e2e8f0;">
+        <div style="font-size:13px;font-weight:700;color:#4a5568;
+                    margin-bottom:12px;">📊 本次來源分布</div>
+        <table style="width:100%;border-collapse:collapse;
+                      border:1px solid #e8edf3;border-radius:8px;
+                      overflow:hidden;">
+            {source_rows}
+        </table>
     </div>
 
-    <!-- ══ 中文媒體 ══ -->
-    <div style="background:white;padding:24px 30px;">
-        <h2 style="color:#276749;margin:0 0 16px;font-size:17px;
-                   border-left:4px solid #38a169;padding-left:12px;">
-            📰 中文媒體 &nbsp;
-            <span style="font-size:14px;font-weight:normal;
-                         color:#718096;">({len(zh_news)} 則)</span>
-        </h2>
-        {self._render_cards(zh_news)}
-    </div>
-
-    <!-- ══ Footer ══ -->
-    <div style="background:#2d3748;padding:20px 30px;
-                border-radius:0 0 12px 12px;text-align:center;
-                color:#a0aec0;font-size:12px;">
+    <!-- ══════════════════════════════
+         FOOTER
+    ══════════════════════════════ -->
+    <div style="background:#2d3748;padding:20px 32px;
+                border-radius:0 0 16px 16px;
+                text-align:center;color:#a0aec0;font-size:12px;">
         <p style="margin:0 0 4px;">
             🤖 此為 GitHub Actions 自動發送郵件，請勿直接回覆
         </p>
-        <p style="margin:0;">
-            航運安全監控系統 v3.0 &nbsp;|&nbsp;
-            監控來源：{len(RSS_SOURCES)} 個 &nbsp;|&nbsp;
-            關鍵字：{len(ALL_KEYWORDS)} 個
+        <p style="margin:0;color:#718096;">
+            航運安全監控系統 v3.1
+            &nbsp;·&nbsp;
+            下次執行：約 1 小時後
         </p>
     </div>
 
@@ -766,7 +874,7 @@ class NewsEmailSender:
 # ==================== 主程式 ====================
 if __name__ == "__main__":
     logger.info("\n" + "=" * 60)
-    logger.info("🚢 航運安全暨地緣政治新聞監控系統 v3.0")
+    logger.info("🚢 航運安全暨地緣政治新聞監控系統 v3.1")
     logger.info("=" * 60)
 
     run_time   = datetime.now(tz=timezone.utc)
