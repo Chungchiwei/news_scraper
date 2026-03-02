@@ -44,77 +44,94 @@ logger = logging.getLogger(__name__)
 
 # ==================== 關鍵字設定（分類管理）====================
 SHIPPING_KEYWORDS = [
-    # ── 船型 ──
-    "container ship", "containership", "bulk carrier", "tanker",
-    "VLCC", "ULCC", "LNG carrier", "LPG carrier", "car carrier",
-    "RORO", "feeder vessel", "mega vessel", "vessel",
-    "貨櫃船", "散裝船", "油輪", "液化天然氣船", "滾裝船",
-    # ── 港口 / 航線 ──
-    "port congestion", "port closure", "terminal", "berth",
-    "Suez Canal", "Panama Canal", "Strait of Malacca",
-    "Singapore", "Rotterdam", "Shanghai port", "Kaohsiung",
-    "蘇伊士運河", "巴拿馬運河", "麻六甲海峽", "高雄港", "基隆港",
-    "上海港", "寧波港", "釜山港",
-    # ── 運費 / 市場 ──
-    "freight rate", "shipping rate", "bunker", "fuel surcharge",
-    "BAF", "GRI", "PSS", "congestion surcharge",
-    "SCFI", "BDI", "Baltic Dry Index", "freight",
-    "運費", "燃油附加費", "旺季附加費", "港口擁塞費",
-    # ── 航運公司 ──
-    "Maersk", "MSC", "CMA CGM", "COSCO", "Evergreen",
-    "Hapag-Lloyd", "ONE", "Yang Ming", "HMM", "Wan Hai",
-    "長榮", "陽明", "萬海", "中遠海運",
-    # ── 操作 ──
-    "blank sailing", "vessel delay", "schedule change",
-    "omit port", "transshipment", "rerouting", "shipping",
-    "跳港", "停航", "改港", "繞航", "延誤",
+    # ── 船型（與安全事件相關）──
+    "tanker", "VLCC", "LNG carrier", "LPG carrier",
+    "container ship", "containership", "bulk carrier",
+    "vessel", "cargo ship", "oil tanker",
+    "油輪", "貨櫃船", "散裝船", "液化天然氣船", "船舶",
+
+    # ── 航行狀態 ──
+    "vessel delay", "rerouting", "diversion",
+    "port closure", "channel closure",
+    "繞航", "改港", "停航", "航道封閉", "延誤",
+
+    # ── 關鍵航道（與霍爾木茲直接相關）──
+    "Strait of Hormuz", "Hormuz", "Strait of Malacca",
+    "Suez Canal", "Panama Canal",
+    "霍爾木茲海峽", "荷姆茲海峽", "麻六甲海峽",
+    "蘇伊士運河", "巴拿馬運河",
 ]
 
 SECURITY_KEYWORDS = [
     # ── 海上安全事件 ──
-    "UKMTO", "IMB", "piracy", "hijack", "armed robbery",
+    "UKMTO", "IMB",
+    "piracy", "hijack", "armed robbery", "boarding",
     "vessel attack", "ship attack", "tanker attack",
-    "mine", "naval mine", "torpedo",
-    "distress signal", "mayday", "crew kidnap",
-    "海盜", "劫船", "武裝搶劫", "水雷", "船員被劫",
-    # ── 高風險海域 ──
+    "naval mine", "mine", "torpedo", "limpet mine",
+    "distress signal", "mayday", "crew kidnap", "hostage",
+    "海盜", "劫船", "武裝搶劫", "登船", "水雷",
+    "船員被劫", "人質", "求救信號",
+
+    # ── 高風險海域（霍爾木茲核心區域）──
+    "Strait of Hormuz", "Hormuz",
+    "Persian Gulf", "Gulf of Oman",
     "Red Sea", "Gulf of Aden", "Bab el-Mandeb",
-    "Persian Gulf", "Gulf of Oman", "Strait of Hormuz",
-    "Arabian Sea", "Indian Ocean",
-    "紅海", "亞丁灣", "曼德海峽", "波斯灣", "荷姆茲海峽", "阿拉伯海",
+    "Arabian Sea",
+    "霍爾木茲海峽", "荷姆茲海峽",
+    "波斯灣", "阿曼灣",
+    "紅海", "亞丁灣", "曼德海峽", "阿拉伯海",
+
     # ── 武裝組織 ──
-    "Houthi", "Houthis", "IRGC", "militia",
-    "胡塞", "革命衛隊", "民兵",
-    # ── 護航 / 安全措施 ──
-    "naval escort", "convoy", "warship", "destroyer",
+    "Houthi", "Houthis",
+    "IRGC", "Iranian Revolutionary Guard",
+    "militia", "armed group",
+    "胡塞", "革命衛隊", "伊斯蘭革命衛隊", "民兵",
+
+    # ── 護航 / 軍事行動 ──
+    "naval escort", "convoy", "warship", "destroyer", "frigate",
     "Operation Prosperity Guardian", "CTF-151",
-    "護航", "艦隊", "驅逐艦",
+    "naval blockade", "maritime patrol",
+    "護航", "艦隊", "驅逐艦", "護衛艦", "海上封鎖", "海上巡邏",
+
     # ── 保險 ──
-    "war risk", "war risk insurance", "Lloyd's",
-    "戰爭險", "航運保險",
+    "war risk", "war risk insurance", "war risk surcharge",
+    "戰爭險", "戰爭附加費", "航運保險",
 ]
 
 GEOPOLITICAL_KEYWORDS = [
-    # ── 美伊 / 中東 ──
-    "Iran", "Iranian", "US-Iran", "Israel", "Middle East",
-    "Yemen", "Syria", "Lebanon", "Hezbollah",
-    "伊朗", "美伊", "以色列", "中東", "葉門", "黎巴嫩", "真主黨",
-    # ── 俄烏 / 黑海 ──
-    "Russia", "Ukraine", "Black Sea", "grain corridor",
-    "俄羅斯", "烏克蘭", "黑海", "糧食走廊",
-    # ── 台海 / 南海 ──
-    "Taiwan Strait", "South China Sea", "China blockade",
-    "台灣海峽", "南海", "封鎖", "軍演",
-    # ── 制裁 / 禁運 ──
-    "sanctions", "embargo", "export control", "blacklist",
+    # ── 美伊衝突（霍爾木茲最直接威脅）──
+    "Iran", "Iranian", "US-Iran", "Iran nuclear",
+    "Iran sanctions", "Iran oil", "Iran strait",
+    "伊朗", "美伊", "伊朗核武", "伊朗制裁", "伊朗石油",
+
+    # ── 中東局勢 ──
+    "Israel", "Middle East", "Yemen", "Hezbollah",
+    "以色列", "中東", "葉門", "真主黨",
+
+    # ── 封鎖 / 制裁（影響航道）──
+    "sanctions", "embargo", "oil embargo",
     "OFAC", "shadow fleet", "dark fleet",
-    "制裁", "禁運", "出口管制", "黑名單", "影子船隊",
-    # ── 戰事 ──
-    "airstrike", "missile attack", "drone attack", "naval strike",
+    "strait closure", "blockade",
+    "制裁", "禁運", "石油禁運",
+    "影子船隊", "黑名單", "海峽封鎖", "封鎖",
+
+    # ── 軍事行動（直接影響航運安全）──
+    "airstrike", "missile attack", "drone attack",
+    "naval strike", "naval warfare",
     "空襲", "飛彈攻擊", "無人機攻擊", "海上打擊",
 ]
 
+# 合併所有關鍵字
 ALL_KEYWORDS = SHIPPING_KEYWORDS + SECURITY_KEYWORDS + GEOPOLITICAL_KEYWORDS
+
+# 去除重複（Hormuz 同時出現在兩個分類，保留第一次出現的分類）
+_seen = set()
+_deduped = []
+for kw in ALL_KEYWORDS:
+    if kw.lower() not in _seen:
+        _deduped.append(kw)
+        _seen.add(kw.lower())
+ALL_KEYWORDS = _deduped
 
 KEYWORD_CATEGORY_MAP = {
     **{kw.lower(): ("航運動態", "#2b6cb0") for kw in SHIPPING_KEYWORDS},
@@ -696,22 +713,42 @@ class NewsEmailSender:
         intl_news     = news_data.get('intl',     [])
         zh_news       = news_data.get('chinese',  [])
 
-        # 來源統計
+        # ✅ 修復：先排序，再用獨立函式產生 HTML，避免 f-string 括號解析錯誤
         source_stats = {}
         for item in all_news:
             key = f"{item['source_icon']} {item['source_name']}"
             source_stats[key] = source_stats.get(key, 0) + 1
 
+        _sorted_sources = sorted(source_stats.items(), key=lambda x: -x[1])
+
+        def _row(src: str, cnt: int) -> str:
+            return (
+                f'<tr style="border-bottom:1px solid #f0f4f8;">'
+                f'<td style="padding:7px 16px;font-size:13px;'
+                f'color:#4a5568;">{src}</td>'
+                f'<td style="padding:7px 16px;font-size:13px;'
+                f'text-align:right;font-weight:700;'
+                f'color:#2b6cb0;">{cnt} 則</td>'
+                f'</tr>'
+            )
+
+        source_rows = (
+            "".join(_row(s, c) for s, c in _sorted_sources)
+            or '<tr><td colspan="2" style="color:#a0aec0;'
+            'padding:12px;">無資料</td></tr>'
+        )
+
+        def _make_source_row(src: str, cnt: int) -> str:
+            return (
+                f'<tr style="border-bottom:1px solid #f0f4f8;">'
+                f'<td style="padding:7px 16px;font-size:13px;color:#4a5568;">{src}</td>'
+                f'<td style="padding:7px 16px;font-size:13px;text-align:right;'
+                f'font-weight:700;color:#2b6cb0;">{cnt} 則</td>'
+                f'</tr>'
+            )
+
         source_rows = "".join(
-            f"""<tr style="border-bottom:1px solid #f0f4f8;">
-                <td style="padding:7px 16px;font-size:13px;color:#4a5568;">
-                    {src}
-                </td>
-                <td style="padding:7px 16px;font-size:13px;
-                           text-align:right;font-weight:700;
-                           color:#2b6cb0;">{cnt} 則</td>
-            </tr>"""
-            for src, cnt in sorted(source_stats.items(), key=lambda x: -x[[1]](#__1))
+            _make_source_row(src, cnt) for src, cnt in _sorted_sources
         ) or '<tr><td colspan="2" style="color:#a0aec0;padding:12px;">無資料</td></tr>'
 
         # 分類統計卡
