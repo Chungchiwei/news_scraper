@@ -3,13 +3,14 @@
 """
 航運安全暨地緣政治新聞監控系統
 GitHub Actions 版本 - 單次執行
-版本: 4.5 - 精準關鍵字過濾 + 語境驗證
+版本: 4.6 - 標題權重驗證 + 精準關鍵字 + BBC 修復 + 鉅亨網整合
 """
 
 import os
 import io
 import re
 import ssl
+import json
 import smtplib
 import logging
 import traceback
@@ -43,22 +44,22 @@ logger = logging.getLogger(__name__)
 # ==================== 關鍵字設定 ====================
 #
 # 設計原則：
-#   ✅ 使用「複合詞組」而非單字，確保有航運語境
-#   ✅ 英文關鍵字需要至少 2 個詞（避免 Iran / Israel 單字誤觸）
-#   ✅ 中文關鍵字保留單詞（中文不易誤觸）
-#   ❌ 禁止：Iran, Israeli, Yemen, Gaza 等純地名/人名單字
+#   ✅ 複合詞組，避免單字誤觸
+#   ✅ 中文關鍵字加上前後文限定詞
+#   ✅ 標題若無航運詞 → 要求摘要中有更多航運詞才通過
 # ─────────────────────────────────────────────────────────────
 
 SHIPPING_KEYWORDS = [
-    # ── 英文：船型（精確複合詞）──
+    # ── 英文：船型 ──
     "oil tanker", "product tanker", "chemical tanker",
     "VLCC", "ULCC", "Aframax", "Suezmax",
     "LNG carrier", "LNG tanker", "LPG carrier",
     "container ship", "containership", "container vessel",
-    "bulk carrier", "bulk vessel", "cargo vessel",
+    "bulk carrier", "bulk vessel",
     "merchant vessel", "merchant ship",
+    "cargo vessel", "newbuilding", "shipbuilding order",
 
-    # ── 英文：航行狀態（需有航運語境）──
+    # ── 英文：航行狀態 ──
     "vessel rerouting", "ship diversion", "vessel delay",
     "port congestion", "port closure", "port blockade",
     "channel closure", "waterway closure",
@@ -69,20 +70,24 @@ SHIPPING_KEYWORDS = [
     # ── 中文船型（繁體）──
     "油輪", "成品油輪", "化學品船", "貨櫃船", "散裝船",
     "液化天然氣船", "液化石油氣船", "商船", "貨輪",
+    "超大型油輪", "新造船",
     # ── 中文船型（簡體）──
     "油船", "成品油船", "化学品船", "集装箱船", "散装船",
-    "液化天然气船", "商船", "货轮", "船舶",
+    "液化天然气船", "货轮", "超大型油轮", "新造船",
 
     # ── 中文航行狀態（繁體）──
-    "繞航", "改港", "停航", "好望角", "航道封閉", "塞港",
-    "運費上漲", "運價", "航運市場",
+    "商船停航", "貨輪停航", "航運停航", "航線改道",
+    "繞航好望角", "改港卸貨", "港口封閉",
+    "運費上漲", "運價", "航運市場", "造船訂單",
     # ── 中文航行狀態（簡體）──
-    "绕航", "停航", "航道封闭", "运费上涨", "运价", "航运市场",
-    "港口拥堵", "港口封锁",
+    "商船停航", "货轮停航", "航运停航", "航线改道",
+    "绕航好望角", "港口封闭",
+    "运费上涨", "运价", "航运市场", "造船订单",
+    "港口拥堵",
 ]
 
 SECURITY_KEYWORDS = [
-    # ── 英文：海上安全事件（必須有船舶語境）──
+    # ── 英文：海上安全事件 ──
     "UKMTO alert", "UKMTO incident", "IMB piracy",
     "maritime piracy", "ship hijacking", "vessel hijacking",
     "armed attack on vessel", "armed robbery at sea",
@@ -94,7 +99,7 @@ SECURITY_KEYWORDS = [
     "Red Sea attack", "Red Sea incident", "Red Sea shipping",
     "maritime security incident", "maritime security alert",
 
-    # ── 英文：關鍵航道（複合詞，避免單字誤觸）──
+    # ── 英文：關鍵航道（複合詞）──
     "Strait of Hormuz", "Hormuz Strait", "Hormuz closure",
     "Hormuz shipping", "Hormuz tanker",
     "Suez Canal closure", "Suez Canal transit", "Suez Canal attack",
@@ -110,70 +115,72 @@ SECURITY_KEYWORDS = [
     "Houthi shipping", "Houthi tanker", "Houthi Red Sea",
     "IRGC vessel", "IRGC tanker", "IRGC seizure",
     "Iranian navy", "Iranian vessel", "Iranian tanker",
+    "Iranian shipping",
 
-    # ── 英文：護航與保險（需有航運語境）──
+    # ── 英文：護航與保險 ──
     "naval escort shipping", "Operation Prosperity Guardian",
     "CTF-151", "Combined Maritime Forces",
-    "war risk insurance shipping", "war risk premium tanker",
-    "maritime war risk",
+    "war risk insurance shipping", "maritime war risk",
 
     # ── 中文安全事件（繁體）──
     "海盜攻擊", "海盜劫船", "武裝登船", "水雷威脅",
     "商船遇襲", "貨輪遭攻擊", "船員被劫", "船員被扣押",
-    "紅海危機", "紅海攻擊", "紅海封鎖",
+    "紅海危機", "紅海攻擊", "紅海封鎖", "紅海航運受阻",
     # ── 中文安全事件（簡體）──
     "海盗攻击", "海盗劫船", "武装登船", "水雷威胁",
     "商船遇袭", "货轮遭攻击", "船员被劫", "船员被扣押",
-    "红海危机", "红海攻击", "红海封锁",
+    "红海危机", "红海攻击", "红海封锁", "红海航运受阻",
 
-    # ── 中文關鍵航道（繁體）──
-    "霍爾木茲海峽", "荷姆茲海峽", "蘇伊士運河",
-    "巴拿馬運河", "波斯灣航運", "亞丁灣",
-    "曼德海峽", "黑海航運", "紅海航運",
+    # ── 中文關鍵航道（繁體，複合詞避免財經文章誤觸）──
+    "霍爾木茲海峽封鎖", "霍爾木茲海峽關閉", "霍爾木茲海峽航運",
+    "荷姆茲海峽封鎖", "荷姆茲海峽關閉", "荷姆茲海峽航運",
+    "蘇伊士運河封鎖", "蘇伊士運河關閉", "蘇伊士運河通行",
+    "巴拿馬運河封鎖", "巴拿馬運河關閉",
+    "波斯灣航運", "波斯灣油輪", "波斯灣封鎖",
+    "亞丁灣", "曼德海峽", "黑海航運", "紅海航運",
     # ── 中文關鍵航道（簡體）──
-    "霍尔木兹海峡", "苏伊士运河", "巴拿马运河",
-    "波斯湾航运", "亚丁湾", "曼德海峡", "黑海航运", "红海航运",
+    "霍尔木兹海峡封锁", "霍尔木兹海峡关闭", "霍尔木兹海峡航运",
+    "苏伊士运河封锁", "苏伊士运河关闭", "苏伊士运河通行",
+    "巴拿马运河封锁", "巴拿马运河关闭",
+    "波斯湾航运", "波斯湾油轮", "波斯湾封锁",
+    "亚丁湾", "曼德海峡", "黑海航运", "红海航运",
 
-    # ── 中文武裝組織（需有攻擊語境）──
-    "胡塞攻擊", "胡塞飛彈", "胡塞無人機", "胡塞武裝攻船",
-    "革命衛隊扣押", "革命衛隊船隻", "伊朗海軍扣押",
+    # ── 中文武裝組織（繁體）──
+    "胡塞攻擊船", "胡塞飛彈攻船", "胡塞無人機攻船",
+    "革命衛隊扣押船", "伊朗海軍扣押",
     # ── 簡體 ──
-    "胡塞攻击", "胡塞导弹", "胡塞无人机", "胡塞武装攻船",
-    "革命卫队扣押", "伊朗海军扣押",
+    "胡塞攻击船", "胡塞导弹攻船", "革命卫队扣押船", "伊朗海军扣押",
 
     # ── 中文護航（繁體）──
-    "護航艦隊", "繁榮衛士行動", "戰爭險", "航運保險",
-    "戰爭附加費",
+    "護航艦隊", "繁榮衛士行動", "戰爭險", "航運保險", "戰爭附加費",
     # ── 簡體 ──
-    "护航舰队", "繁荣卫士行动", "战争险", "航运保险",
-    "战争附加费",
+    "护航舰队", "繁荣卫士行动", "战争险", "航运保险", "战争附加费",
 ]
 
 GEOPOLITICAL_KEYWORDS = [
     # ── 英文：必須有航運/能源語境的複合詞 ──
     "Iran oil sanctions", "Iran shipping sanctions",
     "Iran oil exports", "Iran oil tanker",
-    "Iran nuclear shipping", "Iran strait threat",
+    "Iran strait threat", "Iran nuclear shipping",
     "oil embargo shipping", "energy sanctions tanker",
     "shadow fleet tanker", "shadow fleet sanctions",
     "dark fleet vessel", "dark fleet tanker",
     "sanctioned vessel", "sanctioned tanker",
     "shipping sanctions", "tanker sanctions",
     "strait closure threat", "naval blockade shipping",
-    "maritime blockade", "oil supply disruption",
-    "energy supply shipping", "crude oil shipping",
-    "OPEC oil supply", "oil production shipping",
+    "maritime blockade", "oil supply disruption shipping",
+    "crude oil shipping", "OPEC shipping impact",
 
     # ── 中文（繁體）──
-    "伊朗石油制裁", "伊朗航運制裁", "伊朗石油出口",
-    "制裁油輪", "制裁船隊", "石油禁運",
-    "影子船隊", "黑名單船舶", "海峽封鎖威脅",
-    "海上封鎖", "能源供應中斷", "石油供應",
+    "伊朗石油制裁", "伊朗航運制裁", "伊朗石油出口受阻",
+    "制裁油輪", "制裁船隊", "石油禁運影響航運",
+    "影子船隊", "黑名單船舶", "海峽封鎖威脅航運",
+    "海上封鎖航運", "石油供應中斷航運",
     # ── 簡體 ──
-    "伊朗石油制裁", "伊朗航运制裁", "伊朗石油出口",
-    "制裁油轮", "制裁船队", "石油禁运",
-    "影子船队", "黑名单船舶", "海峡封锁威胁",
-    "海上封锁", "能源供应中断", "石油供应",
+    "伊朗石油制裁", "伊朗航运制裁", "伊朗石油出口受阻",
+    "制裁油轮", "制裁船队", "石油禁运影响航运",
+    "影子船队", "黑名单船舶", "海峡封锁威胁航运",
+    "海上封锁航运",
 ]
 
 # ── 合併並去重 ──
@@ -192,28 +199,6 @@ KEYWORD_CATEGORY_MAP = {
     **{kw.lower(): ("地緣政治", "#ef4444") for kw in GEOPOLITICAL_KEYWORDS},
 }
 
-# ==================== 核心航運詞（語境驗證用）====================
-#
-# 一篇文章必須同時包含「至少一個核心航運詞」
-# 才能通過語境驗證，避免純政治/社會新聞誤入
-#
-CORE_SHIPPING_TERMS = {
-    # 英文核心詞
-    "tanker", "vessel", "ship", "shipping", "maritime",
-    "fleet", "cargo", "freight", "port", "canal",
-    "strait", "suez", "hormuz", "panama", "red sea",
-    "gulf of aden", "persian gulf", "bab el-mandeb",
-    "vlcc", "lng", "lpg", "bunker", "charter",
-    # 中文核心詞（繁體）
-    "油輪", "船", "航運", "海運", "貨輪", "港口",
-    "運河", "海峽", "紅海", "波斯灣", "亞丁灣",
-    "運費", "船舶", "貨櫃",
-    # 中文核心詞（簡體）
-    "油船", "航运", "海运", "货轮", "港口",
-    "运河", "海峡", "红海", "波斯湾", "亚丁湾",
-    "运费", "船舶", "集装箱",
-}
-
 logger.info(
     f"📚 關鍵字載入 | "
     f"航運: {len(SHIPPING_KEYWORDS)} | "
@@ -221,6 +206,53 @@ logger.info(
     f"地緣: {len(GEOPOLITICAL_KEYWORDS)} | "
     f"去重後: {len(ALL_KEYWORDS)} 個"
 )
+
+
+# ==================== 語境驗證詞集 ====================
+#
+# TITLE_SHIPPING_TERMS：標題中出現任一詞 → 直接通過
+# BODY_SHIPPING_TERMS ：標題無航運詞時，摘要需出現 ≥2 個才通過
+#
+TITLE_SHIPPING_TERMS = {
+    # 英文
+    "tanker", "vessel", "ship", "shipping", "maritime",
+    "fleet", "cargo", "freight", "port", "canal",
+    "strait", "suez", "hormuz", "panama",
+    "vlcc", "lng", "lpg", "bunker", "charter",
+    "seafarer", "crew", "piracy", "hijack",
+    "red sea", "gulf of aden", "persian gulf",
+    "bab el-mandeb", "container ship", "bulk carrier",
+    # 中文（繁體）
+    "油輪", "貨輪", "商船", "貨櫃船", "散裝船",
+    "航運", "海運", "港口", "運河", "海峽",
+    "紅海", "波斯灣", "亞丁灣", "海盜", "劫船",
+    "護航", "戰爭險", "運費", "船舶",
+    # 中文（簡體）
+    "油船", "货轮", "集装箱船", "散装船",
+    "航运", "海运", "港口", "运河", "海峡",
+    "红海", "波斯湾", "亚丁湾", "海盗", "劫船",
+    "护航", "战争险", "运费", "船舶",
+}
+
+BODY_SHIPPING_TERMS = {
+    # 英文
+    "tanker", "vessel", "ship", "shipping", "maritime",
+    "fleet", "cargo", "freight", "port", "canal",
+    "strait", "hormuz", "suez", "panama",
+    "vlcc", "lng", "lpg", "bunker", "charter",
+    "seafarer", "crew", "piracy", "red sea",
+    "gulf of aden", "persian gulf",
+    # 中文（繁體）
+    "油輪", "貨輪", "商船", "貨櫃船",
+    "航運", "海運", "港口", "運河", "海峽",
+    "紅海", "波斯灣", "亞丁灣", "海盜",
+    "護航", "運費", "船舶",
+    # 中文（簡體）
+    "油船", "货轮", "集装箱船",
+    "航运", "海运", "港口", "运河", "海峡",
+    "红海", "波斯湾", "亚丁湾", "海盗",
+    "护航", "运费", "船舶",
+}
 
 
 # ==================== RSS 來源設定 ====================
@@ -410,10 +442,14 @@ RSS_SOURCES = [
         "lang": "en", "icon": "🌐", "category": "國際媒體",
     },
     {
+        # BBC 多備用 URL
         "name": "BBC News",
         "url": "https://feeds.bbci.co.uk/news/world/rss.xml",
         "backup_url": "https://feeds.bbci.co.uk/news/rss.xml",
-        "extra_urls": [],
+        "extra_urls": [
+            "https://rsshub.app/bbc/world",
+            "https://rsshub.app/bbc/chinese/world",
+        ],
         "lang": "en", "icon": "🇬🇧", "category": "國際媒體",
     },
     {
@@ -436,6 +472,26 @@ RSS_SOURCES = [
         "backup_url": "https://feeds.apnews.com/rss/apf-topnews",
         "extra_urls": [],
         "lang": "en", "icon": "📡", "category": "國際媒體",
+    },
+]
+
+
+# ==================== 鉅亨網 JSON API 來源 ====================
+CNYES_SOURCES = [
+    {
+        "name": "鉅亨網 頭條",
+        "api_url": "https://news.cnyes.com/api/v3/news/category/headline?limit=30",
+        "icon": "💹", "category": "中文媒體", "lang": "zh-TW",
+    },
+    {
+        "name": "鉅亨網 國際政經",
+        "api_url": "https://news.cnyes.com/api/v3/news/category/wd_macro?limit=30",
+        "icon": "💹", "category": "中文媒體", "lang": "zh-TW",
+    },
+    {
+        "name": "鉅亨網 能源",
+        "api_url": "https://news.cnyes.com/api/v3/news/category/energy?limit=30",
+        "icon": "💹", "category": "中文媒體", "lang": "zh-TW",
     },
 ]
 
@@ -472,40 +528,66 @@ class NewsRssScraper:
         "Accept-Language": "zh-CN,zh;q=0.9",
         "Accept-Encoding": "gzip, deflate",
     }
+    HEADERS_CNYES = {
+        "User-Agent": (
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+            "AppleWebKit/537.36 (KHTML, like Gecko) "
+            "Chrome/122.0.0.0 Safari/537.36"
+        ),
+        "Accept": "application/json",
+        "Accept-Language": "zh-TW,zh;q=0.9",
+        "Referer": "https://news.cnyes.com/",
+    }
 
-    def __init__(self, keywords: list, sources: list, hours_back: int = 2):
-        self.keywords   = keywords
-        self.sources    = sources
-        self.hours_back = hours_back
-        self.seen_urls  = set()
+    def __init__(self, keywords: list, sources: list,
+                 cnyes_sources: list, hours_back: int = 2):
+        self.keywords       = keywords
+        self.sources        = sources
+        self.cnyes_sources  = cnyes_sources
+        self.hours_back     = hours_back
+        self.seen_urls      = set()
 
-    def _match_keywords(self, text: str) -> list[tuple]:
+    # ──────────────────────────────────────────
+    # 語境驗證：兩段式
+    # ──────────────────────────────────────────
+    def _validate_shipping_context(self, title: str, summary: str) -> bool:
         """
-        關鍵字比對 + 語境驗證
-        規則：命中關鍵字 AND 文章包含至少一個核心航運詞
+        Pass 1：標題含航運詞 → 直接通過
+        Pass 2：標題無航運詞 → 摘要需含 ≥2 個航運詞才通過
         """
-        if not text:
-            return []
-        text_lower = text.lower()
+        title_lower   = title.lower()
+        summary_lower = summary.lower()
 
-        # ── Step 1：先做語境驗證（核心航運詞檢查）──
-        has_shipping_context = any(
-            core in text_lower for core in CORE_SHIPPING_TERMS
+        for term in TITLE_SHIPPING_TERMS:
+            if term in title_lower:
+                return True
+
+        body_hits = sum(
+            1 for term in BODY_SHIPPING_TERMS
+            if term in summary_lower
         )
-        if not has_shipping_context:
-            return []  # 無航運語境，直接排除
+        return body_hits >= 2
 
-        # ── Step 2：比對關鍵字 ──
+    # ──────────────────────────────────────────
+    # 關鍵字比對
+    # ──────────────────────────────────────────
+    def _match_keywords(self, title: str, summary: str) -> list[tuple]:
+        if not self._validate_shipping_context(title, summary):
+            return []
+
+        full_lower = (title + " " + summary).lower()
         matched, seen_kw = [], set()
         for kw in self.keywords:
-            if kw.lower() in text_lower and kw not in seen_kw:
+            if kw.lower() in full_lower and kw not in seen_kw:
                 cat, color = KEYWORD_CATEGORY_MAP.get(kw.lower(), ("其他", "#94a3b8"))
                 matched.append((kw, cat, color))
                 seen_kw.add(kw)
         return matched
 
+    # ──────────────────────────────────────────
+    # 時間解析（支援大陸 CST / 中文格式）
+    # ──────────────────────────────────────────
     def _parse_published_time(self, entry) -> datetime | None:
-        """處理大陸 RSS 常見的非標準時間格式（CST、中文格式等）"""
         try:
             if hasattr(entry, 'published_parsed') and entry.published_parsed:
                 t = entry.published_parsed
@@ -527,7 +609,9 @@ class NewsRssScraper:
                 '%Y年%m月%d日 %H:%M',
                 '%Y/%m/%d %H:%M:%S',
             ]
-            raw_clean = raw_time.replace(' CST', ' +0800').replace(' +0800 (CST)', ' +0800')
+            raw_clean = (raw_time
+                         .replace(' CST', ' +0800')
+                         .replace(' +0800 (CST)', ' +0800'))
             for fmt in formats:
                 try:
                     dt = datetime.strptime(raw_clean.strip(), fmt)
@@ -538,6 +622,9 @@ class NewsRssScraper:
                     continue
         return None
 
+    # ──────────────────────────────────────────
+    # RSS 下載
+    # ──────────────────────────────────────────
     def _download_rss(self, url: str, need_clean: bool = False,
                       is_cn: bool = False):
         headers = self.HEADERS_CN if is_cn else self.HEADERS_DEFAULT
@@ -549,11 +636,13 @@ class NewsRssScraper:
             resp.raise_for_status()
 
             if len(resp.content) < 100:
-                logger.warning(f"    ⚠️  回應過短 ({len(resp.content)} bytes): {url[:60]}")
+                logger.warning(f"    ⚠️  回應過短 ({len(resp.content)} bytes)")
                 return None
 
             if need_clean:
-                parsed = feedparser.parse(io.StringIO(clean_xml_content(resp.content)))
+                parsed = feedparser.parse(
+                    io.StringIO(clean_xml_content(resp.content))
+                )
             else:
                 parsed = feedparser.parse(io.BytesIO(resp.content))
 
@@ -576,6 +665,9 @@ class NewsRssScraper:
             logger.warning(f"    ⚠️  錯誤: {url[:60]} → {e}")
         return None
 
+    # ──────────────────────────────────────────
+    # 單一 RSS 來源爬取
+    # ──────────────────────────────────────────
     def fetch_from_source(self, source: dict) -> list:
         results    = []
         cutoff     = datetime.now(tz=timezone.utc) - timedelta(hours=self.hours_back)
@@ -604,11 +696,7 @@ class NewsRssScraper:
             logger.warning(f"  ⛔ {source['name']} 所有 URL 均失敗")
             return results
 
-        matched_count = 0
-        skipped_time  = 0
-        skipped_ctx   = 0  # 語境過濾
-        skipped_kw    = 0
-        skipped_dup   = 0
+        matched_count = skipped_time = skipped_ctx = skipped_kw = skipped_dup = 0
 
         for entry in feed.entries:
             try:
@@ -625,18 +713,12 @@ class NewsRssScraper:
                     skipped_time += 1
                     continue
 
-                full_text = f"{title} {summary}"
-
-                # 語境預檢（快速排除）
-                full_lower = full_text.lower()
-                has_ctx = any(c in full_lower for c in CORE_SHIPPING_TERMS)
-                if not has_ctx:
-                    skipped_ctx += 1
-                    continue
-
-                matched = self._match_keywords(full_text)
+                matched = self._match_keywords(title, summary)
                 if not matched:
-                    skipped_kw += 1
+                    if not self._validate_shipping_context(title, summary):
+                        skipped_ctx += 1
+                    else:
+                        skipped_kw += 1
                     continue
 
                 if link:
@@ -667,19 +749,118 @@ class NewsRssScraper:
 
         logger.info(
             f"  📋 {source['name']} | "
-            f"總 {len(feed.entries)} | "
-            f"命中 {matched_count} | "
-            f"無語境 {skipped_ctx} | "
-            f"無關鍵字 {skipped_kw} | "
-            f"時間 {skipped_time} | "
-            f"重複 {skipped_dup}"
+            f"總 {len(feed.entries)} | 命中 {matched_count} | "
+            f"無語境 {skipped_ctx} | 無關鍵字 {skipped_kw} | "
+            f"時間 {skipped_time} | 重複 {skipped_dup}"
         )
         return results
 
+    # ──────────────────────────────────────────
+    # 鉅亨網 JSON API 爬取
+    # ──────────────────────────────────────────
+    def fetch_from_cnyes(self, source: dict) -> list:
+        """
+        鉅亨網專用 JSON API 爬取器
+        API 格式：{"items": {"data": [{"newsId", "title", "content", "publishAt"}]}}
+        publishAt 為標準 Unix timestamp，時間解析最可靠
+        """
+        results = []
+        cutoff  = datetime.now(tz=timezone.utc) - timedelta(hours=self.hours_back)
+
+        logger.info(f"\n  📡 [鉅亨網 API][zh-TW] {source['name']}")
+        logger.info(f"    🔗 {source['api_url']}")
+
+        try:
+            resp = requests.get(
+                source['api_url'],
+                headers=self.HEADERS_CNYES,
+                timeout=20, verify=False,
+            )
+            resp.raise_for_status()
+            data = resp.json()
+        except Exception as e:
+            logger.warning(f"  ⛔ 鉅亨網 API 失敗: {e}")
+            return results
+
+        items = data.get("items", {}).get("data", [])
+        logger.info(f"    📊 {len(items)} 則")
+
+        matched_count = skipped_time = skipped_ctx = skipped_dup = 0
+
+        for item in items:
+            try:
+                news_id     = item.get("newsId", "")
+                title       = item.get("title", "") or ""
+                content_raw = item.get("content", "") or item.get("summary", "") or ""
+                summary     = re.sub(r'<[^>]+>', '', content_raw).strip()[:300]
+                if len(summary) == 300:
+                    summary += "..."
+
+                link = f"https://news.cnyes.com/news/id/{news_id}" if news_id else ""
+
+                if link and link in self.seen_urls:
+                    skipped_dup += 1
+                    continue
+
+                # Unix timestamp 時間處理
+                publish_at = item.get("publishAt", 0)
+                if publish_at:
+                    pub_time = datetime.fromtimestamp(publish_at, tz=timezone.utc)
+                    if pub_time < cutoff:
+                        skipped_time += 1
+                        continue
+                else:
+                    pub_time = None
+
+                matched = self._match_keywords(title, summary)
+                if not matched:
+                    if not self._validate_shipping_context(title, summary):
+                        skipped_ctx += 1
+                    continue
+
+                if link:
+                    self.seen_urls.add(link)
+
+                results.append({
+                    'source_name':     source['name'],
+                    'source_icon':     source['icon'],
+                    'source_lang':     source.get('lang', 'zh-TW'),
+                    'source_category': source.get('category', '中文媒體'),
+                    'title':           title.strip(),
+                    'summary':         summary,
+                    'link':            link,
+                    'published': (
+                        pub_time.strftime('%Y-%m-%d %H:%M UTC')
+                        if pub_time else '時間未知'
+                    ),
+                    'matched': matched,
+                })
+                matched_count += 1
+
+            except Exception as e:
+                logger.warning(f"    ⚠️  解析失敗: {e}")
+
+        logger.info(
+            f"  📋 {source['name']} | "
+            f"總 {len(items)} | 命中 {matched_count} | "
+            f"無語境 {skipped_ctx} | "
+            f"時間 {skipped_time} | 重複 {skipped_dup}"
+        )
+        return results
+
+    # ──────────────────────────────────────────
+    # 全部來源彙整
+    # ──────────────────────────────────────────
     def fetch_all(self) -> dict:
         all_news = []
+
+        # RSS 來源
         for source in self.sources:
             all_news.extend(self.fetch_from_source(source))
+
+        # 鉅亨網 JSON API
+        for cnyes_source in self.cnyes_sources:
+            all_news.extend(self.fetch_from_cnyes(cnyes_source))
 
         all_news.sort(
             key=lambda x: x['published'] if x['published'] != '時間未知' else '0000',
@@ -711,7 +892,7 @@ class NewsRssScraper:
         }
 
 
-# ==================== Email 發送器（純 HTML Table 版）====================
+# ==================== Email 發送器 ====================
 class NewsEmailSender:
     SECTION_COLORS = {
         '中文媒體台灣': {'color': '#10b981', 'bg': '#ecfdf5', 'icon': '🇹🇼'},
@@ -788,8 +969,14 @@ class NewsEmailSender:
             except Exception:
                 pass
 
-        safe_title   = item['title'].replace('&','&amp;').replace('<','&lt;').replace('>','&gt;')
-        safe_summary = item['summary'].replace('&','&amp;').replace('<','&lt;').replace('>','&gt;')
+        safe_title   = (item['title']
+                        .replace('&', '&amp;')
+                        .replace('<', '&lt;')
+                        .replace('>', '&gt;'))
+        safe_summary = (item['summary']
+                        .replace('&', '&amp;')
+                        .replace('<', '&lt;')
+                        .replace('>', '&gt;'))
 
         return f"""
         <table width="100%" border="0" cellpadding="1" cellspacing="0" bgcolor="#e2e8f0">
@@ -799,6 +986,8 @@ class NewsEmailSender:
             <td width="5" bgcolor="{border_color}">&nbsp;</td>
             <td>
             <table width="100%" border="0" cellpadding="14" cellspacing="0"><tr><td>
+
+                <!-- 來源 + 時間 -->
                 <table width="100%" border="0" cellpadding="0" cellspacing="0"><tr>
                     <td align="left">
                         <table border="0" cellpadding="4" cellspacing="0" bgcolor="#f1f5f9"><tr><td>
@@ -812,18 +1001,24 @@ class NewsEmailSender:
                     </td>
                 </tr></table>
                 <br>
+
+                <!-- 標題 -->
                 <a href="{item['link']}" target="_blank" style="text-decoration:none;">
                     <font face="Microsoft JhengHei,Arial,sans-serif" size="4" color="#0f172a">
                         <b>{safe_title}</b>
                     </font>
                 </a>
                 <br><br>
+
+                <!-- 摘要 -->
                 <table width="100%" border="0" cellpadding="10" cellspacing="0" bgcolor="#f8fafc"><tr><td>
                     <font face="Microsoft JhengHei,Arial,sans-serif" size="3" color="#64748b">
                         {safe_summary or '（無摘要）'}
                     </font>
                 </td></tr></table>
                 <br>
+
+                <!-- 關鍵字 + 閱讀按鈕 -->
                 <table width="100%" border="0" cellpadding="0" cellspacing="0"><tr>
                     <td align="left" valign="middle">{kw_html}</td>
                     <td align="right" valign="middle">
@@ -836,6 +1031,7 @@ class NewsEmailSender:
                         </td></tr></table>
                     </td>
                 </tr></table>
+
             </td></tr></table>
             </td>
         </tr>
@@ -847,7 +1043,7 @@ class NewsEmailSender:
     def _render_section(self, title: str, news_list: list, cfg_key: str) -> str:
         if not news_list:
             return ""
-        cfg   = self.SECTION_COLORS.get(cfg_key, {'color':'#64748b','bg':'#f1f5f9','icon':'📄'})
+        cfg   = self.SECTION_COLORS.get(cfg_key, {'color': '#64748b', 'bg': '#f1f5f9', 'icon': '📄'})
         cards = "".join(self._render_card(item, cfg['color']) for item in news_list)
         return f"""
         <table width="100%" border="0" cellpadding="0" cellspacing="0" bgcolor="{cfg['bg']}">
@@ -877,7 +1073,9 @@ class NewsEmailSender:
         """
 
     def _generate_html(self, news_data: dict, run_time: datetime) -> str:
-        tpe_str = run_time.astimezone(timezone(timedelta(hours=8))).strftime('%Y-%m-%d %H:%M')
+        tpe_str = run_time.astimezone(
+            timezone(timedelta(hours=8))
+        ).strftime('%Y-%m-%d %H:%M')
 
         source_stats = {}
         for item in news_data.get('all', []):
@@ -890,19 +1088,24 @@ class NewsEmailSender:
             return (
                 f'<tr>'
                 f'<td align="left" bgcolor="#ffffff" style="padding:8px 12px;">'
-                f'<font face="Microsoft JhengHei,Arial,sans-serif" size="2" color="#475569">{src}</font>'
-                f'</td>'
+                f'<font face="Microsoft JhengHei,Arial,sans-serif" size="2" color="#475569">'
+                f'{src}</font></td>'
                 f'<td align="right" bgcolor="#ffffff" style="padding:8px 12px;">'
-                f'<font face="Arial,sans-serif" size="2" color="#3b82f6"><b>{cnt} 則</b></font>'
-                f'</td>'
+                f'<font face="Arial,sans-serif" size="2" color="#3b82f6">'
+                f'<b>{cnt} 則</b></font></td>'
                 f'</tr>'
             )
 
         stat_rows = (
             "".join(_stat_row(s, c) for s, c in _sorted_sources)
-            or '<tr><td colspan="2" style="padding:10px 12px;">'
-               '<font face="Arial,sans-serif" size="2" color="#94a3b8">無資料</font></td></tr>'
+            or (
+                '<tr><td colspan="2" style="padding:10px 12px;">'
+                '<font face="Arial,sans-serif" size="2" color="#94a3b8">無資料</font>'
+                '</td></tr>'
+            )
         )
+
+        total_sources = len(RSS_SOURCES) + len(CNYES_SOURCES)
 
         return f"""<!DOCTYPE html>
 <html>
@@ -915,7 +1118,7 @@ class NewsEmailSender:
 <tr><td align="center" valign="top">
 <table width="700" border="0" cellpadding="0" cellspacing="0" bgcolor="#ffffff">
 
-    <!-- HEADER -->
+    <!-- ══ HEADER ══ -->
     <tr><td bgcolor="#0f172a" align="center">
         <table width="100%" border="0" cellpadding="30" cellspacing="0"><tr><td align="center">
             <font size="7" color="#ffffff">🚢</font><br><br>
@@ -927,16 +1130,17 @@ class NewsEmailSender:
             </font><br><br>
             <table border="0" cellpadding="6" cellspacing="0" bgcolor="#1e293b"><tr><td>
                 <font face="Arial,sans-serif" size="2" color="#94a3b8">
-                    來源 {len(RSS_SOURCES)} 個 &nbsp;|&nbsp;
+                    來源 {total_sources} 個 &nbsp;|&nbsp;
                     關鍵字 {len(ALL_KEYWORDS)} 個（繁簡雙語 + 語境驗證）
                 </font>
             </td></tr></table>
         </td></tr></table>
     </td></tr>
 
-    <!-- 統計列 -->
+    <!-- ══ 統計列 ══ -->
     <tr><td bgcolor="#ffffff">
-        <table width="100%" border="1" bordercolor="#e2e8f0" cellpadding="15" cellspacing="0"><tr>
+        <table width="100%" border="1" bordercolor="#e2e8f0"
+               cellpadding="15" cellspacing="0"><tr>
             <td align="center" width="20%">
                 <font face="Arial,sans-serif" size="6" color="#0f172a">
                     <b>{len(news_data['all'])}</b>
@@ -947,59 +1151,74 @@ class NewsEmailSender:
                 <font face="Arial,sans-serif" size="6" color="#10b981">
                     <b>{len(news_data['zh_tw'])}</b>
                 </font><br>
-                <font face="Microsoft JhengHei,Arial,sans-serif" size="1" color="#94a3b8">🇹🇼 台灣</font>
+                <font face="Microsoft JhengHei,Arial,sans-serif" size="1" color="#94a3b8">
+                    🇹🇼 台灣
+                </font>
             </td>
             <td align="center" width="20%">
                 <font face="Arial,sans-serif" size="6" color="#ef4444">
                     <b>{len(news_data['zh_cn'])}</b>
                 </font><br>
-                <font face="Microsoft JhengHei,Arial,sans-serif" size="1" color="#94a3b8">🇨🇳 大陸</font>
+                <font face="Microsoft JhengHei,Arial,sans-serif" size="1" color="#94a3b8">
+                    🇨🇳 大陸
+                </font>
             </td>
             <td align="center" width="20%">
                 <font face="Arial,sans-serif" size="6" color="#3b82f6">
                     <b>{len(news_data['shipping'])}</b>
                 </font><br>
-                <font face="Microsoft JhengHei,Arial,sans-serif" size="1" color="#94a3b8">🚢 專業</font>
+                <font face="Microsoft JhengHei,Arial,sans-serif" size="1" color="#94a3b8">
+                    🚢 專業
+                </font>
             </td>
             <td align="center" width="20%">
                 <font face="Arial,sans-serif" size="6" color="#f97316">
                     <b>{len(news_data['intl'])}</b>
                 </font><br>
-                <font face="Microsoft JhengHei,Arial,sans-serif" size="1" color="#94a3b8">🌐 國際</font>
+                <font face="Microsoft JhengHei,Arial,sans-serif" size="1" color="#94a3b8">
+                    🌐 國際
+                </font>
             </td>
         </tr></table>
     </td></tr>
 
-    <!-- 關鍵字圖例 -->
+    <!-- ══ 關鍵字圖例 ══ -->
     <tr><td bgcolor="#fffbeb">
-        <table width="100%" border="0" cellpadding="10" cellspacing="0"><tr><td align="left" valign="middle">
+        <table width="100%" border="0"
+               cellpadding="10" cellspacing="0"><tr><td align="left" valign="middle">
             <font face="Microsoft JhengHei,Arial,sans-serif" size="2" color="#92400e">
                 <b>🏷️ 關鍵字分類：</b>
             </font>
             &nbsp;
             <table border="0" cellpadding="0" cellspacing="0" style="display:inline-table;"><tr>
                 <td bgcolor="#3b82f6" style="padding:3px 10px;">
-                    <font face="Microsoft JhengHei,Arial,sans-serif" size="2" color="#ffffff">航運動態</font>
+                    <font face="Microsoft JhengHei,Arial,sans-serif" size="2" color="#ffffff">
+                        航運動態
+                    </font>
                 </td>
                 <td width="6"></td>
                 <td bgcolor="#f97316" style="padding:3px 10px;">
-                    <font face="Microsoft JhengHei,Arial,sans-serif" size="2" color="#ffffff">海上安全</font>
+                    <font face="Microsoft JhengHei,Arial,sans-serif" size="2" color="#ffffff">
+                        海上安全
+                    </font>
                 </td>
                 <td width="6"></td>
                 <td bgcolor="#ef4444" style="padding:3px 10px;">
-                    <font face="Microsoft JhengHei,Arial,sans-serif" size="2" color="#ffffff">地緣政治</font>
+                    <font face="Microsoft JhengHei,Arial,sans-serif" size="2" color="#ffffff">
+                        地緣政治
+                    </font>
                 </td>
                 <td width="12"></td>
                 <td>
                     <font face="Microsoft JhengHei,Arial,sans-serif" size="1" color="#92400e">
-                        ✦ 繁簡雙語 + 語境驗證
+                        ✦ 繁簡雙語 + 兩段式語境驗證
                     </font>
                 </td>
             </tr></table>
         </td></tr></table>
     </td></tr>
 
-    <!-- 主內容 -->
+    <!-- ══ 主內容 ══ -->
     <tr><td bgcolor="#f8fafc">
         <table width="100%" border="0" cellpadding="20" cellspacing="0"><tr><td>
             {self._render_section('中文媒體（台灣）', news_data['zh_tw'],    '中文媒體台灣')}
@@ -1009,27 +1228,29 @@ class NewsEmailSender:
         </td></tr></table>
     </td></tr>
 
-    <!-- 來源統計 -->
+    <!-- ══ 來源統計 ══ -->
     <tr><td bgcolor="#ffffff">
         <table width="100%" border="0" cellpadding="20" cellspacing="0"><tr><td>
             <font face="Microsoft JhengHei,Arial,sans-serif" size="3" color="#475569">
                 <b>📊 本次來源分布</b>
             </font>
             <br><br>
-            <table width="100%" border="1" bordercolor="#e2e8f0" cellpadding="0" cellspacing="0">
+            <table width="100%" border="1" bordercolor="#e2e8f0"
+                   cellpadding="0" cellspacing="0">
                 {stat_rows}
             </table>
         </td></tr></table>
     </td></tr>
 
-    <!-- FOOTER -->
+    <!-- ══ FOOTER ══ -->
     <tr><td bgcolor="#1e293b" align="center">
         <table width="100%" border="0" cellpadding="20" cellspacing="0"><tr><td align="center">
             <font face="Microsoft JhengHei,Arial,sans-serif" size="2" color="#64748b">
                 🤖 此為 GitHub Actions 自動發送郵件，請勿直接回覆
             </font><br><br>
             <font face="Arial,sans-serif" size="2" color="#475569">
-                航運安全監控系統 v4.5 &nbsp;·&nbsp; Powered by Python &amp; GitHub Actions
+                航運安全監控系統 v4.6 &nbsp;·&nbsp;
+                Powered by Python &amp; GitHub Actions
             </font>
         </td></tr></table>
     </td></tr>
@@ -1043,17 +1264,18 @@ class NewsEmailSender:
 # ==================== 主程式 ====================
 if __name__ == "__main__":
     logger.info("\n" + "=" * 60)
-    logger.info("🚢 航運安全監控系統 v4.5")
-    logger.info("   精準關鍵字 + 語境驗證 + 繁簡雙語")
+    logger.info("🚢 航運安全監控系統 v4.6")
+    logger.info("   精準關鍵字 + 兩段式語境驗證 + 繁簡雙語 + 鉅亨網整合")
     logger.info("=" * 60)
 
     run_time   = datetime.now(tz=timezone.utc)
     hours_back = int(os.environ.get("NEWS_HOURS_BACK", "2"))
 
     scraper = NewsRssScraper(
-        keywords   = ALL_KEYWORDS,
-        sources    = RSS_SOURCES,
-        hours_back = hours_back,
+        keywords      = ALL_KEYWORDS,
+        sources       = RSS_SOURCES,
+        cnyes_sources = CNYES_SOURCES,
+        hours_back    = hours_back,
     )
     sender = NewsEmailSender()
 
