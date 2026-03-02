@@ -1,11 +1,11 @@
 name: ⚡ 美伊戰事新聞監控
 
 on:
-  # ── 排程：每小時執行一次（UTC 時間）──
+  # ── 排程：每四小時執行一次（UTC 時間）──
   # cron 格式：分 時 日 月 星期
-  # 0 * * * * = 每小時整點執行
+  # 0 */4 * * * = 每四小時整點執行（00:00, 04:00, 08:00, 12:00, 16:00, 20:00 UTC）
   schedule:
-    - cron: '0 * * * *'
+    - cron: '0 */4 * * *'
 
   # ── 允許手動從 GitHub 網頁觸發 ──
   workflow_dispatch:
@@ -13,7 +13,7 @@ on:
       hours_back:
         description: '抓取幾小時內的新聞'
         required: false
-        default: '2'
+        default: '4'
 
 jobs:
   fetch-and-send:
@@ -48,8 +48,8 @@ jobs:
           TARGET_EMAIL:      ${{ secrets.TARGET_EMAIL }}
           MAIL_SMTP_SERVER:  ${{ secrets.MAIL_SMTP_SERVER }}
           MAIL_SMTP_PORT:    ${{ secrets.MAIL_SMTP_PORT }}
-          # 手動觸發時可覆蓋，排程時使用預設值
-          NEWS_HOURS_BACK: ${{ github.event.inputs.hours_back || '2' }}
+          # 手動觸發時可覆蓋，排程時使用預設值 4 小時
+          NEWS_HOURS_BACK: ${{ github.event.inputs.hours_back || '4' }}
         run: python news_scraper.py
 
       # Step 5: 執行失敗時顯示提示
