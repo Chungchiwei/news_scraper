@@ -924,7 +924,7 @@ class NewsEmailSender:
         try:
             tpe_time = run_time.astimezone(timezone(timedelta(hours=8)))
             subject  = (
-                f"Maritime Intel News Alert - {total} News Matched "
+                f"GITHUB_Maritime Intel News Alert"
                 f"({tpe_time.strftime('%m/%d %H:%M')})"
             )
             msg            = MIMEMultipart('alternative')
