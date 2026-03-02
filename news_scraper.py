@@ -1131,7 +1131,7 @@ class NewsEmailSender:
             <table border="0" cellpadding="6" cellspacing="0" bgcolor="#1e293b"><tr><td>
                 <font face="Arial,sans-serif" size="2" color="#94a3b8">
                     來源 {total_sources} 個 &nbsp;|&nbsp;
-                    關鍵字 {len(ALL_KEYWORDS)} 個（繁簡雙語 + 語境驗證）
+                    關鍵字 {len(ALL_KEYWORDS)} 個
                 </font>
             </td></tr></table>
         </td></tr></table>
@@ -1209,11 +1209,6 @@ class NewsEmailSender:
                     </font>
                 </td>
                 <td width="12"></td>
-                <td>
-                    <font face="Microsoft JhengHei,Arial,sans-serif" size="1" color="#92400e">
-                        ✦ 繁簡雙語 + 兩段式語境驗證
-                    </font>
-                </td>
             </tr></table>
         </td></tr></table>
     </td></tr>
@@ -1265,7 +1260,6 @@ class NewsEmailSender:
 if __name__ == "__main__":
     logger.info("\n" + "=" * 60)
     logger.info("🚢 航運安全監控系統 v4.6")
-    logger.info("   精準關鍵字 + 兩段式語境驗證 + 繁簡雙語 + 鉅亨網整合")
     logger.info("=" * 60)
 
     run_time   = datetime.now(tz=timezone.utc)
