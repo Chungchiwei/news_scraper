@@ -1,0 +1,63 @@
+name: ⚡ 美伊戰事新聞監控
+
+on:
+  # ── 排程：每小時執行一次（UTC 時間）──
+  # cron 格式：分 時 日 月 星期
+  # 0 * * * * = 每小時整點執行
+  schedule:
+    - cron: '0 * * * *'
+
+  # ── 允許手動從 GitHub 網頁觸發 ──
+  workflow_dispatch:
+    inputs:
+      hours_back:
+        description: '抓取幾小時內的新聞'
+        required: false
+        default: '2'
+
+jobs:
+  fetch-and-send:
+    name: 抓取新聞並發送 Email
+    runs-on: ubuntu-latest
+    timeout-minutes: 10       # 最多執行 10 分鐘，避免卡住
+
+    steps:
+      # Step 1: 取得程式碼
+      - name: 📥 Checkout 程式碼
+        uses: actions/checkout@v4
+
+      # Step 2: 設定 Python 環境
+      - name: 🐍 設定 Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'          # 快取 pip 套件，加速後續執行
+
+      # Step 3: 安裝套件
+      - name: 📦 安裝依賴套件
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      # Step 4: 執行新聞爬取
+      - name: 🚀 執行新聞爬取與發送
+        env:
+          # 從 GitHub Secrets 注入敏感資訊
+          MAIL_USER:         ${{ secrets.MAIL_USER }}
+          MAIL_PASSWORD:     ${{ secrets.MAIL_PASSWORD }}
+          TARGET_EMAIL:      ${{ secrets.TARGET_EMAIL }}
+          MAIL_SMTP_SERVER:  ${{ secrets.MAIL_SMTP_SERVER }}
+          MAIL_SMTP_PORT:    ${{ secrets.MAIL_SMTP_PORT }}
+          # 手動觸發時可覆蓋，排程時使用預設值
+          NEWS_HOURS_BACK: ${{ github.event.inputs.hours_back || '2' }}
+        run: python news_scraper.py
+
+      # Step 5: 執行失敗時顯示提示
+      - name: ❌ 失敗通知
+        if: failure()
+        run: |
+          echo "::error::新聞爬取失敗，請檢查 Secrets 設定或網路連線"
+          echo "請確認以下 Secrets 已設定："
+          echo "  - MAIL_USER"
+          echo "  - MAIL_PASSWORD"
+          echo "  - TARGET_EMAIL"
