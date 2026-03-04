@@ -541,42 +541,77 @@ RSS_SOURCES = [
         "backup_url": None, "extra_urls": [],
         "lang": "zh-TW", "icon": "🌪️", "category": "中文媒體",
     },
-    # ── 中文媒體（大陸）──
+    # ── 中文媒體（大陸）── 修復版
     {
-        "name": "海事服務網 CNSS", "url": "https://rsshub.app/cnss/news",
-        "backup_url": "https://www.cnss.com.cn/rss/news.xml",
-        "extra_urls": ["https://rsshub.rssforever.com/cnss/news"],
+        "name": "海事服務網 CNSS",
+        # 原 /rss/news.xml 已 404，改用 RSSHub 多備援
+        "url":        "https://rsshub.app/cnss/news",
+        "backup_url": "https://rsshub.rssforever.com/cnss/news",
+        "extra_urls": [
+            "https://rsshub2.rssforever.com/cnss/news",
+            "https://rss.fatpandadev.com/cnss/news",
+        ],
         "lang": "zh-CN", "icon": "⚓", "category": "中文媒體", "need_clean": True,
     },
     {
-        "name": "人民網 國際", "url": "https://rsshub.app/people/world",
-        "backup_url": "http://www.people.com.cn/rss/world.xml",
-        "extra_urls": ["https://rsshub.rssforever.com/people/world"],
+        "name": "壹航運",
+        # 無 RSS，由 OneShippingScraper 處理，此條目僅供來源清單顯示用
+        # fetch_from_source 會因 URL 失敗而跳過，實際由 fetch_all 呼叫 HTML 爬蟲
+        "url":        "__oneshipping_html__",   # 特殊標記，跳過 RSS 爬取
+        "backup_url": None,
+        "extra_urls": [],
+        "lang": "zh-CN", "icon": "🚢", "category": "中文媒體",
+        "_html_scraper": True,                  # 標記為 HTML 爬蟲
+    },
+    {
+        "name": "人民網 國際",
+        "url":        "https://rsshub.app/people/world",
+        "backup_url": "https://rsshub.rssforever.com/people/world",
+        "extra_urls": [
+            "https://rsshub2.rssforever.com/people/world",
+            # 直連備援（部分環境可用）
+            "http://www.people.com.cn/rss/world.xml",
+        ],
         "lang": "zh-CN", "icon": "🏮", "category": "中文媒體", "need_clean": True,
     },
     {
-        "name": "環球時報", "url": "https://rsshub.app/huanqiu/world",
-        "backup_url": "https://www.huanqiu.com/rss",
-        "extra_urls": ["https://rsshub.rssforever.com/huanqiu/world",
-                       "https://rsshub.app/huanqiu/mil"],
+        "name": "環球時報",
+        "url":        "https://rsshub.app/huanqiu/world",
+        "backup_url": "https://rsshub.rssforever.com/huanqiu/world",
+        "extra_urls": [
+            "https://rsshub.app/huanqiu/mil",
+            "https://rsshub2.rssforever.com/huanqiu/world",
+        ],
         "lang": "zh-CN", "icon": "🌏", "category": "中文媒體", "need_clean": True,
     },
     {
-        "name": "新華社 國際", "url": "https://rsshub.app/xinhua/world",
-        "backup_url": "http://www.xinhuanet.com/world/news_world.xml",
-        "extra_urls": ["https://rsshub.rssforever.com/xinhua/world"],
+        "name": "新華社 國際",
+        "url":        "https://rsshub.app/xinhua/world",
+        "backup_url": "https://rsshub.rssforever.com/xinhua/world",
+        "extra_urls": [
+            "https://rsshub2.rssforever.com/xinhua/world",
+            "https://rss.fatpandadev.com/xinhua/world",
+        ],
         "lang": "zh-CN", "icon": "📻", "category": "中文媒體", "need_clean": True,
     },
     {
-        "name": "澎湃新聞 國際", "url": "https://rsshub.app/thepaper/channel/25950",
-        "backup_url": "https://rsshub.app/thepaper/channel/121811",
-        "extra_urls": ["https://rsshub.rssforever.com/thepaper/channel/25950"],
+        "name": "澎湃新聞 國際",
+        "url":        "https://rsshub.app/thepaper/channel/25950",
+        "backup_url": "https://rsshub.rssforever.com/thepaper/channel/25950",
+        "extra_urls": [
+            "https://rsshub.app/thepaper/channel/121811",
+            "https://rsshub2.rssforever.com/thepaper/channel/25950",
+        ],
         "lang": "zh-CN", "icon": "🗞️", "category": "中文媒體", "need_clean": True,
     },
     {
-        "name": "財新網 國際", "url": "https://rsshub.app/caixin/international",
-        "backup_url": "https://rsshub.app/caixin/economy",
-        "extra_urls": ["https://rsshub.rssforever.com/caixin/international"],
+        "name": "財新網 國際",
+        "url":        "https://rsshub.app/caixin/international",
+        "backup_url": "https://rsshub.rssforever.com/caixin/international",
+        "extra_urls": [
+            "https://rsshub.app/caixin/economy",
+            "https://rsshub2.rssforever.com/caixin/international",
+        ],
         "lang": "zh-CN", "icon": "💹", "category": "中文媒體", "need_clean": True,
     },
     # ── 航運專業媒體 ──
@@ -689,7 +724,203 @@ def clean_xml_content(raw_bytes: bytes) -> str:
     text = re.sub(r'&(?!(amp|lt|gt|quot|apos|#\d+|#x[0-9a-fA-F]+);)', '&amp;', text)
     return text
 
+# ══════════════════════════════════════════════════════════════
+# 壹航運 HTML 爬蟲（無 RSS，直接解析首頁文章列表）
+# ══════════════════════════════════════════════════════════════
+class OneShippingScraper:
+    BASE_URL = "https://www.oneshipping.info"
+    # 首頁上各新聞區塊的入口頁
+    SECTION_URLS = [
+        "https://www.oneshipping.info/",          # 首頁（含最新）
+        "https://www.oneshipping.info/hyrd",       # 航運熱點
+        "https://www.oneshipping.info/hysj",       # 航運數據
+    ]
+    HEADERS = {
+        "User-Agent": (
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+            "AppleWebKit/537.36 (KHTML, like Gecko) "
+            "Chrome/122.0.0.0 Safari/537.36"
+        ),
+        "Accept": "text/html,application/xhtml+xml,*/*",
+        "Accept-Language": "zh-CN,zh;q=0.9",
+        "Referer": "https://www.oneshipping.info/",
+    }
+    SOURCE_META = {
+        "name":     "壹航運",
+        "icon":     "🚢",
+        "lang":     "zh-CN",
+        "category": "中文媒體",
+    }
 
+    def __init__(self, keywords: list, hours_back: int = 2):
+        self.keywords   = keywords
+        self.hours_back = hours_back
+        self.seen_urls: set = set()
+
+    def _extract_articles(self, html: str) -> list[dict]:
+        """
+        從 HTML 中提取所有 /newsinfo/{id}.html 連結與標題。
+        壹航運文章 URL 格式固定為 /newsinfo/數字.html
+        """
+        articles = []
+        # 匹配 <a href="/newsinfo/123456.html">標題文字</a>
+        pattern = re.compile(
+            r'<a[^>]+href=["\'](/newsinfo/(\d+)\.html)["\'][^>]*>\s*([^<]{4,200})\s*</a>',
+            re.IGNORECASE | re.DOTALL,
+        )
+        seen_ids: set = set()
+        for m in pattern.finditer(html):
+            path, art_id, raw_title = m.group(1), m.group(2), m.group(3)
+            if art_id in seen_ids:
+                continue
+            seen_ids.add(art_id)
+            title = re.sub(r'\s+', ' ', raw_title).strip()
+            # 過濾掉太短或明顯是導覽列的文字
+            if len(title) < 8:
+                continue
+            articles.append({
+                "url":   f"{self.BASE_URL}{path}",
+                "title": title,
+            })
+        return articles
+
+    def _fetch_article_detail(self, url: str) -> tuple[str, str]:
+        """
+        抓取文章頁面，取得發佈時間與摘要。
+        回傳 (pub_time_str, summary)，失敗時回傳 ('', '')
+        """
+        try:
+            resp = requests.get(url, headers=self.HEADERS,
+                                timeout=15, verify=False, allow_redirects=True)
+            resp.raise_for_status()
+            html = resp.text
+
+            # ── 發佈時間：常見格式 2026-03-04 或 2026/03/04
+            time_match = re.search(
+                r'(\d{4}[-/]\d{2}[-/]\d{2}(?:\s+\d{2}:\d{2}(?::\d{2})?)?)',
+                html
+            )
+            pub_str = time_match.group(1).replace('/', '-') if time_match else ''
+
+            # ── 摘要：抓 <p> 標籤內文，取前 300 字
+            paragraphs = re.findall(r'<p[^>]*>(.*?)</p>', html,
+                                    re.IGNORECASE | re.DOTALL)
+            summary_parts = []
+            for p in paragraphs:
+                clean = re.sub(r'<[^>]+>', '', p).strip()
+                clean = re.sub(r'\s+', ' ', clean)
+                if len(clean) > 20:
+                    summary_parts.append(clean)
+                if sum(len(s) for s in summary_parts) >= 300:
+                    break
+            summary = ' '.join(summary_parts)[:300]
+            if len(summary) == 300:
+                summary += '...'
+
+            return pub_str, summary
+        except Exception as e:
+            logger.debug(f"      壹航運文章抓取失敗: {url} → {e}")
+            return '', ''
+
+    def _parse_pub_time(self, pub_str: str) -> datetime | None:
+        if not pub_str:
+            return None
+        for fmt in ('%Y-%m-%d %H:%M:%S', '%Y-%m-%d %H:%M', '%Y-%m-%d'):
+            try:
+                dt = datetime.strptime(pub_str.strip(), fmt)
+                return dt.replace(tzinfo=timezone(timedelta(hours=8))).astimezone(timezone.utc)
+            except ValueError:
+                continue
+        return None
+
+    def fetch(self, scraper_ref) -> list[dict]:
+        """
+        主爬取入口。scraper_ref 傳入 NewsRssScraper 實例，
+        借用其 _match_keywords / _classify_incident 方法。
+        """
+        results = []
+        cutoff  = datetime.now(tz=timezone.utc) - timedelta(hours=self.hours_back)
+
+        logger.info("\n  📡 [中文媒體][zh-CN] 壹航運（HTML 爬蟲）")
+
+        # Step 1：從各入口頁收集文章連結
+        all_articles: list[dict] = []
+        seen_urls_local: set     = set()
+
+        for section_url in self.SECTION_URLS:
+            logger.info(f"    🔗 {section_url}")
+            try:
+                resp = requests.get(section_url, headers=self.HEADERS,
+                                    timeout=20, verify=False)
+                resp.raise_for_status()
+                for art in self._extract_articles(resp.text):
+                    if art['url'] not in seen_urls_local:
+                        seen_urls_local.add(art['url'])
+                        all_articles.append(art)
+            except Exception as e:
+                logger.warning(f"    ⚠️  壹航運入口頁失敗: {section_url} → {e}")
+
+        logger.info(f"    📊 共發現 {len(all_articles)} 篇候選文章")
+
+        # Step 2：逐篇過濾關鍵字（先用標題快篩，減少不必要的 HTTP 請求）
+        matched_count = skipped_kw = skipped_time = skipped_dup = 0
+
+        for art in all_articles:
+            url   = art['url']
+            title = art['title']
+
+            if url in self.seen_urls:
+                skipped_dup += 1
+                continue
+
+            # 標題快篩（不符合直接跳過，不發 HTTP）
+            title_matched = scraper_ref._match_keywords(title, '')
+            if not title_matched:
+                skipped_kw += 1
+                continue
+
+            # 抓文章詳情（時間 + 摘要）
+            pub_str, summary = self._fetch_article_detail(url)
+            pub_time         = self._parse_pub_time(pub_str)
+
+            if pub_time is not None and pub_time < cutoff:
+                skipped_time += 1
+                continue
+
+            # 用完整內容再比對一次關鍵字
+            matched = scraper_ref._match_keywords(title, summary)
+            if not matched:
+                skipped_kw += 1
+                continue
+
+            self.seen_urls.add(url)
+            incident_cat = scraper_ref._classify_incident(title, summary)
+            pub_display  = (
+                pub_time.strftime('%Y-%m-%d %H:%M UTC')
+                if pub_time else '時間未知'
+            )
+
+            results.append({
+                'source_name':     self.SOURCE_META['name'],
+                'source_icon':     self.SOURCE_META['icon'],
+                'source_lang':     self.SOURCE_META['lang'],
+                'source_category': self.SOURCE_META['category'],
+                'title':           title,
+                'summary':         summary,
+                'link':            url,
+                'published':       pub_display,
+                'matched':         matched,
+                'incident_cat':    incident_cat,
+            })
+            matched_count += 1
+
+        logger.info(
+            f"  📋 壹航運 | 候選 {len(all_articles)} | "
+            f"命中 {matched_count} | 無關鍵字 {skipped_kw} | "
+            f"時間 {skipped_time} | 重複 {skipped_dup}"
+        )
+        return results
+    
 # ══════════════════════════════════════════════════════════════
 # 新聞爬取器
 # ══════════════════════════════════════════════════════════════
@@ -861,6 +1092,9 @@ class NewsRssScraper:
 
     # ── 單一 RSS 來源爬取 ──
     def fetch_from_source(self, source: dict) -> list:
+        # ── HTML 爬蟲來源跳過（由 fetch_all 另行處理）──
+        if source.get("_html_scraper"):
+            return []
         results    = []
         cutoff     = datetime.now(tz=timezone.utc) - timedelta(hours=self.hours_back)
         need_clean = source.get("need_clean", False)
@@ -1010,11 +1244,18 @@ class NewsRssScraper:
     def fetch_all(self) -> dict:
         all_news = []
 
-        # RSS 來源
+        # ── RSS 來源（跳過 _html_scraper 標記的）──
         for source in self.sources:
             all_news.extend(self.fetch_from_source(source))
 
-        # 鉅亨網 JSON API
+        # ── 壹航運 HTML 爬蟲 ──
+        oneshipping_scraper = OneShippingScraper(
+            keywords   = self.keywords,
+            hours_back = self.hours_back,
+        )
+        all_news.extend(oneshipping_scraper.fetch(self))
+
+        # ── 鉅亨網 JSON API ──
         for cnyes_source in self.cnyes_sources:
             all_news.extend(self.fetch_from_cnyes(cnyes_source))
 
@@ -1235,24 +1476,24 @@ class NewsEmailSender:
     # ──────────────────────────────────────────────────────────
     @staticmethod
     def _render_incident_section(cat_key: str, news_list: list) -> str:
+        cfg = INCIDENT_CATEGORIES[cat_key]
+
         if not news_list:
-            # 空白情境：顯示「本期無相關新聞」佔位列
-            cfg = INCIDENT_CATEGORIES[cat_key]
             return f"""
 <table width="100%" border="0" cellpadding="0" cellspacing="0"
-       style="margin-bottom:4px;">
+       style="margin-bottom:6px;">
   <tr>
-    <td width="4" bgcolor="{cfg['color']}">&nbsp;</td>
-    <td bgcolor="{cfg['bg']}" style="padding:10px 14px;">
+    <td width="5" bgcolor="{cfg['color']}">&nbsp;</td>
+    <td bgcolor="{cfg['bg']}" style="padding:11px 16px;">
       <table width="100%" border="0" cellpadding="0" cellspacing="0"><tr>
-        <td>
+        <td valign="middle">
           <font face="Microsoft JhengHei,Arial,sans-serif"
-                size="3" color="{cfg['color']}">
-            <b>{cfg['icon']} {cfg['label']}</b>
+                size="2" color="{cfg['color']}">
+            <b>{cfg['icon']}&nbsp;{cfg['label']}</b>
           </font>
         </td>
-        <td align="right">
-          <font face="Arial,sans-serif" size="2" color="#94a3b8">
+        <td align="right" valign="middle">
+          <font face="Microsoft JhengHei,Arial,sans-serif" size="2" color="#94a3b8">
             本期無相關新聞
           </font>
         </td>
@@ -1261,26 +1502,35 @@ class NewsEmailSender:
   </tr>
 </table>"""
 
-        cfg   = INCIDENT_CATEGORIES[cat_key]
         cards = "".join(NewsEmailSender._render_card(item) for item in news_list)
+
+        # 篇數標籤用深色實色背景（避免 rgba 在 email 失效）
+        darker = {
+            "#dc2626": "#991b1b",
+            "#b45309": "#78350f",
+            "#7c3aed": "#4c1d95",
+            "#0369a1": "#0c4a6e",
+            "#047857": "#064e3b",
+            "#475569": "#1e293b",
+        }
+        count_bg = darker.get(cfg['color'], "#1e293b")
 
         return f"""
 <table width="100%" border="0" cellpadding="0" cellspacing="0"
-       style="margin-bottom:16px;">
-
+       style="margin-bottom:14px;">
   <!-- 情境標題列 -->
   <tr>
-    <td bgcolor="{cfg['color']}" style="padding:10px 16px;">
+    <td bgcolor="{cfg['color']}" style="padding:11px 16px;">
       <table width="100%" border="0" cellpadding="0" cellspacing="0"><tr>
         <td align="left" valign="middle">
           <font face="Microsoft JhengHei,Arial,sans-serif"
                 size="3" color="#ffffff">
-            <b>{cfg['icon']} {cfg['label']}</b>
+            <b>{cfg['icon']}&nbsp;{cfg['label']}</b>
           </font>
         </td>
-        <td align="right" valign="middle">
-          <table border="0" cellpadding="4" cellspacing="0"
-                 bgcolor="rgba(0,0,0,0.25)"><tr><td>
+        <td align="right" valign="middle" width="60">
+          <table border="0" cellpadding="5" cellspacing="0"
+                 bgcolor="{count_bg}"><tr><td align="center">
             <font face="Arial,sans-serif" size="2" color="#ffffff">
               <b>{len(news_list)} 則</b>
             </font>
@@ -1289,100 +1539,13 @@ class NewsEmailSender:
       </tr></table>
     </td>
   </tr>
-
   <!-- 新聞卡片區 -->
   <tr>
     <td bgcolor="{cfg['bg']}" style="padding:10px 12px;">
       {cards}
     </td>
   </tr>
-
 </table>"""
-
-    # ──────────────────────────────────────────────────────────
-    # 監控來源清單（3 欄網格）
-    # ──────────────────────────────────────────────────────────
-    @staticmethod
-    def _render_source_grid() -> str:
-        SOURCE_GROUPS = [
-            {
-                "title":   "中文媒體（台灣）",
-                "icon":    "🇹🇼",
-                "color":   "#10b981",
-                "bg":      "#ecfdf5",
-                "sources": [s for s in RSS_SOURCES if s.get("lang") == "zh-TW"]
-                           + [s for s in CNYES_SOURCES if s.get("lang") == "zh-TW"],
-            },
-            {
-                "title":   "中文媒體（大陸）",
-                "icon":    "🇨🇳",
-                "color":   "#ef4444",
-                "bg":      "#fef2f2",
-                "sources": [s for s in RSS_SOURCES if s.get("lang") == "zh-CN"],
-            },
-            {
-                "title":   "航運專業媒體",
-                "icon":    "🚢",
-                "color":   "#3b82f6",
-                "bg":      "#eff6ff",
-                "sources": [s for s in RSS_SOURCES if s.get("category") == "航運專業"],
-            },
-            {
-                "title":   "國際媒體",
-                "icon":    "🌐",
-                "color":   "#f97316",
-                "bg":      "#fff7ed",
-                "sources": [s for s in RSS_SOURCES if s.get("category") == "國際媒體"],
-            },
-        ]
-
-        groups_html = ""
-        for grp in SOURCE_GROUPS:
-            sources   = grp["sources"]
-            rows_html = ""
-            for i in range(0, len(sources), 3):
-                chunk = sources[i:i+3]
-                while len(chunk) < 3:
-                    chunk.append(None)
-                cells = ""
-                for src in chunk:
-                    if src is None:
-                        cells += f'<td width="33%" bgcolor="{grp["bg"]}" style="padding:6px 10px;"></td>'
-                    else:
-                        name   = src.get("name", "")
-                        icon   = src.get("icon", "📰")
-                        url    = src.get("url") or src.get("api_url", "")
-                        domain = re.sub(r'^https?://(www\.)?', '', url).split('/')[0]
-                        cells += f"""
-                        <td width="33%" bgcolor="{grp['bg']}"
-                            style="padding:6px 10px;border-right:1px solid #e2e8f0;">
-                          <table border="0" cellpadding="0" cellspacing="0" width="100%"><tr>
-                            <td width="20" valign="middle"><font size="2">{icon}</font></td>
-                            <td valign="middle">
-                              <font face="Microsoft JhengHei,Arial,sans-serif"
-                                    size="2" color="#1e293b"><b>{name}</b></font><br>
-                              <font face="Arial,sans-serif" size="1" color="#94a3b8">{domain}</font>
-                            </td>
-                          </tr></table>
-                        </td>"""
-                rows_html += f"""
-                <tr>{cells}</tr>
-                <tr><td colspan="3" bgcolor="#e2e8f0" height="1"></td></tr>"""
-
-            groups_html += f"""
-            <table width="100%" border="0" cellpadding="0" cellspacing="0"
-                   style="margin-bottom:10px;">
-              <tr>
-                <td colspan="3" bgcolor="{grp['color']}" style="padding:6px 14px;">
-                  <font face="Microsoft JhengHei,Arial,sans-serif" size="2" color="#fff">
-                    <b>{grp['icon']} {grp['title']} ({len(sources)} 個)</b>
-                  </font>
-                </td>
-              </tr>
-              {rows_html}
-            </table>"""
-
-        return groups_html
 
     # ──────────────────────────────────────────────────────────
     # 主 HTML 生成
@@ -1392,52 +1555,70 @@ class NewsEmailSender:
         total_sources = len(RSS_SOURCES) + len(CNYES_SOURCES)
         total_news    = len(news_data['all'])
 
-        # ── 五大情境 + GEN 的區塊 HTML ──
+        # ── 五大情境 + GEN 區塊 ──
         cat_order    = ['CAT1', 'CAT2', 'CAT3', 'CAT4', 'CAT5', 'GEN']
         cat_sections = "".join(
             self._render_incident_section(k, news_data.get(k.lower(), []))
             for k in cat_order
         )
 
-        # ── 快速摘要列（6 格數字）──
-        def _stat_cell(cat_key: str) -> str:
+        # ── 統計列：數字 + 文字分兩行，格子夠高 ──
+        def _stat_cell(cat_key: str, width_pct: str) -> str:
             cfg   = INCIDENT_CATEGORIES[cat_key]
             count = len(news_data.get(cat_key.lower(), []))
-            # 有新聞時背景加深
-            bg    = cfg['color'] if count > 0 else "#e2e8f0"
-            fg    = "#ffffff"    if count > 0 else "#94a3b8"
-            num   = f"<b>{count}</b>" if count > 0 else "0"
+            if count > 0:
+                cell_bg  = cfg['color']
+                num_fg   = "#ffffff"
+                label_fg = "#ffffff"
+                num_html = f"<b>{count}</b>"
+            else:
+                cell_bg  = "#334155"
+                num_fg   = "#64748b"
+                label_fg = "#475569"
+                num_html = "0"
+            # 截短標籤避免換行
+            short_labels = {
+                "CAT1": "船舶於波斯灣含荷姆茲海峽週遭被攻擊事件",
+                "CAT2": "海灣國家及美軍基地被攻擊事件",
+                "CAT3": "伊朗已採取水雷封鎖",
+                "CAT4": "紅海/曼德海峽胡塞含伊朗攻擊事件",
+                "CAT5": "航商宣佈採取繞航措施及波斯灣內避難點",
+                "GEN":  "其他航運新聞",
+            }
+            short = short_labels.get(cat_key, cat_key)
             return f"""
-            <td align="center" bgcolor="{bg}" style="padding:10px 4px;width:14%;">
-              <font face="Arial,sans-serif" size="4" color="{fg}">{num}</font><br>
-              <font face="Arial,sans-serif" size="1" color="{fg}">
-                {cfg['icon']}
-              </font>
-            </td>"""
+<td align="center" bgcolor="{cell_bg}"
+    style="padding:14px 6px;width:{width_pct};border-right:1px solid #1e293b;">
+  <font face="Arial,sans-serif" size="5" color="{num_fg}">{num_html}</font><br>
+  <font face="Arial,sans-serif" size="1" color="{num_fg}">{cfg['icon']}</font><br>
+  <font face="Microsoft JhengHei,Arial,sans-serif" size="1" color="{label_fg}">{short}</font>
+</td>"""
 
-        stat_cells = "".join(_stat_cell(k) for k in cat_order)
+        stat_cells = "".join(
+            _stat_cell(k, "14%") for k in cat_order
+        )
 
         # ── 監控來源網格 ──
         source_grid = self._render_source_grid()
 
-        # ── 本次命中來源（僅有命中的）──
+        # ── 本次命中來源 ──
         source_stats: dict = {}
         for item in news_data.get('all', []):
             key = f"{item['source_icon']} {item['source_name']}"
             source_stats[key] = source_stats.get(key, 0) + 1
         hit_rows = "".join(
             f'<tr>'
-            f'<td bgcolor="#f8fafc" style="padding:6px 12px;border-bottom:1px solid #e2e8f0;">'
+            f'<td bgcolor="#f8fafc" style="padding:7px 14px;border-bottom:1px solid #e2e8f0;">'
             f'<font face="Microsoft JhengHei,Arial,sans-serif" size="2" color="#475569">{s}</font>'
             f'</td>'
-            f'<td bgcolor="#f8fafc" style="padding:6px 12px;border-bottom:1px solid #e2e8f0;" align="right">'
+            f'<td bgcolor="#f8fafc" style="padding:7px 14px;border-bottom:1px solid #e2e8f0;" align="right" width="50">'
             f'<font face="Arial,sans-serif" size="2" color="#3b82f6"><b>{c}</b></font>'
             f'</td></tr>'
             for s, c in sorted(source_stats.items(), key=lambda x: -x[1])
         ) or (
-            '<tr><td colspan="2" style="padding:10px 12px;">'
-            '<font face="Arial,sans-serif" size="2" color="#94a3b8">無命中來源</font>'
-            '</td></tr>'
+            '<tr><td colspan="2" style="padding:12px 14px;">'
+            '<font face="Microsoft JhengHei,Arial,sans-serif" size="2" color="#94a3b8">'
+            '本次無命中來源</font></td></tr>'
         )
 
         return f"""<!DOCTYPE html>
@@ -1446,143 +1627,181 @@ class NewsEmailSender:
 <body bgcolor="#cbd5e1" style="margin:0;padding:0;">
 <table width="100%" border="0" cellpadding="16" cellspacing="0" bgcolor="#cbd5e1">
 <tr><td align="center" valign="top">
-<table width="700" border="0" cellpadding="0" cellspacing="0" bgcolor="#ffffff"
-       style="border-radius:4px;overflow:hidden;">
+<table width="700" border="0" cellpadding="0" cellspacing="0" bgcolor="#ffffff">
 
-  <!-- ══════════════════════════════════════════
-       HEADER
-  ══════════════════════════════════════════ -->
+  <!-- ══ HEADER ══ -->
   <tr><td bgcolor="#0f172a">
-    <table width="100%" border="0" cellpadding="28" cellspacing="0"><tr>
-      <td align="left" valign="middle">
+    <table width="100%" border="0" cellpadding="0" cellspacing="0"><tr>
+      <td style="padding:24px 24px 20px 24px;" valign="middle">
         <font face="Microsoft JhengHei,Arial,sans-serif" size="5" color="#f8fafc">
-          <b>🚢 Maritime Intel</b>
+          <b>🚢&nbsp;Maritime Intel</b>
         </font><br>
-        <font face="Microsoft JhengHei,Arial,sans-serif" size="2" color="#94a3b8">
+        <font face="Microsoft JhengHei,Arial,sans-serif" size="2" color="#64748b">
           航運安全情報快報
         </font>
       </td>
-      <td align="right" valign="middle">
-        <font face="Arial,sans-serif" size="2" color="#64748b">
-          {tpe_str}<br>台北時間
+      <td style="padding:24px 24px 20px 0;" align="right" valign="middle">
+        <font face="Arial,sans-serif" size="2" color="#94a3b8">
+          {tpe_str}&nbsp;台北時間
         </font><br><br>
-        <table border="0" cellpadding="5" cellspacing="0" bgcolor="#1e293b"><tr><td>
+        <table border="0" cellpadding="6" cellspacing="0" bgcolor="#1e293b"><tr><td>
           <font face="Arial,sans-serif" size="1" color="#64748b">
-            來源 {total_sources} 個 &nbsp;|&nbsp; 關鍵字 {len(ALL_KEYWORDS)} 個
+            來源&nbsp;{total_sources}&nbsp;個&nbsp;&nbsp;|&nbsp;&nbsp;關鍵字&nbsp;{len(ALL_KEYWORDS)}&nbsp;個
           </font>
         </td></tr></table>
       </td>
     </tr></table>
   </td></tr>
 
-  <!-- ══════════════════════════════════════════
-       監控來源清單
-  ══════════════════════════════════════════ -->
-  <tr><td bgcolor="#f1f5f9">
+  <!-- ══ 監控來源清單 ══ -->
+  <tr><td bgcolor="#f1f5f9" style="padding:0;">
     <table width="100%" border="0" cellpadding="0" cellspacing="0">
-      <tr><td bgcolor="#334155" style="padding:10px 16px;">
-        <font face="Microsoft JhengHei,Arial,sans-serif" size="2" color="#f8fafc">
-          <b>📡 新聞來源清單</b>
+      <tr><td bgcolor="#334155" style="padding:11px 18px;">
+        <font face="Microsoft JhengHei,Arial,sans-serif" size="2" color="#f1f5f9">
+          <b>📡&nbsp;新聞來源清單</b>
         </font>
-        &nbsp;
+        &nbsp;&nbsp;
         <font face="Arial,sans-serif" size="1" color="#94a3b8">
-          共 {total_sources} 個 · RSS + JSON API
+          共&nbsp;{total_sources}&nbsp;個&nbsp;·&nbsp;RSS&nbsp;+&nbsp;JSON&nbsp;API
         </font>
       </td></tr>
-      <tr><td style="padding:12px 16px;">
+      <tr><td style="padding:14px 16px;">
         {source_grid}
       </td></tr>
     </table>
   </td></tr>
 
-  <!-- ══════════════════════════════════════════
-       快速統計列（6 格）
-  ══════════════════════════════════════════ -->
+  <!-- ══ 快速統計列（數字 + icon + 短標籤）══ -->
   <tr><td bgcolor="#0f172a" style="padding:0;">
-    <table width="100%" border="0" cellpadding="0" cellspacing="1"
-           bgcolor="#0f172a"><tr>
-      <!-- TOTAL 格 -->
-      <td align="center" bgcolor="#1e293b" style="padding:14px 4px;width:16%;">
-        <font face="Arial,sans-serif" size="5" color="#f8fafc">
-          <b>{total_news}</b>
-        </font><br>
-        <font face="Arial,sans-serif" size="1" color="#64748b">TOTAL</font>
+    <table width="100%" border="0" cellpadding="0" cellspacing="0"><tr>
+      <!-- TOTAL -->
+      <td align="center" bgcolor="#1e293b"
+          style="padding:14px 6px;width:16%;border-right:1px solid #0f172a;">
+        <font face="Arial,sans-serif" size="5" color="#f8fafc"><b>{total_news}</b></font><br>
+        <font face="Arial,sans-serif" size="1" color="#64748b">📰</font><br>
+        <font face="Microsoft JhengHei,Arial,sans-serif" size="1" color="#64748b">總計</font>
       </td>
       {stat_cells}
     </tr></table>
   </td></tr>
 
-  <!-- ══════════════════════════════════════════
-       新聞標題分類說明
-  ══════════════════════════════════════════ -->
-  <tr><td bgcolor="#1e293b" style="padding:10px 16px;">
-    <table border="0" cellpadding="3" cellspacing="4"><tr>
-      <td bgcolor="#dc2626" style="padding:3px 10px;">
-        <font face="Microsoft JhengHei,Arial,sans-serif" size="1" color="#fff">
-          💥 船舶於波斯灣含荷姆茲海峽週遭被攻擊事件
-        </font>
-      </td>
-      <td bgcolor="#b45309" style="padding:3px 10px;">
-        <font face="Microsoft JhengHei,Arial,sans-serif" size="1" color="#fff">
-          🎯 海灣國家及美軍基地被攻擊事件
-        </font>
-      </td>
-      <td bgcolor="#7c3aed" style="padding:3px 10px;">
-        <font face="Microsoft JhengHei,Arial,sans-serif" size="1" color="#fff">
-          💣 伊朗已採取水雷封鎖
-        </font>
-      </td>
-    </tr><tr>
-      <td bgcolor="#0369a1" style="padding:3px 10px;">
-        <font face="Microsoft JhengHei,Arial,sans-serif" size="1" color="#fff">
-          🚀 紅海/曼德海峽胡塞含伊朗攻擊事件
-        </font>
-      </td>
-      <td bgcolor="#047857" style="padding:3px 10px;">
-        <font face="Microsoft JhengHei,Arial,sans-serif" size="1" color="#fff">
-          🔀 航商宣佈採取繞航措施及波斯灣內避難點
-        </font>
-      </td>
-      <td bgcolor="#475569" style="padding:3px 10px;">
-        <font face="Microsoft JhengHei,Arial,sans-serif" size="1" color="#fff">
-          🚢 其他航運新聞動態
-        </font>
-      </td>
-    </tr></table>
+  <!-- ══ 情境說明帶 ══ -->
+  <tr><td bgcolor="#1e293b" style="padding:12px 16px;">
+    <table width="100%" border="0" cellpadding="0" cellspacing="0">
+      <tr>
+        <td width="5" bgcolor="#dc2626">&nbsp;</td>
+        <td bgcolor="#1e2d3d" style="padding:7px 12px;">
+          <font face="Microsoft JhengHei,Arial,sans-serif" size="2" color="#fca5a5">
+            <b>💥&nbsp;CAT1</b>
+          </font>
+          &nbsp;
+          <font face="Microsoft JhengHei,Arial,sans-serif" size="2" color="#e2e8f0">
+            船舶於波斯灣/荷姆茲海峽週遭被攻擊事件
+          </font>
+        </td>
+      </tr>
+      <tr><td colspan="2" height="3"></td></tr>
+      <tr>
+        <td width="5" bgcolor="#b45309">&nbsp;</td>
+        <td bgcolor="#1e2d3d" style="padding:7px 12px;">
+          <font face="Microsoft JhengHei,Arial,sans-serif" size="2" color="#fcd34d">
+            <b>🎯&nbsp;CAT2</b>
+          </font>
+          &nbsp;
+          <font face="Microsoft JhengHei,Arial,sans-serif" size="2" color="#e2e8f0">
+            海灣國家及美軍基地被攻擊事件
+          </font>
+        </td>
+      </tr>
+      <tr><td colspan="2" height="3"></td></tr>
+      <tr>
+        <td width="5" bgcolor="#7c3aed">&nbsp;</td>
+        <td bgcolor="#1e2d3d" style="padding:7px 12px;">
+          <font face="Microsoft JhengHei,Arial,sans-serif" size="2" color="#c4b5fd">
+            <b>💣&nbsp;CAT3</b>
+          </font>
+          &nbsp;
+          <font face="Microsoft JhengHei,Arial,sans-serif" size="2" color="#e2e8f0">
+            伊朗已採取水雷封鎖
+          </font>
+        </td>
+      </tr>
+      <tr><td colspan="2" height="3"></td></tr>
+      <tr>
+        <td width="5" bgcolor="#0369a1">&nbsp;</td>
+        <td bgcolor="#1e2d3d" style="padding:7px 12px;">
+          <font face="Microsoft JhengHei,Arial,sans-serif" size="2" color="#7dd3fc">
+            <b>🚀&nbsp;CAT4</b>
+          </font>
+          &nbsp;
+          <font face="Microsoft JhengHei,Arial,sans-serif" size="2" color="#e2e8f0">
+            紅海/曼德海峽胡塞含伊朗攻擊事件
+          </font>
+        </td>
+      </tr>
+      <tr><td colspan="2" height="3"></td></tr>
+      <tr>
+        <td width="5" bgcolor="#047857">&nbsp;</td>
+        <td bgcolor="#1e2d3d" style="padding:7px 12px;">
+          <font face="Microsoft JhengHei,Arial,sans-serif" size="2" color="#6ee7b7">
+            <b>🔀&nbsp;CAT5</b>
+          </font>
+          &nbsp;
+          <font face="Microsoft JhengHei,Arial,sans-serif" size="2" color="#e2e8f0">
+            航商宣佈採取繞航措施及波斯灣內避難點
+          </font>
+        </td>
+      </tr>
+      <tr><td colspan="2" height="3"></td></tr>
+      <tr>
+        <td width="5" bgcolor="#475569">&nbsp;</td>
+        <td bgcolor="#1e2d3d" style="padding:7px 12px;">
+          <font face="Microsoft JhengHei,Arial,sans-serif" size="2" color="#94a3b8">
+            <b>🚢&nbsp;GEN</b>
+          </font>
+          &nbsp;
+          <font face="Microsoft JhengHei,Arial,sans-serif" size="2" color="#e2e8f0">
+            其他航運新聞動態
+          </font>
+        </td>
+      </tr>
+    </table>
   </td></tr>
 
-  <!-- ══════════════════════════════════════════
-       五大情境新聞主體
-  ══════════════════════════════════════════ -->
+  <!-- ══ 五大情境新聞主體 ══ -->
   <tr><td bgcolor="#f1f5f9" style="padding:16px;">
     {cat_sections}
   </td></tr>
 
-  <!-- ══════════════════════════════════════════
-       本次新聞來源
-  ══════════════════════════════════════════ -->
+  <!-- ══ 本次命中來源 ══ -->
   <tr><td bgcolor="#ffffff" style="padding:16px;">
-    <font face="Microsoft JhengHei,Arial,sans-serif" size="2" color="#334155">
-      <b>📊 本次新聞來源</b>
-    </font>
-    <font face="Microsoft JhengHei,Arial,sans-serif" size="1" color="#94a3b8">
-      &nbsp;（僅列出有命中關鍵字的來源）
-    </font>
-    <br><br>
     <table width="100%" border="0" cellpadding="0" cellspacing="0">
-      {hit_rows}
+      <tr>
+        <td bgcolor="#334155" style="padding:10px 14px;">
+          <font face="Microsoft JhengHei,Arial,sans-serif" size="2" color="#f1f5f9">
+            <b>📊&nbsp;本次新聞來源</b>
+          </font>
+          &nbsp;
+          <font face="Microsoft JhengHei,Arial,sans-serif" size="1" color="#94a3b8">
+            （僅列出有新增新聞的來源）
+          </font>
+        </td>
+      </tr>
+      <tr><td>
+        <table width="100%" border="0" cellpadding="0" cellspacing="0">
+          {hit_rows}
+        </table>
+      </td></tr>
     </table>
   </td></tr>
 
-  <!-- ══════════════════════════════════════════
-       FOOTER
-  ══════════════════════════════════════════ -->
-  <tr><td bgcolor="#0f172a" align="center" style="padding:18px;">
+  <!-- ══ FOOTER ══ -->
+  <tr><td bgcolor="#0f172a" align="center" style="padding:20px 16px;">
     <font face="Microsoft JhengHei,Arial,sans-serif" size="1" color="#475569">
-      此新聞為自動發送 · 請勿直接回覆
-    </font><br>
+      此新聞為自動發送&nbsp;·&nbsp;請勿直接回覆
+    </font><br><br>
     <font face="Arial,sans-serif" size="1" color="#334155">
-      Maritime Intel System v5.1 · Powered by Python &amp; GitHub Actions
+      Maritime Intel System v5.1&nbsp;·&nbsp;Powered by Python &amp; GitHub Actions
     </font>
   </td></tr>
 
@@ -1590,9 +1809,6 @@ class NewsEmailSender:
 </td></tr></table>
 </body>
 </html>"""
-
-
-
 
 # ══════════════════════════════════════════════════════════════
 # 主程式
