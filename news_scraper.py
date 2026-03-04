@@ -743,37 +743,50 @@ CNYES_SOURCES = [
 
 
 # ══════════════════════════════════════════════════════════════
-# XML 清洗工具
+# XML 清洗工具（修復 bytes/str 型別問題）
 # ══════════════════════════════════════════════════════════════
 def clean_xml_content(raw_bytes: bytes) -> str:
-    try:
-        text = raw_bytes.decode('utf-8', errors='replace')
-    except Exception:
-        text = raw_bytes.decode('latin-1', errors='replace')
+    """將 bytes（含 gzip）清洗為合法 XML 字串"""
+    import gzip as _gzip
+
+    # ── 自動解壓 gzip ──
+    if isinstance(raw_bytes, bytes) and raw_bytes[:2] == b'\x1f\x8b':
+        try:
+            raw_bytes = _gzip.decompress(raw_bytes)
+        except Exception:
+            pass
+
+    # ── bytes → str ──
+    if isinstance(raw_bytes, bytes):
+        try:
+            text = raw_bytes.decode('utf-8', errors='replace')
+        except Exception:
+            text = raw_bytes.decode('latin-1', errors='replace')
+    else:
+        text = raw_bytes  # 已是 str，直接用
+
+    # ── 清除非法控制字元 ──
     text = re.sub(r'[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]', '', text)
+    # ── 修復裸 & ──
     text = re.sub(r'&(?!(amp|lt|gt|quot|apos|#\d+|#x[0-9a-fA-F]+);)', '&amp;', text)
     return text
 
 # ══════════════════════════════════════════════════════════════
-# 壹航運 HTML 爬蟲（無 RSS，直接解析首頁文章列表）
+# 壹航運 HTML 爬蟲（改用 sitemap.xml 取得文章列表）
 # ══════════════════════════════════════════════════════════════
 class OneShippingScraper:
-    BASE_URL = "https://www.oneshipping.info"
-    # 首頁上各新聞區塊的入口頁
-    SECTION_URLS = [
-        "https://www.oneshipping.info/",          # 首頁（含最新）
-        "https://www.oneshipping.info/hyrd",       # 航運熱點
-        "https://www.oneshipping.info/hysj",       # 航運數據
-    ]
+    BASE_URL    = "https://www.oneshipping.info"
+    SITEMAP_URL = "https://www.oneshipping.info/sitemap.xml"
     HEADERS = {
         "User-Agent": (
             "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
             "AppleWebKit/537.36 (KHTML, like Gecko) "
             "Chrome/122.0.0.0 Safari/537.36"
         ),
-        "Accept": "text/html,application/xhtml+xml,*/*",
+        "Accept":          "text/html,application/xhtml+xml,*/*",
         "Accept-Language": "zh-CN,zh;q=0.9",
-        "Referer": "https://www.oneshipping.info/",
+        "Accept-Encoding": "gzip, deflate",
+        "Referer":         "https://www.oneshipping.info/",
     }
     SOURCE_META = {
         "name":     "壹航運",
@@ -787,54 +800,100 @@ class OneShippingScraper:
         self.hours_back = hours_back
         self.seen_urls: set = set()
 
-    def _extract_articles(self, html: str) -> list[dict]:
+    # ── Step 1：從 sitemap.xml 取得最新文章 URL ──
+    def _get_article_urls_from_sitemap(self) -> list[dict]:
         """
-        從 HTML 中提取所有 /newsinfo/{id}.html 連結與標題。
-        壹航運文章 URL 格式固定為 /newsinfo/數字.html
-        """
-        articles = []
-        # 匹配 <a href="/newsinfo/123456.html">標題文字</a>
-        pattern = re.compile(
-            r'<a[^>]+href=["\'](/newsinfo/(\d+)\.html)["\'][^>]*>\s*([^<]{4,200})\s*</a>',
-            re.IGNORECASE | re.DOTALL,
-        )
-        seen_ids: set = set()
-        for m in pattern.finditer(html):
-            path, art_id, raw_title = m.group(1), m.group(2), m.group(3)
-            if art_id in seen_ids:
-                continue
-            seen_ids.add(art_id)
-            title = re.sub(r'\s+', ' ', raw_title).strip()
-            # 過濾掉太短或明顯是導覽列的文字
-            if len(title) < 8:
-                continue
-            articles.append({
-                "url":   f"{self.BASE_URL}{path}",
-                "title": title,
-            })
-        return articles
-
-    def _fetch_article_detail(self, url: str) -> tuple[str, str]:
-        """
-        抓取文章頁面，取得發佈時間與摘要。
-        回傳 (pub_time_str, summary)，失敗時回傳 ('', '')
+        解析 sitemap.xml，取出所有 /newsinfo/*.html 的 URL 與 lastmod。
+        依 lastmod 降序排列，只取最近 hours_back*2 小時內（或最多 50 篇）。
         """
         try:
-            resp = requests.get(url, headers=self.HEADERS,
-                                timeout=15, verify=False, allow_redirects=True)
+            resp = requests.get(
+                self.SITEMAP_URL, headers=self.HEADERS,
+                timeout=20, verify=False
+            )
+            resp.raise_for_status()
+            xml_text = resp.text
+
+            # 解析 <url><loc>...</loc><lastmod>...</lastmod></url>
+            pattern = re.compile(
+                r'<url>\s*<loc>(https?://[^<]+/newsinfo/\d+\.html)</loc>'
+                r'(?:\s*<lastmod>([^<]+)</lastmod>)?',
+                re.IGNORECASE | re.DOTALL,
+            )
+            cutoff = datetime.now(tz=timezone.utc) - timedelta(hours=self.hours_back * 3)
+            results = []
+
+            for m in pattern.finditer(xml_text):
+                url_str  = m.group(1).strip()
+                lastmod  = m.group(2).strip() if m.group(2) else ''
+                pub_time = None
+                if lastmod:
+                    for fmt in ('%Y-%m-%dT%H:%M:%S%z', '%Y-%m-%d'):
+                        try:
+                            pub_time = datetime.strptime(lastmod[:19], fmt[:len(lastmod[:19])])
+                            if pub_time.tzinfo is None:
+                                pub_time = pub_time.replace(
+                                    tzinfo=timezone(timedelta(hours=8))
+                                ).astimezone(timezone.utc)
+                            break
+                        except ValueError:
+                            continue
+
+                # 若有時間且太舊就跳過
+                if pub_time and pub_time < cutoff:
+                    continue
+
+                results.append({"url": url_str, "lastmod": pub_time})
+
+            # 依時間降序，最多取 60 篇
+            results.sort(
+                key=lambda x: x["lastmod"] or datetime.min.replace(tzinfo=timezone.utc),
+                reverse=True,
+            )
+            return results[:60]
+
+        except Exception as e:
+            logger.warning(f"    ⚠️  壹航運 sitemap 失敗: {e}")
+            return []
+
+    # ── Step 2：抓單篇文章（標題 + 時間 + 摘要）──
+    def _fetch_article(self, url: str) -> dict | None:
+        try:
+            resp = requests.get(
+                url, headers=self.HEADERS,
+                timeout=15, verify=False, allow_redirects=True
+            )
             resp.raise_for_status()
             html = resp.text
 
-            # ── 發佈時間：常見格式 2026-03-04 或 2026/03/04
+            # 標題：優先抓 <title> 或 <h1>
+            title = ''
+            for pat in [
+                r'<title[^>]*>([^<]{5,200})</title>',
+                r'<h1[^>]*>([^<]{5,200})</h1>',
+            ]:
+                m = re.search(pat, html, re.IGNORECASE)
+                if m:
+                    title = re.sub(r'\s+', ' ', m.group(1)).strip()
+                    # 去掉「_壹航運」等網站名後綴
+                    title = re.sub(r'[_\-–|]\s*壹航運.*$', '', title).strip()
+                    if len(title) >= 8:
+                        break
+
+            if not title:
+                return None
+
+            # 時間
             time_match = re.search(
                 r'(\d{4}[-/]\d{2}[-/]\d{2}(?:\s+\d{2}:\d{2}(?::\d{2})?)?)',
                 html
             )
             pub_str = time_match.group(1).replace('/', '-') if time_match else ''
 
-            # ── 摘要：抓 <p> 標籤內文，取前 300 字
-            paragraphs = re.findall(r'<p[^>]*>(.*?)</p>', html,
-                                    re.IGNORECASE | re.DOTALL)
+            # 摘要：取 <p> 內文
+            paragraphs = re.findall(
+                r'<p[^>]*>(.*?)</p>', html, re.IGNORECASE | re.DOTALL
+            )
             summary_parts = []
             for p in paragraphs:
                 clean = re.sub(r'<[^>]+>', '', p).strip()
@@ -847,10 +906,11 @@ class OneShippingScraper:
             if len(summary) == 300:
                 summary += '...'
 
-            return pub_str, summary
+            return {"title": title, "pub_str": pub_str, "summary": summary}
+
         except Exception as e:
-            logger.debug(f"      壹航運文章抓取失敗: {url} → {e}")
-            return '', ''
+            logger.debug(f"      壹航運文章失敗: {url} → {e}")
+            return None
 
     def _parse_pub_time(self, pub_str: str) -> datetime | None:
         if not pub_str:
@@ -858,66 +918,49 @@ class OneShippingScraper:
         for fmt in ('%Y-%m-%d %H:%M:%S', '%Y-%m-%d %H:%M', '%Y-%m-%d'):
             try:
                 dt = datetime.strptime(pub_str.strip(), fmt)
-                return dt.replace(tzinfo=timezone(timedelta(hours=8))).astimezone(timezone.utc)
+                return dt.replace(
+                    tzinfo=timezone(timedelta(hours=8))
+                ).astimezone(timezone.utc)
             except ValueError:
                 continue
         return None
 
     def fetch(self, scraper_ref) -> list[dict]:
-        """
-        主爬取入口。scraper_ref 傳入 NewsRssScraper 實例，
-        借用其 _match_keywords / _classify_incident 方法。
-        """
         results = []
         cutoff  = datetime.now(tz=timezone.utc) - timedelta(hours=self.hours_back)
 
-        logger.info("\n  📡 [中文媒體][zh-CN] 壹航運（HTML 爬蟲）")
+        logger.info("\n  📡 [中文媒體][zh-CN] 壹航運（sitemap 爬蟲）")
 
-        # Step 1：從各入口頁收集文章連結
-        all_articles: list[dict] = []
-        seen_urls_local: set     = set()
+        # Step 1：從 sitemap 取文章列表
+        candidates = self._get_article_urls_from_sitemap()
+        logger.info(f"    📊 共發現 {len(candidates)} 篇候選文章")
 
-        for section_url in self.SECTION_URLS:
-            logger.info(f"    🔗 {section_url}")
-            try:
-                resp = requests.get(section_url, headers=self.HEADERS,
-                                    timeout=20, verify=False)
-                resp.raise_for_status()
-                for art in self._extract_articles(resp.text):
-                    if art['url'] not in seen_urls_local:
-                        seen_urls_local.add(art['url'])
-                        all_articles.append(art)
-            except Exception as e:
-                logger.warning(f"    ⚠️  壹航運入口頁失敗: {section_url} → {e}")
-
-        logger.info(f"    📊 共發現 {len(all_articles)} 篇候選文章")
-
-        # Step 2：逐篇過濾關鍵字（先用標題快篩，減少不必要的 HTTP 請求）
         matched_count = skipped_kw = skipped_time = skipped_dup = 0
 
-        for art in all_articles:
-            url   = art['url']
-            title = art['title']
+        for cand in candidates:
+            url = cand["url"]
 
             if url in self.seen_urls:
                 skipped_dup += 1
                 continue
 
-            # 標題快篩（不符合直接跳過，不發 HTTP）
-            title_matched = scraper_ref._match_keywords(title, '')
-            if not title_matched:
+            # 抓文章詳情
+            detail = self._fetch_article(url)
+            if not detail:
                 skipped_kw += 1
                 continue
 
-            # 抓文章詳情（時間 + 摘要）
-            pub_str, summary = self._fetch_article_detail(url)
-            pub_time         = self._parse_pub_time(pub_str)
+            title   = detail["title"]
+            summary = detail["summary"]
+            pub_str = detail["pub_str"]
 
-            if pub_time is not None and pub_time < cutoff:
+            # 時間過濾
+            pub_time = cand["lastmod"] or self._parse_pub_time(pub_str)
+            if pub_time and pub_time < cutoff:
                 skipped_time += 1
                 continue
 
-            # 用完整內容再比對一次關鍵字
+            # 關鍵字比對
             matched = scraper_ref._match_keywords(title, summary)
             if not matched:
                 skipped_kw += 1
@@ -945,7 +988,7 @@ class OneShippingScraper:
             matched_count += 1
 
         logger.info(
-            f"  📋 壹航運 | 候選 {len(all_articles)} | "
+            f"  📋 壹航運 | 候選 {len(candidates)} | "
             f"命中 {matched_count} | 無關鍵字 {skipped_kw} | "
             f"時間 {skipped_time} | 重複 {skipped_dup}"
         )
@@ -1070,35 +1113,47 @@ class NewsRssScraper:
 
     # ── RSS 下載 ──
     def _download_rss(self, url: str, need_clean: bool = False, is_cn: bool = False):
-        headers = self.HEADERS_CN if is_cn else self.HEADERS_DEFAULT
-        try:
-            resp = requests.get(url, headers=headers,
-                                timeout=20, verify=False, allow_redirects=True)
-            resp.raise_for_status()
-            if len(resp.content) < 100:
-                logger.warning(f"    ⚠️  回應過短 ({len(resp.content)} bytes)")
-                return None
-            if need_clean:
-                parsed = feedparser.parse(io.StringIO(clean_xml_content(resp.content)))
-            else:
-                parsed = feedparser.parse(io.BytesIO(resp.content))
-            entry_count = len(parsed.entries) if parsed else 0
-            bozo        = getattr(parsed, 'bozo', False)
-            bozo_exc    = getattr(parsed, 'bozo_exception', None)
-            logger.info(
-                f"    📊 {entry_count} 則 | bozo={bozo}"
-                + (f" ({type(bozo_exc).__name__})" if bozo_exc else "")
-            )
-            return parsed
-        except requests.exceptions.ConnectionError:
-            logger.warning(f"    ⚠️  連線失敗: {url[:60]}")
-        except requests.exceptions.Timeout:
-            logger.warning(f"    ⚠️  逾時 (20s): {url[:60]}")
-        except requests.exceptions.HTTPError as e:
-            logger.warning(f"    ⚠️  HTTP {e.response.status_code}: {url[:60]}")
-        except Exception as e:
-            logger.warning(f"    ⚠️  錯誤: {url[:60]} → {e}")
-        return None
+            headers = self.HEADERS_CN if is_cn else self.HEADERS_DEFAULT
+            # 加上 Accept-Encoding 讓 requests 自動解壓，避免 gzip bytes 流入 feedparser
+            headers = {**headers, "Accept-Encoding": "gzip, deflate, br"}
+            try:
+                resp = requests.get(url, headers=headers,
+                                    timeout=20, verify=False, allow_redirects=True)
+                resp.raise_for_status()
+
+                if len(resp.content) < 100:
+                    logger.warning(f"    ⚠️  回應過短 ({len(resp.content)} bytes)")
+                    return None
+
+                # resp.text 已由 requests 自動解碼（含 gzip），直接用 str
+                if need_clean:
+                    cleaned = clean_xml_content(resp.content)   # bytes 路徑
+                    parsed  = feedparser.parse(io.StringIO(cleaned))
+                else:
+                    # 優先用 resp.text（str），避免 feedparser 遇到 gzip bytes
+                    try:
+                        parsed = feedparser.parse(io.StringIO(resp.text))
+                    except Exception:
+                        parsed = feedparser.parse(io.BytesIO(resp.content))
+
+                entry_count = len(parsed.entries) if parsed else 0
+                bozo        = getattr(parsed, 'bozo', False)
+                bozo_exc    = getattr(parsed, 'bozo_exception', None)
+                logger.info(
+                    f"    📊 {entry_count} 則 | bozo={bozo}"
+                    + (f" ({type(bozo_exc).__name__})" if bozo_exc else "")
+                )
+                return parsed
+
+            except requests.exceptions.ConnectionError:
+                logger.warning(f"    ⚠️  連線失敗: {url[:60]}")
+            except requests.exceptions.Timeout:
+                logger.warning(f"    ⚠️  逾時 (20s): {url[:60]}")
+            except requests.exceptions.HTTPError as e:
+                logger.warning(f"    ⚠️  HTTP {e.response.status_code}: {url[:60]}")
+            except Exception as e:
+                logger.warning(f"    ⚠️  錯誤: {url[:60]} → {e}")
+            return None
 
     # ── 建立新聞物件 ──
     def _build_item(self, source: dict, title: str, summary: str,
@@ -1359,7 +1414,96 @@ class NewsEmailSender:
             logger.error("❌ Email 環境變數未設定：MAIL_USER / MAIL_PASSWORD / TARGET_EMAIL")
         else:
             logger.info(f"✅ Email → {self.target_email}")
+    # ──────────────────────────────────────────────────────────
+    # 監控來源清單（3 欄網格）
+    # ──────────────────────────────────────────────────────────
+    @staticmethod
+    def _render_source_grid() -> str:
+        SOURCE_GROUPS = [
+            {
+                "title":   "中文媒體（台灣）",
+                "icon":    "🇹🇼",
+                "color":   "#10b981",
+                "bg":      "#ecfdf5",
+                "sources": [s for s in RSS_SOURCES if s.get("lang") == "zh-TW"]
+                           + [s for s in CNYES_SOURCES if s.get("lang") == "zh-TW"],
+            },
+            {
+                "title":   "中文媒體（大陸）",
+                "icon":    "🇨🇳",
+                "color":   "#ef4444",
+                "bg":      "#fef2f2",
+                "sources": [s for s in RSS_SOURCES if s.get("lang") == "zh-CN"],
+            },
+            {
+                "title":   "航運專業媒體",
+                "icon":    "🚢",
+                "color":   "#3b82f6",
+                "bg":      "#eff6ff",
+                "sources": [s for s in RSS_SOURCES if s.get("category") == "航運專業"],
+            },
+            {
+                "title":   "國際媒體",
+                "icon":    "🌐",
+                "color":   "#f97316",
+                "bg":      "#fff7ed",
+                "sources": [s for s in RSS_SOURCES if s.get("category") == "國際媒體"],
+            },
+        ]
 
+        groups_html = ""
+        for grp in SOURCE_GROUPS:
+            sources   = grp["sources"]
+            rows_html = ""
+            for i in range(0, len(sources), 3):
+                chunk = sources[i:i+3]
+                while len(chunk) < 3:
+                    chunk.append(None)
+                cells = ""
+                for src in chunk:
+                    if src is None:
+                        cells += (
+                            f'<td width="33%" bgcolor="{grp["bg"]}" '
+                            f'style="padding:6px 10px;"></td>'
+                        )
+                    else:
+                        name   = src.get("name", "")
+                        icon   = src.get("icon", "📰")
+                        url    = src.get("url") or src.get("api_url", "")
+                        # 壹航運特殊標記，顯示真實網域
+                        if url == "__oneshipping_html__":
+                            url = "https://www.oneshipping.info"
+                        domain = re.sub(r'^https?://(www\.)?', '', url).split('/')[0]
+                        cells += f"""
+<td width="33%" bgcolor="{grp['bg']}"
+    style="padding:6px 10px;border-right:1px solid #e2e8f0;">
+  <table border="0" cellpadding="0" cellspacing="0" width="100%"><tr>
+    <td width="20" valign="middle"><font size="2">{icon}</font></td>
+    <td valign="middle">
+      <font face="Microsoft JhengHei,Arial,sans-serif"
+            size="2" color="#1e293b"><b>{name}</b></font><br>
+      <font face="Arial,sans-serif" size="1" color="#94a3b8">{domain}</font>
+    </td>
+  </tr></table>
+</td>"""
+                rows_html += f"""
+<tr>{cells}</tr>
+<tr><td colspan="3" bgcolor="#e2e8f0" height="1"></td></tr>"""
+
+            groups_html += f"""
+<table width="100%" border="0" cellpadding="0" cellspacing="0"
+       style="margin-bottom:10px;">
+  <tr>
+    <td colspan="3" bgcolor="{grp['color']}" style="padding:6px 14px;">
+      <font face="Microsoft JhengHei,Arial,sans-serif" size="2" color="#fff">
+        <b>{grp['icon']} {grp['title']} ({len(sources)} 個)</b>
+      </font>
+    </td>
+  </tr>
+  {rows_html}
+</table>"""
+
+        return groups_html
     # ──────────────────────────────────────────────────────────
     # 發送
     # ──────────────────────────────────────────────────────────
