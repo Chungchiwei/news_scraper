@@ -3,14 +3,13 @@
 """
 航運安全暨地緣政治新聞監控系統
 GitHub Actions 版本 - 單次執行
-功能說明：
 """
 
 import os
 import io
 import re
 import ssl
-import json
+import html as _html_module
 import smtplib
 import logging
 import traceback
@@ -43,65 +42,56 @@ logger = logging.getLogger(__name__)
 
 # ╔══════════════════════════════════════════════════════════════╗
 # ║              五大情境分類定義                                 ║
-# ║                                                              ║
-# ║  CAT1：船舶於波斯灣/荷姆茲海峽週遭被攻擊事件                 ║
-# ║  CAT2：海灣國家及美軍基地被攻擊事件                          ║
-# ║  CAT3：伊朗已採取水雷封鎖                                    ║
-# ║  CAT4：紅海/曼德海峽胡塞含伊朗攻擊事件                      ║
-# ║  CAT5：航商宣佈採取繞航措施及波斯灣內避難點                  ║
 # ╚══════════════════════════════════════════════════════════════╝
-
-# ── 每個情境的顯示設定 ──
 INCIDENT_CATEGORIES = {
     "CAT1": {
         "label":    "船舶於波斯灣/荷姆茲海峽週遭被攻擊事件",
         "icon":     "💥",
-        "color":    "#dc2626",   # 深紅
+        "color":    "#dc2626",
         "bg":       "#fef2f2",
         "priority": 1,
     },
     "CAT2": {
         "label":    "海灣國家及美軍基地被攻擊事件",
         "icon":     "🎯",
-        "color":    "#b45309",   # 深橙
+        "color":    "#b45309",
         "bg":       "#fffbeb",
         "priority": 2,
     },
     "CAT3": {
         "label":    "伊朗已採取水雷封鎖",
         "icon":     "💣",
-        "color":    "#7c3aed",   # 紫
+        "color":    "#7c3aed",
         "bg":       "#f5f3ff",
         "priority": 3,
     },
     "CAT4": {
         "label":    "紅海/曼德海峽胡塞含伊朗攻擊事件",
         "icon":     "🚀",
-        "color":    "#0369a1",   # 藍
+        "color":    "#0369a1",
         "bg":       "#eff6ff",
         "priority": 4,
     },
     "CAT5": {
         "label":    "航商宣佈採取繞航措施及波斯灣內避難點",
         "icon":     "🔀",
-        "color":    "#047857",   # 綠
+        "color":    "#047857",
         "bg":       "#ecfdf5",
         "priority": 5,
     },
     "GEN": {
         "label":    "其他航運動態",
         "icon":     "🚢",
-        "color":    "#475569",   # 灰
+        "color":    "#475569",
         "bg":       "#f8fafc",
         "priority": 6,
     },
 }
 
 # ══════════════════════════════════════════════════════════════
-# CAT1：船舶於波斯灣/荷姆茲海峽週遭被攻擊
+# 關鍵字定義
 # ══════════════════════════════════════════════════════════════
 CAT1_KEYWORDS = [
-    # 英文
     "tanker attack Persian Gulf", "vessel attack Persian Gulf",
     "ship attack Persian Gulf", "tanker attack Gulf of Oman",
     "vessel attack Gulf of Oman", "ship attack Gulf of Oman",
@@ -121,11 +111,9 @@ CAT1_KEYWORDS = [
     "tanker struck Persian Gulf", "vessel struck Persian Gulf",
     "ship struck Persian Gulf",
     "armed attack tanker Gulf", "armed boarding Persian Gulf",
-    # NewsBase 專用
     "tanker traffic halt", "tanker traffic stopped",
     "vessels struck Gulf", "tanker struck Hormuz",
     "shipping halt Hormuz", "tanker halt Persian Gulf",
-    # 中文（繁體）
     "波斯灣油輪遭攻擊", "波斯灣商船遇襲", "波斯灣貨輪被攻擊",
     "荷姆茲海峽油輪遭攻擊", "荷姆茲海峽商船遇襲",
     "霍爾木茲海峽油輪遭攻擊", "霍爾木茲海峽商船遇襲",
@@ -136,7 +124,6 @@ CAT1_KEYWORDS = [
     "伊朗扣押船隻", "伊朗扣押油輪",
     "波斯灣無人機攻船", "波斯灣飛彈攻船",
     "波斯灣武裝登船",
-    # 中文（簡體）
     "波斯湾油轮遭攻击", "波斯湾商船遇袭", "波斯湾货轮被攻击",
     "霍尔木兹海峡油轮遭攻击", "霍尔木兹海峡商船遇袭",
     "阿曼湾油轮遭攻击", "阿曼湾商船遇袭",
@@ -145,13 +132,13 @@ CAT1_KEYWORDS = [
     "伊朗海军扣押油轮", "伊朗海军扣押商船",
     "伊朗扣押船只", "伊朗扣押油轮",
     "波斯湾无人机攻船", "波斯湾导弹攻船",
+    # ── 新增：荷莫茲（台灣常見異體字）──
+    "荷莫茲海峽油輪", "荷莫茲海峽商船", "荷莫茲海峽封鎖",
+    "荷莫茲海峽攻擊", "荷莫茲海峽被攻擊",
+    "控制荷莫茲", "封鎖荷莫茲",
 ]
 
-# ══════════════════════════════════════════════════════════════
-# CAT2：海灣國家及美軍基地被攻擊
-# ══════════════════════════════════════════════════════════════
 CAT2_KEYWORDS = [
-    # 英文
     "US military base attack Gulf", "US base attack Middle East",
     "US base attacked Iraq", "US base attacked Syria",
     "US base attacked Kuwait", "US base attacked Bahrain",
@@ -169,7 +156,6 @@ CAT2_KEYWORDS = [
     "Riyadh attack", "Manama attack",
     "Al Udeid attack", "Al Dhafra attack",
     "Camp Arifjan attack", "NSA Bahrain attack",
-    # 中文（繁體）
     "美軍基地遭攻擊", "美軍基地被攻擊", "美軍基地受攻擊",
     "美國海軍遭攻擊", "美軍艦艇遭攻擊",
     "第五艦隊遭攻擊", "中央司令部基地遭攻擊",
@@ -181,7 +167,6 @@ CAT2_KEYWORDS = [
     "海灣國家遭攻擊", "海灣地區美軍遭攻擊",
     "無人機攻擊美軍基地", "飛彈攻擊美軍基地",
     "彈道飛彈攻擊海灣", "巡弋飛彈攻擊海灣",
-    # 中文（簡體）
     "美军基地遭攻击", "美军基地被攻击", "美军基地受攻击",
     "美国海军遭攻击", "美军舰艇遭攻击",
     "第五舰队遭攻击", "中央司令部基地遭攻击",
@@ -195,11 +180,7 @@ CAT2_KEYWORDS = [
     "弹道导弹攻击海湾", "巡航导弹攻击海湾",
 ]
 
-# ══════════════════════════════════════════════════════════════
-# CAT3：伊朗水雷封鎖
-# ══════════════════════════════════════════════════════════════
 CAT3_KEYWORDS = [
-    # 英文
     "sea mine Strait of Hormuz", "naval mine Strait of Hormuz",
     "sea mine Persian Gulf", "naval mine Persian Gulf",
     "sea mine Gulf of Oman", "naval mine Gulf of Oman",
@@ -217,7 +198,6 @@ CAT3_KEYWORDS = [
     "Hormuz minefield", "Persian Gulf minefield",
     "mine clearance Gulf", "mine sweeping Gulf",
     "mine sweeping Hormuz",
-    # NewsBase 專用（長句分析型標題）
     "Hormuz closure", "Strait of Hormuz closure",
     "Hormuz blockade", "Persian Gulf blockade",
     "mine the strait", "mining the strait",
@@ -225,9 +205,14 @@ CAT3_KEYWORDS = [
     "Iran mining campaign", "Iranian mining",
     "submarine minelaying", "mine laying submarine",
     "Hormuz oil flow", "Hormuz oil supply",
-    "tanker traffic Hormuz", "tanker traffic halt",
+    "tanker traffic Hormuz",
     "oil flow disruption Hormuz",
-    # 中文（繁體）
+    # ── 新增：伊朗封鎖荷姆茲（台灣媒體常用句型）──
+    "伊朗封鎖荷姆茲", "伊朗封鎖荷莫茲", "伊朗封鎖霍爾木茲",
+    "伊朗控制荷姆茲", "伊朗控制荷莫茲", "伊朗控制霍爾木茲",
+    "完全控制荷姆茲", "完全控制荷莫茲", "完全控制霍爾木茲",
+    "荷姆茲海峽封鎖", "荷莫茲海峽封鎖", "霍爾木茲海峽封鎖",
+    "封鎖荷姆茲海峽", "封鎖荷莫茲海峽",
     "水雷封鎖荷姆茲", "水雷封鎖霍爾木茲",
     "水雷封鎖波斯灣", "水雷封鎖阿曼灣",
     "伊朗布雷", "伊朗水雷威脅",
@@ -240,11 +225,9 @@ CAT3_KEYWORDS = [
     "阿曼灣水雷", "掃雷行動海灣",
     "水雷清除荷姆茲", "水雷威脅航運",
     "水雷攻擊船隻", "水雷攻擊油輪",
-    # 中文（簡體）
     "水雷封锁霍尔木兹", "水雷封锁波斯湾",
     "水雷封锁阿曼湾",
-    "伊朗布雷", "伊朗水雷威胁",
-    "伊朗水雷攻击", "伊朗水雷封锁",
+    "伊朗水雷威胁", "伊朗水雷攻击", "伊朗水雷封锁",
     "革命卫队布雷", "革命卫队水雷",
     "磁吸水雷油轮", "磁吸水雷商船",
     "水雷爆炸油轮", "水雷爆炸商船",
@@ -253,13 +236,14 @@ CAT3_KEYWORDS = [
     "阿曼湾水雷", "扫雷行动海湾",
     "水雷清除霍尔木兹", "水雷威胁航运",
     "水雷攻击船只", "水雷攻击油轮",
+    # ── 新增：油輪被砲擊（CAT3 情境）──
+    "油輪被砲擊", "油輪遭砲擊", "商船被砲擊",
+    "油輪被炮弹击中", "油轮遭炮击", "商船被炮弹击中",
+    "tanker shelled", "vessel shelled Hormuz",
+    "tanker fired upon", "vessel fired upon Gulf",
 ]
 
-# ══════════════════════════════════════════════════════════════
-# CAT4：紅海/曼德海峽胡塞含伊朗攻擊
-# ══════════════════════════════════════════════════════════════
 CAT4_KEYWORDS = [
-    # 英文
     "Houthi attack", "Houthi missile", "Houthi drone",
     "Houthi ship attack", "Houthi tanker attack",
     "Houthi vessel attack", "Houthi Red Sea",
@@ -279,7 +263,6 @@ CAT4_KEYWORDS = [
     "Ansarallah attack", "Ansarallah shipping",
     "Iranian-backed attack shipping",
     "Iran proxy attack tanker", "Iran proxy Red Sea",
-    # 中文（繁體）
     "胡塞攻擊", "胡塞飛彈", "胡塞無人機",
     "胡塞攻擊船隻", "胡塞攻擊油輪",
     "胡塞攻擊商船", "胡塞紅海攻擊",
@@ -293,7 +276,6 @@ CAT4_KEYWORDS = [
     "亞丁灣攻擊", "亞丁灣油輪遭攻擊",
     "葉門攻擊船隻", "葉門飛彈攻船",
     "伊朗代理人攻擊船", "伊朗支持攻擊航運",
-    # 中文（簡體）
     "胡塞攻击", "胡塞导弹", "胡塞无人机",
     "胡塞攻击船只", "胡塞攻击油轮",
     "胡塞攻击商船", "胡塞红海攻击",
@@ -309,11 +291,7 @@ CAT4_KEYWORDS = [
     "伊朗代理人攻击船", "伊朗支持攻击航运",
 ]
 
-# ══════════════════════════════════════════════════════════════
-# CAT5：航商繞航措施及波斯灣內避難點
-# ══════════════════════════════════════════════════════════════
 CAT5_KEYWORDS = [
-    # 英文
     "vessel rerouting", "ship diversion", "vessel diversion",
     "rerouting Cape of Good Hope", "Cape of Good Hope rerouting",
     "Cape routing", "Cape diversion",
@@ -343,7 +321,12 @@ CAT5_KEYWORDS = [
     "Hormuz disruption supply", "energy security Gulf",
     "tanker insurance suspended", "insurers suspended",
     "trading house suspended Gulf",
-    # 中文（繁體）
+    # ── 新增：保險/護航（台灣媒體常用）──
+    "tanker insurance Gulf", "US escort tanker",
+    "navy escort tanker Hormuz", "US Navy escort Gulf",
+    "government backstop tanker", "insurance backstop shipping",
+    "booking freeze Gulf", "booking cancelled Gulf",
+    "ONE cancelled bookings", "container booking freeze",
     "航商宣佈繞航", "航商改道", "航線改道",
     "繞航好望角", "改走好望角",
     "避開紅海", "避開蘇伊士運河",
@@ -360,7 +343,9 @@ CAT5_KEYWORDS = [
     "馬斯喀特避難", "薩拉拉避難",
     "戰爭附加費", "戰爭險保費上漲",
     "航運保險費率上漲", "繞航費用增加",
-    # 中文（簡體）
+    # ── 新增：航運股/ETF（台灣財經媒體）──
+    "航運股震盪", "航運ETF", "航運族群",
+    "運價上漲荷姆茲", "運費上漲荷姆茲",
     "航商宣布绕航", "航商改道", "航线改道",
     "绕航好望角", "改走好望角",
     "避开红海", "避开苏伊士运河",
@@ -378,11 +363,7 @@ CAT5_KEYWORDS = [
     "航运保险费率上涨", "绕航费用增加",
 ]
 
-# ══════════════════════════════════════════════════════════════
-# GEN：一般航運動態（不屬於以上五類）
-# ══════════════════════════════════════════════════════════════
 GEN_KEYWORDS = [
-    # 英文：船型
     "oil tanker", "product tanker", "chemical tanker",
     "VLCC", "ULCC", "Aframax", "Suezmax",
     "LNG carrier", "LNG tanker", "LPG carrier",
@@ -390,7 +371,6 @@ GEN_KEYWORDS = [
     "bulk carrier", "bulk vessel",
     "merchant vessel", "merchant ship",
     "cargo vessel", "newbuilding", "shipbuilding order",
-    # 英文：市場
     "freight rate", "shipping rate", "charter rate",
     "bunker fuel", "shipping cost",
     "port congestion", "port closure", "port blockade",
@@ -411,7 +391,6 @@ GEN_KEYWORDS = [
     "Panama Canal closure", "Panama Canal transit",
     "Persian Gulf shipping", "Persian Gulf tanker",
     "Gulf of Oman shipping",
-    # 中文（繁體）
     "油輪", "成品油輪", "化學品船", "貨櫃船", "散裝船",
     "液化天然氣船", "液化石油氣船", "商船", "貨輪",
     "超大型油輪", "新造船",
@@ -428,7 +407,6 @@ GEN_KEYWORDS = [
     "巴拿馬運河封鎖", "巴拿馬運河關閉",
     "波斯灣航運", "波斯灣油輪",
     "伊朗石油制裁", "伊朗航運制裁",
-    # 中文（簡體）
     "油船", "成品油船", "化学品船", "集装箱船", "散装船",
     "液化天然气船", "货轮", "超大型油轮",
     "商船停航", "货轮停航", "航运停航",
@@ -461,7 +439,6 @@ for _kw in CAT5_KEYWORDS:
 for _kw in GEN_KEYWORDS:
     INCIDENT_KEYWORD_MAP.setdefault(_kw.lower(), "GEN")
 
-# ── 合併所有關鍵字並去重 ──
 _ALL_RAW = (
     CAT1_KEYWORDS + CAT2_KEYWORDS + CAT3_KEYWORDS +
     CAT4_KEYWORDS + CAT5_KEYWORDS + GEN_KEYWORDS
@@ -484,11 +461,8 @@ logger.info(
 
 # ══════════════════════════════════════════════════════════════
 # 語境驗證詞集
-# TITLE_SHIPPING_TERMS：標題含任一詞 → 直接通過
-# BODY_SHIPPING_TERMS ：標題無航運詞 → 摘要需 ≥2 個才通過
 # ══════════════════════════════════════════════════════════════
 TITLE_SHIPPING_TERMS = {
-    # 英文
     "tanker", "vessel", "ship", "shipping", "maritime",
     "fleet", "cargo", "freight", "port", "canal",
     "strait", "suez", "hormuz", "panama",
@@ -497,22 +471,23 @@ TITLE_SHIPPING_TERMS = {
     "red sea", "gulf of aden", "persian gulf",
     "bab el-mandeb", "container ship", "bulk carrier",
     "houthi", "irgc", "mine", "blockade",
-    # 中文（繁體）
+    # ── 新增：荷莫茲（台灣常見異體）──
+    "荷莫茲", "荷姆茲", "霍爾木茲",
     "油輪", "貨輪", "商船", "貨櫃船", "散裝船",
     "航運", "海運", "港口", "運河", "海峽",
     "紅海", "波斯灣", "亞丁灣", "海盜", "劫船",
     "護航", "戰爭險", "運費", "船舶",
     "水雷", "布雷", "掃雷", "胡塞",
-    # 中文（簡體）
     "油船", "货轮", "集装箱船", "散装船",
     "航运", "海运", "港口", "运河", "海峡",
     "红海", "波斯湾", "亚丁湾", "海盗", "劫船",
     "护航", "战争险", "运费", "船舶",
     "水雷", "布雷", "扫雷", "胡塞",
+    # ── 新增：台灣財經媒體常用詞 ──
+    "航運股", "航運ETF", "航運族群", "運價",
 }
 
 BODY_SHIPPING_TERMS = {
-    # 英文
     "tanker", "vessel", "ship", "shipping", "maritime",
     "fleet", "cargo", "freight", "port", "canal",
     "strait", "hormuz", "suez", "panama",
@@ -520,12 +495,11 @@ BODY_SHIPPING_TERMS = {
     "seafarer", "crew", "piracy", "red sea",
     "gulf of aden", "persian gulf", "houthi",
     "mine", "irgc",
-    # 中文（繁體）
+    "荷莫茲", "荷姆茲", "霍爾木茲",
     "油輪", "貨輪", "商船", "貨櫃船",
     "航運", "海運", "港口", "運河", "海峽",
     "紅海", "波斯灣", "亞丁灣", "海盜",
     "護航", "運費", "船舶", "水雷", "胡塞",
-    # 中文（簡體）
     "油船", "货轮", "集装箱船",
     "航运", "海运", "港口", "运河", "海峡",
     "红海", "波斯湾", "亚丁湾", "海盗",
@@ -534,7 +508,7 @@ BODY_SHIPPING_TERMS = {
 
 
 # ══════════════════════════════════════════════════════════════
-# RSS 來源設定
+# RSS 來源設定（已修正：移除重複的 Yahoo新聞）
 # ══════════════════════════════════════════════════════════════
 RSS_SOURCES = [
     # ── 中文媒體（台灣）──
@@ -548,7 +522,6 @@ RSS_SOURCES = [
         "backup_url": "https://udn.com/rssfeed/news/2/6638", "extra_urls": [],
         "lang": "zh-TW", "icon": "📰", "category": "中文媒體",
     },
-    # ✅ 中央社：改用 RSSHub 路由（官方 RSS 已全面停用）
     {
         "name": "中央社",
         "url":        "https://rsshub.app/cna/aall",
@@ -560,16 +533,11 @@ RSS_SOURCES = [
         "lang": "zh-TW", "icon": "🏛️", "category": "中文媒體", "need_clean": True,
     },
     {
+        # ✅ Bug 1 修正：移除重複定義，只保留一個 Yahoo新聞
         "name": "Yahoo新聞", "url": "https://tw.news.yahoo.com/rss/world",
         "backup_url": "https://tw.news.yahoo.com/rss/", "extra_urls": [],
         "lang": "zh-TW", "icon": "🟣", "category": "中文媒體",
     },
-    {
-        "name": "Yahoo新聞", "url": "https://tw.news.yahoo.com/rss/world",
-        "backup_url": "https://tw.news.yahoo.com/rss/", "extra_urls": [],
-        "lang": "zh-TW", "icon": "🟣", "category": "中文媒體",
-    },
-    # ✅ 風傳媒：改用 RSSHub 路由
     {
         "name": "風傳媒",
         "url":        "https://rsshub.app/storm/latest",
@@ -577,7 +545,7 @@ RSS_SOURCES = [
         "extra_urls": [],
         "lang": "zh-TW", "icon": "🌪️", "category": "中文媒體", "need_clean": True,
     },
-    # ── 中文媒體（大陸）── 修復版
+    # ── 中文媒體（大陸）──
     {
         "name": "海事服務網 CNSS",
         "url":        "https://rsshub.app/cnss/news",
@@ -646,14 +614,11 @@ RSS_SOURCES = [
         "lang": "zh-CN", "icon": "💹", "category": "中文媒體", "need_clean": True,
     },
     # ── 航運專業媒體 ──
-    # ✅ TradeWinds：改用 rss.app 重新產生的 feed
     {
         "name": "TradeWinds",
         "url":        "https://rss.app/feeds/tvCHOGHBWmcHkBKM.xml",
         "backup_url": "https://rsshub.app/tradewindsnews/latest",
-        "extra_urls": [
-            "https://rsshub.rssforever.com/tradewindsnews/latest",
-        ],
+        "extra_urls": ["https://rsshub.rssforever.com/tradewindsnews/latest"],
         "lang": "en", "icon": "🚢", "category": "航運專業", "need_clean": True,
     },
     {
@@ -666,33 +631,26 @@ RSS_SOURCES = [
         "backup_url": "https://gcaptain.com/feed/rss/", "extra_urls": [],
         "lang": "en", "icon": "🧭", "category": "航運專業",
     },
-    # ✅ Maritime Exec：改用正確的 feed 路徑
     {
         "name": "Maritime Exec",
         "url":        "https://maritime-executive.com/feed",
         "backup_url": "https://rsshub.app/maritime-executive/article",
-        "extra_urls": [
-            "https://rsshub.rssforever.com/maritime-executive/article",
-        ],
+        "extra_urls": ["https://rsshub.rssforever.com/maritime-executive/article"],
         "lang": "en", "icon": "⛴️", "category": "航運專業", "need_clean": True,
     },
-     # ✅ Hellenic Ship：加上 need_clean 解決 SAXParseException
     {
         "name": "Hellenic Ship",
         "url":        "https://www.hellenicshippingnews.com/feed/",
         "backup_url": "https://www.hellenicshippingnews.com/feed/rss/",
         "extra_urls": [],
-        "lang": "en", "icon": "🏛️", "category": "航運專業",
-        "need_clean": True,   # ← 新增，修復 SAXParseException
+        "lang": "en", "icon": "🏛️", "category": "航運專業", "need_clean": True,
     },
-    # ✅ Safety4Sea：同上加 need_clean
     {
         "name": "Safety4Sea",
         "url":        "https://safety4sea.com/feed/",
         "backup_url": "https://safety4sea.com/feed/rss/",
         "extra_urls": [],
-        "lang": "en", "icon": "🛡️", "category": "航運專業",
-        "need_clean": True,   # ← 新增，修復 SAXParseException
+        "lang": "en", "icon": "🛡️", "category": "航運專業", "need_clean": True,
     },
     {
         "name": "Container News", "url": "https://container-news.com/feed/",
@@ -709,14 +667,12 @@ RSS_SOURCES = [
         "backup_url": None, "extra_urls": [],
         "lang": "en", "icon": "⚡", "category": "航運專業",
     },
-    # ✅ NewsBase：need_clean 已有，但 _download_rss 需確認 str 路徑
     {
         "name": "NewsBase",
         "url":        "https://newsbase.com/rss",
         "backup_url": "https://newsbase.com/feed",
         "extra_urls": [],
-        "lang": "en", "icon": "🛢️", "category": "航運專業",
-        "need_clean": True,
+        "lang": "en", "icon": "🛢️", "category": "航運專業", "need_clean": True,
     },
     # ── 國際媒體 ──
     {
@@ -742,16 +698,11 @@ RSS_SOURCES = [
         "backup_url": None, "extra_urls": [],
         "lang": "en", "icon": "🗞️", "category": "國際媒體",
     },
-    # ✅ AP News：改用可靠的備援 feed
     {
         "name": "AP News",
         "url":        "https://rsshub.app/apnews/topics/world-news",
         "backup_url": "https://rsshub.rssforever.com/apnews/topics/world-news",
-        "extra_urls": [
-            "https://feeds.apnews.com/rss/apf-topnews",
-            # AP 官方備援
-            "https://apnews.com/apf-topnews",
-        ],
+        "extra_urls": ["https://feeds.apnews.com/rss/apf-topnews"],
         "lang": "en", "icon": "📡", "category": "國際媒體", "need_clean": True,
     },
 ]
@@ -779,39 +730,32 @@ CNYES_SOURCES = [
 
 
 # ══════════════════════════════════════════════════════════════
-# XML 清洗工具（修復 bytes/str 型別問題）
+# XML 清洗工具
 # ══════════════════════════════════════════════════════════════
 def clean_xml_content(raw) -> str:
-    """
-    接受 bytes 或 str，統一清洗為合法 XML 字串。
-    修復：cannot use a bytes pattern on a string-like object
-    """
+    """接受 bytes 或 str，統一清洗為合法 XML 字串。"""
     import gzip as _gzip
 
-    # ── 若已是 str，直接跳過解壓流程 ──
     if isinstance(raw, str):
         text = raw
     else:
-        # ── bytes：嘗試 gzip 解壓 ──
         if isinstance(raw, bytes) and raw[:2] == b'\x1f\x8b':
             try:
                 raw = _gzip.decompress(raw)
             except Exception:
                 pass
-        # ── bytes → str ──
         try:
             text = raw.decode('utf-8', errors='replace')
         except Exception:
             text = raw.decode('latin-1', errors='replace')
 
-    # ── 清除非法控制字元（純 str 操作，不會有 bytes pattern 問題）──
     text = re.sub(r'[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]', '', text)
-    # ── 修復裸 & ──
     text = re.sub(r'&(?!(amp|lt|gt|quot|apos|#\d+|#x[0-9a-fA-F]+);)', '&amp;', text)
     return text
 
+
 # ══════════════════════════════════════════════════════════════
-# 壹航運 HTML 爬蟲（改用 sitemap.xml 取得文章列表）
+# 壹航運 HTML 爬蟲
 # ══════════════════════════════════════════════════════════════
 class OneShippingScraper:
     BASE_URL    = "https://www.oneshipping.info"
@@ -839,29 +783,20 @@ class OneShippingScraper:
         self.hours_back = hours_back
         self.seen_urls: set = set()
 
-    # ── Step 1：從 sitemap.xml 取得最新文章 URL ──
     def _get_article_urls_from_sitemap(self) -> list[dict]:
-        """
-        解析 sitemap.xml，取出所有 /newsinfo/*.html 的 URL 與 lastmod。
-        依 lastmod 降序排列，只取最近 hours_back*2 小時內（或最多 50 篇）。
-        """
         try:
             resp = requests.get(
-                self.SITEMAP_URL, headers=self.HEADERS,
-                timeout=20, verify=False
+                self.SITEMAP_URL, headers=self.HEADERS, timeout=20, verify=False
             )
             resp.raise_for_status()
             xml_text = resp.text
-
-            # 解析 <url><loc>...</loc><lastmod>...</lastmod></url>
             pattern = re.compile(
                 r'<url>\s*<loc>(https?://[^<]+/newsinfo/\d+\.html)</loc>'
                 r'(?:\s*<lastmod>([^<]+)</lastmod>)?',
                 re.IGNORECASE | re.DOTALL,
             )
-            cutoff = datetime.now(tz=timezone.utc) - timedelta(hours=self.hours_back * 3)
+            cutoff  = datetime.now(tz=timezone.utc) - timedelta(hours=self.hours_back * 3)
             results = []
-
             for m in pattern.finditer(xml_text):
                 url_str  = m.group(1).strip()
                 lastmod  = m.group(2).strip() if m.group(2) else ''
@@ -877,35 +812,25 @@ class OneShippingScraper:
                             break
                         except ValueError:
                             continue
-
-                # 若有時間且太舊就跳過
                 if pub_time and pub_time < cutoff:
                     continue
-
                 results.append({"url": url_str, "lastmod": pub_time})
-
-            # 依時間降序，最多取 60 篇
             results.sort(
                 key=lambda x: x["lastmod"] or datetime.min.replace(tzinfo=timezone.utc),
                 reverse=True,
             )
             return results[:60]
-
         except Exception as e:
             logger.warning(f"    ⚠️  壹航運 sitemap 失敗: {e}")
             return []
 
-    # ── Step 2：抓單篇文章（標題 + 時間 + 摘要）──
     def _fetch_article(self, url: str) -> dict | None:
         try:
             resp = requests.get(
-                url, headers=self.HEADERS,
-                timeout=15, verify=False, allow_redirects=True
+                url, headers=self.HEADERS, timeout=15, verify=False, allow_redirects=True
             )
             resp.raise_for_status()
             html = resp.text
-
-            # 標題：優先抓 <title> 或 <h1>
             title = ''
             for pat in [
                 r'<title[^>]*>([^<]{5,200})</title>',
@@ -914,25 +839,16 @@ class OneShippingScraper:
                 m = re.search(pat, html, re.IGNORECASE)
                 if m:
                     title = re.sub(r'\s+', ' ', m.group(1)).strip()
-                    # 去掉「_壹航運」等網站名後綴
                     title = re.sub(r'[_\-–|]\s*壹航運.*$', '', title).strip()
                     if len(title) >= 8:
                         break
-
             if not title:
                 return None
-
-            # 時間
             time_match = re.search(
-                r'(\d{4}[-/]\d{2}[-/]\d{2}(?:\s+\d{2}:\d{2}(?::\d{2})?)?)',
-                html
+                r'(\d{4}[-/]\d{2}[-/]\d{2}(?:\s+\d{2}:\d{2}(?::\d{2})?)?)', html
             )
-            pub_str = time_match.group(1).replace('/', '-') if time_match else ''
-
-            # 摘要：取 <p> 內文
-            paragraphs = re.findall(
-                r'<p[^>]*>(.*?)</p>', html, re.IGNORECASE | re.DOTALL
-            )
+            pub_str    = time_match.group(1).replace('/', '-') if time_match else ''
+            paragraphs = re.findall(r'<p[^>]*>(.*?)</p>', html, re.IGNORECASE | re.DOTALL)
             summary_parts = []
             for p in paragraphs:
                 clean = re.sub(r'<[^>]+>', '', p).strip()
@@ -944,9 +860,7 @@ class OneShippingScraper:
             summary = ' '.join(summary_parts)[:300]
             if len(summary) == 300:
                 summary += '...'
-
             return {"title": title, "pub_str": pub_str, "summary": summary}
-
         except Exception as e:
             logger.debug(f"      壹航運文章失敗: {url} → {e}")
             return None
@@ -967,51 +881,35 @@ class OneShippingScraper:
     def fetch(self, scraper_ref) -> list[dict]:
         results = []
         cutoff  = datetime.now(tz=timezone.utc) - timedelta(hours=self.hours_back)
-
         logger.info("\n  📡 [中文媒體][zh-CN] 壹航運（sitemap 爬蟲）")
-
-        # Step 1：從 sitemap 取文章列表
         candidates = self._get_article_urls_from_sitemap()
         logger.info(f"    📊 共發現 {len(candidates)} 篇候選文章")
-
         matched_count = skipped_kw = skipped_time = skipped_dup = 0
-
         for cand in candidates:
             url = cand["url"]
-
             if url in self.seen_urls:
                 skipped_dup += 1
                 continue
-
-            # 抓文章詳情
             detail = self._fetch_article(url)
             if not detail:
                 skipped_kw += 1
                 continue
-
             title   = detail["title"]
             summary = detail["summary"]
             pub_str = detail["pub_str"]
-
-            # 時間過濾
             pub_time = cand["lastmod"] or self._parse_pub_time(pub_str)
             if pub_time and pub_time < cutoff:
                 skipped_time += 1
                 continue
-
-            # 關鍵字比對
             matched = scraper_ref._match_keywords(title, summary)
             if not matched:
                 skipped_kw += 1
                 continue
-
             self.seen_urls.add(url)
             incident_cat = scraper_ref._classify_incident(title, summary)
             pub_display  = (
-                pub_time.strftime('%Y-%m-%d %H:%M UTC')
-                if pub_time else '時間未知'
+                pub_time.strftime('%Y-%m-%d %H:%M UTC') if pub_time else '時間未知'
             )
-
             results.append({
                 'source_name':     self.SOURCE_META['name'],
                 'source_icon':     self.SOURCE_META['icon'],
@@ -1025,14 +923,14 @@ class OneShippingScraper:
                 'incident_cat':    incident_cat,
             })
             matched_count += 1
-
         logger.info(
             f"  📋 壹航運 | 候選 {len(candidates)} | "
             f"命中 {matched_count} | 無關鍵字 {skipped_kw} | "
             f"時間 {skipped_time} | 重複 {skipped_dup}"
         )
         return results
-    
+
+
 # ══════════════════════════════════════════════════════════════
 # 新聞爬取器
 # ══════════════════════════════════════════════════════════════
@@ -1077,39 +975,45 @@ class NewsRssScraper:
 
     # ── 語境驗證 ──
     def _validate_shipping_context(self, title: str, summary: str) -> bool:
-        title_lower = title.lower()
+        title_clean   = _html_module.unescape(title)
+        summary_clean = _html_module.unescape(summary)
+        title_lower   = title_clean.lower()
         for term in TITLE_SHIPPING_TERMS:
             if term in title_lower:
                 return True
         body_hits = sum(
             1 for term in BODY_SHIPPING_TERMS
-            if term in (title + " " + summary).lower()
+            if term in (title_clean + " " + summary_clean).lower()
         )
         return body_hits >= 2
 
-    # ── 情境分類：依最高優先級的命中關鍵字決定 ──
+    # ── 情境分類 ──
     def _classify_incident(self, title: str, summary: str) -> str:
-        full_lower = (title + " " + summary).lower()
-        best_cat   = "GEN"
-        best_pri   = INCIDENT_CATEGORIES["GEN"]["priority"]
-        for kw in self.keywords:
-            if kw.lower() in full_lower:
-                cat = INCIDENT_KEYWORD_MAP.get(kw.lower(), "GEN")
+        title_clean   = _html_module.unescape(title)
+        summary_clean = _html_module.unescape(summary)
+        full_lower    = (title_clean + " " + summary_clean).lower()
+        best_cat = "GEN"
+        best_pri = INCIDENT_CATEGORIES["GEN"]["priority"]
+        for kw_lower, cat in INCIDENT_KEYWORD_MAP.items():
+            if kw_lower in full_lower:
                 pri = INCIDENT_CATEGORIES[cat]["priority"]
                 if pri < best_pri:
                     best_pri = pri
                     best_cat = cat
         return best_cat
 
-    # ── 關鍵字比對（含語境驗證）──
+    # ── 關鍵字比對 ──
     def _match_keywords(self, title: str, summary: str) -> list[tuple]:
-        if not self._validate_shipping_context(title, summary):
+        title_clean   = _html_module.unescape(title)
+        summary_clean = _html_module.unescape(summary)
+        if not self._validate_shipping_context(title_clean, summary_clean):
             return []
-        full_lower = (title + " " + summary).lower()
+        full_lower = (title_clean + " " + summary_clean).lower()
         matched, seen_kw = [], set()
         for kw in self.keywords:
-            if kw.lower() in full_lower and kw not in seen_kw:
-                cat = INCIDENT_KEYWORD_MAP.get(kw.lower(), "GEN")
+            kw_lower = kw.lower()
+            if kw_lower in full_lower and kw not in seen_kw:
+                cat = INCIDENT_KEYWORD_MAP.get(kw_lower, "GEN")
                 cfg = INCIDENT_CATEGORIES[cat]
                 matched.append((kw, cfg["label"], cfg["color"]))
                 seen_kw.add(kw)
@@ -1158,13 +1062,10 @@ class NewsRssScraper:
             resp = requests.get(url, headers=headers,
                                 timeout=20, verify=False, allow_redirects=True)
             resp.raise_for_status()
-
             if len(resp.content) < 100:
                 logger.warning(f"    ⚠️  回應過短 ({len(resp.content)} bytes)")
                 return None
-
             if need_clean:
-                # ✅ 統一傳 str（resp.text 已由 requests 自動解碼）
                 cleaned = clean_xml_content(resp.text)
                 parsed  = feedparser.parse(io.StringIO(cleaned))
             else:
@@ -1172,7 +1073,6 @@ class NewsRssScraper:
                     parsed = feedparser.parse(io.StringIO(resp.text))
                 except Exception:
                     parsed = feedparser.parse(io.BytesIO(resp.content))
-
             entry_count = len(parsed.entries) if parsed else 0
             bozo        = getattr(parsed, 'bozo', False)
             bozo_exc    = getattr(parsed, 'bozo_exception', None)
@@ -1181,7 +1081,6 @@ class NewsRssScraper:
                 + (f" ({type(bozo_exc).__name__})" if bozo_exc else "")
             )
             return parsed
-
         except requests.exceptions.ConnectionError:
             logger.warning(f"    ⚠️  連線失敗: {url[:60]}")
         except requests.exceptions.Timeout:
@@ -1191,7 +1090,6 @@ class NewsRssScraper:
         except Exception as e:
             logger.warning(f"    ⚠️  錯誤: {url[:60]} → {e}")
         return None
-
 
     # ── 建立新聞物件 ──
     def _build_item(self, source: dict, title: str, summary: str,
@@ -1215,24 +1113,20 @@ class NewsRssScraper:
 
     # ── 單一 RSS 來源爬取 ──
     def fetch_from_source(self, source: dict) -> list:
-        # ── HTML 爬蟲來源跳過（由 fetch_all 另行處理）──
         if source.get("_html_scraper"):
             return []
         results    = []
         cutoff     = datetime.now(tz=timezone.utc) - timedelta(hours=self.hours_back)
         need_clean = source.get("need_clean", False)
         is_cn      = source.get("lang", "en") == "zh-CN"
-
         logger.info(
             f"\n  📡 [{source.get('category','?')}]"
             f"[{source.get('lang','?')}] {source['name']}"
         )
-
         all_urls = [source['url']]
         if source.get('backup_url'):
             all_urls.append(source['backup_url'])
         all_urls.extend(source.get('extra_urls', []))
-
         feed = None
         for attempt_url in all_urls:
             logger.info(f"    🔗 {attempt_url[:70]}")
@@ -1240,49 +1134,43 @@ class NewsRssScraper:
             if feed and feed.entries:
                 break
             logger.warning("    ❌ 無資料，嘗試下一個")
-
         if feed is None or not feed.entries:
             logger.warning(f"  ⛔ {source['name']} 所有 URL 均失敗")
             return results
 
         matched_count = skipped_time = skipped_ctx = skipped_kw = skipped_dup = 0
-
         for entry in feed.entries:
             try:
                 title   = getattr(entry, 'title',   '') or ''
                 summary = getattr(entry, 'summary', '') or ''
                 link    = getattr(entry, 'link',    '') or ''
-
                 if link and link in self.seen_urls:
                     skipped_dup += 1
                     continue
-
                 pub_time = self._parse_published_time(entry)
                 if pub_time is not None and pub_time < cutoff:
                     skipped_time += 1
                     continue
-
-                matched = self._match_keywords(title, summary)
+                # ✅ 先清洗 HTML tag + 解碼實體，再做關鍵字比對
+                summary_clean = _html_module.unescape(
+                    re.sub(r'<[^>]+>', '', summary)
+                ).strip()
+                matched = self._match_keywords(title, summary_clean)
                 if not matched:
-                    if not self._validate_shipping_context(title, summary):
+                    if not self._validate_shipping_context(title, summary_clean):
                         skipped_ctx += 1
                     else:
                         skipped_kw += 1
                     continue
-
                 if link:
                     self.seen_urls.add(link)
-
-                summary_clean = re.sub(r'<[^>]+>', '', summary).strip()[:300]
-                if len(summary_clean) == 300:
-                    summary_clean += "..."
-
+                if len(summary_clean) > 300:
+                    summary_clean = summary_clean[:300] + "..."
                 results.append(
                     self._build_item(source, title, summary_clean,
                                      link, pub_time, matched)
                 )
                 matched_count += 1
-
             except Exception as e:
                 logger.warning(f"    ⚠️  解析失敗: {e}")
 
@@ -1297,10 +1185,8 @@ class NewsRssScraper:
     def fetch_from_cnyes(self, source: dict) -> list:
         results = []
         cutoff  = datetime.now(tz=timezone.utc) - timedelta(hours=self.hours_back)
-
         logger.info(f"\n  📡 [鉅亨網 API][zh-TW] {source['name']}")
         logger.info(f"    🔗 {source['api_url']}")
-
         try:
             resp = requests.get(source['api_url'], headers=self.HEADERS_CNYES,
                                 timeout=20, verify=False)
@@ -1312,7 +1198,6 @@ class NewsRssScraper:
 
         items = data.get("items", {}).get("data", [])
         logger.info(f"    📊 {len(items)} 則")
-
         matched_count = skipped_time = skipped_ctx = skipped_dup = 0
 
         for item in items:
@@ -1320,16 +1205,16 @@ class NewsRssScraper:
                 news_id     = item.get("newsId", "")
                 title       = item.get("title", "") or ""
                 content_raw = item.get("content", "") or item.get("summary", "") or ""
-                summary     = re.sub(r'<[^>]+>', '', content_raw).strip()[:300]
-                if len(summary) == 300:
-                    summary += "..."
-
+                # ✅ Bug 2+3 修正：統一用 summary_clean 做比對與儲存
+                summary_clean = _html_module.unescape(
+                    re.sub(r'<[^>]+>', '', content_raw)
+                ).strip()
+                if len(summary_clean) > 300:
+                    summary_clean = summary_clean[:300] + "..."
                 link = f"https://news.cnyes.com/news/id/{news_id}" if news_id else ""
-
                 if link and link in self.seen_urls:
                     skipped_dup += 1
                     continue
-
                 publish_at = item.get("publishAt", 0)
                 if publish_at:
                     pub_time = datetime.fromtimestamp(publish_at, tz=timezone.utc)
@@ -1338,21 +1223,18 @@ class NewsRssScraper:
                         continue
                 else:
                     pub_time = None
-
-                matched = self._match_keywords(title, summary)
+                # ✅ 傳 summary_clean（已清洗），不再傳原始 summary
+                matched = self._match_keywords(title, summary_clean)
                 if not matched:
-                    if not self._validate_shipping_context(title, summary):
+                    if not self._validate_shipping_context(title, summary_clean):
                         skipped_ctx += 1
                     continue
-
                 if link:
                     self.seen_urls.add(link)
-
                 results.append(
-                    self._build_item(source, title, summary, link, pub_time, matched)
+                    self._build_item(source, title, summary_clean, link, pub_time, matched)
                 )
                 matched_count += 1
-
             except Exception as e:
                 logger.warning(f"    ⚠️  解析失敗: {e}")
 
@@ -1366,35 +1248,25 @@ class NewsRssScraper:
     # ── 全部來源彙整 ──
     def fetch_all(self) -> dict:
         all_news = []
-
-        # ── RSS 來源（跳過 _html_scraper 標記的）──
         for source in self.sources:
             all_news.extend(self.fetch_from_source(source))
-
-        # ── 壹航運 HTML 爬蟲 ──
         oneshipping_scraper = OneShippingScraper(
             keywords   = self.keywords,
             hours_back = self.hours_back,
         )
         all_news.extend(oneshipping_scraper.fetch(self))
-
-        # ── 鉅亨網 JSON API ──
         for cnyes_source in self.cnyes_sources:
             all_news.extend(self.fetch_from_cnyes(cnyes_source))
 
-        # 依時間排序
         all_news.sort(
             key=lambda x: x['published'] if x['published'] != '時間未知' else '0000',
             reverse=True
         )
 
-        # ── 依來源媒體分類 ──
         zh_tw_news    = [n for n in all_news if n['source_category'] == '中文媒體' and n['source_lang'] == 'zh-TW']
         zh_cn_news    = [n for n in all_news if n['source_category'] == '中文媒體' and n['source_lang'] == 'zh-CN']
         shipping_news = [n for n in all_news if n['source_category'] == '航運專業']
         intl_news     = [n for n in all_news if n['source_category'] == '國際媒體']
-
-        # ── 依五大情境分類 ──
         cat1_news = [n for n in all_news if n['incident_cat'] == 'CAT1']
         cat2_news = [n for n in all_news if n['incident_cat'] == 'CAT2']
         cat3_news = [n for n in all_news if n['incident_cat'] == 'CAT3']
@@ -1411,15 +1283,14 @@ class NewsRssScraper:
             f"   🌐 國際媒體: {len(intl_news)} 筆\n"
             f"   📰 總計:     {len(all_news)} 筆\n"
             f"\n📊 最終結果（情境分類）:\n"
-            f"   💥 CAT1 船舶於波斯灣含荷姆茲海峽週遭被攻擊事件: {len(cat1_news)} 筆\n"
-            f"   🎯 CAT2 海灣國家及美軍基地被攻擊事件:     {len(cat2_news)} 筆\n"
-            f"   💣 CAT3 伊朗已採取水雷封鎖:          {len(cat3_news)} 筆\n"
-            f"   🚀 CAT4 紅海/曼德海峽胡塞含伊朗攻擊事件:         {len(cat4_news)} 筆\n"
-            f"   🔀 CAT5 航商宣佈採取繞航措施及波斯灣內避難點:         {len(cat5_news)} 筆\n"
-            f"   🚢 GEN  一般航運新聞動態:           {len(gen_news)} 筆\n"
+            f"   💥 CAT1: {len(cat1_news)} 筆\n"
+            f"   🎯 CAT2: {len(cat2_news)} 筆\n"
+            f"   💣 CAT3: {len(cat3_news)} 筆\n"
+            f"   🚀 CAT4: {len(cat4_news)} 筆\n"
+            f"   🔀 CAT5: {len(cat5_news)} 筆\n"
+            f"   🚢 GEN:  {len(gen_news)} 筆\n"
             f"{'='*60}"
         )
-
         return {
             'all':      all_news,
             'zh_tw':    zh_tw_news,
@@ -1436,7 +1307,7 @@ class NewsRssScraper:
 
 
 # ══════════════════════════════════════════════════════════════
-# Email 發送器  v5.1  —  純情境版面
+# Email 發送器  v5.2
 # ══════════════════════════════════════════════════════════════
 class NewsEmailSender:
 
@@ -1447,104 +1318,11 @@ class NewsEmailSender:
         self.smtp_server  = os.environ.get("MAIL_SMTP_SERVER",   "smtp.gmail.com")
         self.smtp_port    = int(os.environ.get("MAIL_SMTP_PORT", "587"))
         self.enabled      = all([self.mail_user, self.mail_pass, self.target_email])
-
         if not self.enabled:
             logger.error("❌ Email 環境變數未設定：MAIL_USER / MAIL_PASSWORD / TARGET_EMAIL")
         else:
             logger.info(f"✅ Email → {self.target_email}")
-    # ──────────────────────────────────────────────────────────
-    # 監控來源清單（3 欄網格）
-    # ──────────────────────────────────────────────────────────
-    @staticmethod
-    def _render_source_grid() -> str:
-        SOURCE_GROUPS = [
-            {
-                "title":   "中文媒體（台灣）",
-                "icon":    "🇹🇼",
-                "color":   "#10b981",
-                "bg":      "#ecfdf5",
-                "sources": [s for s in RSS_SOURCES if s.get("lang") == "zh-TW"]
-                           + [s for s in CNYES_SOURCES if s.get("lang") == "zh-TW"],
-            },
-            {
-                "title":   "中文媒體（大陸）",
-                "icon":    "🇨🇳",
-                "color":   "#ef4444",
-                "bg":      "#fef2f2",
-                "sources": [s for s in RSS_SOURCES if s.get("lang") == "zh-CN"],
-            },
-            {
-                "title":   "航運專業媒體",
-                "icon":    "🚢",
-                "color":   "#3b82f6",
-                "bg":      "#eff6ff",
-                "sources": [s for s in RSS_SOURCES if s.get("category") == "航運專業"],
-            },
-            {
-                "title":   "國際媒體",
-                "icon":    "🌐",
-                "color":   "#f97316",
-                "bg":      "#fff7ed",
-                "sources": [s for s in RSS_SOURCES if s.get("category") == "國際媒體"],
-            },
-        ]
 
-        groups_html = ""
-        for grp in SOURCE_GROUPS:
-            sources   = grp["sources"]
-            rows_html = ""
-            for i in range(0, len(sources), 3):
-                chunk = sources[i:i+3]
-                while len(chunk) < 3:
-                    chunk.append(None)
-                cells = ""
-                for src in chunk:
-                    if src is None:
-                        cells += (
-                            f'<td width="33%" bgcolor="{grp["bg"]}" '
-                            f'style="padding:6px 10px;"></td>'
-                        )
-                    else:
-                        name   = src.get("name", "")
-                        icon   = src.get("icon", "📰")
-                        url    = src.get("url") or src.get("api_url", "")
-                        # 壹航運特殊標記，顯示真實網域
-                        if url == "__oneshipping_html__":
-                            url = "https://www.oneshipping.info"
-                        domain = re.sub(r'^https?://(www\.)?', '', url).split('/')[0]
-                        cells += f"""
-<td width="33%" bgcolor="{grp['bg']}"
-    style="padding:6px 10px;border-right:1px solid #e2e8f0;">
-  <table border="0" cellpadding="0" cellspacing="0" width="100%"><tr>
-    <td width="20" valign="middle"><font size="2">{icon}</font></td>
-    <td valign="middle">
-      <font face="Microsoft JhengHei,Arial,sans-serif"
-            size="2" color="#1e293b"><b>{name}</b></font><br>
-      <font face="Arial,sans-serif" size="1" color="#94a3b8">{domain}</font>
-    </td>
-  </tr></table>
-</td>"""
-                rows_html += f"""
-<tr>{cells}</tr>
-<tr><td colspan="3" bgcolor="#e2e8f0" height="1"></td></tr>"""
-
-            groups_html += f"""
-<table width="100%" border="0" cellpadding="0" cellspacing="0"
-       style="margin-bottom:10px;">
-  <tr>
-    <td colspan="3" bgcolor="{grp['color']}" style="padding:6px 14px;">
-      <font face="Microsoft JhengHei,Arial,sans-serif" size="2" color="#fff">
-        <b>{grp['icon']} {grp['title']} ({len(sources)} 個)</b>
-      </font>
-    </td>
-  </tr>
-  {rows_html}
-</table>"""
-
-        return groups_html
-    # ──────────────────────────────────────────────────────────
-    # 發送
-    # ──────────────────────────────────────────────────────────
     def send(self, news_data: dict, run_time: datetime) -> bool:
         if not self.enabled:
             return False
@@ -1586,7 +1364,6 @@ class NewsEmailSender:
         cat_cfg      = INCIDENT_CATEGORIES.get(item.get('incident_cat', 'GEN'),
                                                INCIDENT_CATEGORIES['GEN'])
         border_color = cat_cfg['color']
-
         pub = item['published']
         if pub != '時間未知':
             try:
@@ -1594,44 +1371,36 @@ class NewsEmailSender:
                 pub = dt.astimezone(timezone(timedelta(hours=8))).strftime('%m/%d %H:%M')
             except Exception:
                 pass
-
         lang      = item.get('source_lang', 'en')
         lang_bg   = "#dbeafe" if lang == "en" else "#dcfce7"
         lang_fg   = "#1d4ed8" if lang == "en" else "#15803d"
         lang_text = "EN" if lang == "en" else "中文"
-
         safe_title   = (item['title']
                         .replace('&', '&amp;').replace('<', '&lt;').replace('>', '&gt;'))
         safe_summary = (item['summary']
                         .replace('&', '&amp;').replace('<', '&lt;').replace('>', '&gt;'))
-
+        kw_map = {
+            "#dc2626": ("#fef2f2", "#dc2626"),
+            "#b45309": ("#fffbeb", "#b45309"),
+            "#7c3aed": ("#f5f3ff", "#7c3aed"),
+            "#0369a1": ("#eff6ff", "#0369a1"),
+            "#047857": ("#ecfdf5", "#047857"),
+            "#475569": ("#f1f5f9", "#475569"),
+        }
         kw_cells = ""
         for kw, _label, color in item['matched'][:3]:
-            # 關鍵字標籤改為淺色底 + 深色字
-            kw_bg  = color + "22"   # 20% 透明度近似：用淺色替代
-            kw_map = {
-                "#dc2626": ("#fef2f2", "#dc2626"),
-                "#b45309": ("#fffbeb", "#b45309"),
-                "#7c3aed": ("#f5f3ff", "#7c3aed"),
-                "#0369a1": ("#eff6ff", "#0369a1"),
-                "#047857": ("#ecfdf5", "#047857"),
-                "#475569": ("#f1f5f9", "#475569"),
-            }
             kw_bg_c, kw_fg_c = kw_map.get(color, ("#f1f5f9", "#475569"))
             kw_cells += (
                 f'<td bgcolor="{kw_bg_c}" style="padding:2px 8px;border:1px solid {kw_fg_c};">'
                 f'<font face="Arial,Microsoft JhengHei,sans-serif" size="1" color="{kw_fg_c}">'
                 f'<b>{kw}</b></font></td><td width="4"></td>'
             )
-
         return f"""
 <table width="100%" border="0" cellpadding="0" cellspacing="0"
        bgcolor="#ffffff" style="margin-bottom:10px;border:1px solid #e2e8f0;">
 <tr>
   <td width="4" bgcolor="{border_color}" style="padding:0;">&nbsp;</td>
   <td style="padding:12px 14px;">
-
-    <!-- 頂列：來源 + 語言 + 時間 -->
     <table width="100%" border="0" cellpadding="0" cellspacing="0"><tr>
       <td align="left" valign="middle">
         <font face="Microsoft JhengHei,Arial,sans-serif" size="2" color="#64748b">
@@ -1648,8 +1417,6 @@ class NewsEmailSender:
         <font face="Arial,sans-serif" size="1" color="#94a3b8">🕐&nbsp;{pub}</font>
       </td>
     </tr></table>
-
-    <!-- 標題 -->
     <table width="100%" border="0" cellpadding="0" cellspacing="0"
            style="margin-top:7px;"><tr><td>
       <a href="{item['link']}" target="_blank" style="text-decoration:none;">
@@ -1658,16 +1425,12 @@ class NewsEmailSender:
         </font>
       </a>
     </td></tr></table>
-
-    <!-- 摘要 -->
     <table width="100%" border="0" cellpadding="9" cellspacing="0"
            bgcolor="#f8fafc" style="margin-top:8px;border-left:3px solid {border_color};"><tr><td>
       <font face="Microsoft JhengHei,Arial,sans-serif" size="2" color="#475569">
         {safe_summary or '（無摘要）'}
       </font>
     </td></tr></table>
-
-    <!-- 底列：關鍵字 + 閱讀按鈕 -->
     <table width="100%" border="0" cellpadding="0" cellspacing="0"
            style="margin-top:9px;"><tr>
       <td align="left" valign="middle">
@@ -1686,7 +1449,6 @@ class NewsEmailSender:
         </td></tr></table>
       </td>
     </tr></table>
-
   </td>
 </tr>
 </table>"""
@@ -1697,7 +1459,6 @@ class NewsEmailSender:
     @staticmethod
     def _render_incident_section(cat_key: str, news_list: list) -> str:
         cfg = INCIDENT_CATEGORIES[cat_key]
-
         if not news_list:
             return f"""
 <table width="100%" border="0" cellpadding="0" cellspacing="0"
@@ -1723,17 +1484,12 @@ class NewsEmailSender:
 </table>"""
 
         cards = "".join(NewsEmailSender._render_card(item) for item in news_list)
-
         darker = {
-            "#dc2626": "#b91c1c",
-            "#b45309": "#92400e",
-            "#7c3aed": "#6d28d9",
-            "#0369a1": "#075985",
-            "#047857": "#065f46",
-            "#475569": "#334155",
+            "#dc2626": "#b91c1c", "#b45309": "#92400e",
+            "#7c3aed": "#6d28d9", "#0369a1": "#075985",
+            "#047857": "#065f46", "#475569": "#334155",
         }
         count_bg = darker.get(cfg['color'], "#334155")
-
         return f"""
 <table width="100%" border="0" cellpadding="0" cellspacing="0"
        style="margin-bottom:16px;">
@@ -1765,7 +1521,7 @@ class NewsEmailSender:
 </table>"""
 
     # ──────────────────────────────────────────────────────────
-    # 監控來源清單
+    # ✅ Bug 4 修正：只保留一個 _render_source_grid（含 border key）
     # ──────────────────────────────────────────────────────────
     @staticmethod
     def _render_source_grid() -> str:
@@ -1804,7 +1560,6 @@ class NewsEmailSender:
                 "sources": [s for s in RSS_SOURCES if s.get("category") == "國際媒體"],
             },
         ]
-
         groups_html = ""
         for grp in SOURCE_GROUPS:
             sources   = grp["sources"]
@@ -1821,9 +1576,9 @@ class NewsEmailSender:
                             f'style="padding:8px 10px;border-right:1px solid {grp["border"]};"></td>'
                         )
                     else:
-                        name = src.get("name", "")
-                        icon = src.get("icon", "📰")
-                        url  = src.get("url") or src.get("api_url", "")
+                        name   = src.get("name", "")
+                        icon   = src.get("icon", "📰")
+                        url    = src.get("url") or src.get("api_url", "")
                         if url == "__oneshipping_html__":
                             url = "https://www.oneshipping.info"
                         domain = re.sub(r'^https?://(www\.)?', '', url).split('/')[0]
@@ -1842,7 +1597,6 @@ class NewsEmailSender:
                 rows_html += f"""
 <tr>{cells}</tr>
 <tr><td colspan="3" bgcolor="{grp['border']}" height="1"></td></tr>"""
-
             groups_html += f"""
 <table width="100%" border="0" cellpadding="0" cellspacing="0"
        style="margin-bottom:12px;border:1px solid {grp['border']};">
@@ -1855,24 +1609,21 @@ class NewsEmailSender:
   </tr>
   {rows_html}
 </table>"""
-
         return groups_html
 
     # ──────────────────────────────────────────────────────────
-    # 主 HTML 生成（明亮白底版）
+    # 主 HTML 生成
     # ──────────────────────────────────────────────────────────
     def _generate_html(self, news_data: dict, run_time: datetime) -> str:
         tpe_str       = run_time.astimezone(timezone(timedelta(hours=8))).strftime('%Y-%m-%d %H:%M')
         total_sources = len(RSS_SOURCES) + len(CNYES_SOURCES)
         total_news    = len(news_data['all'])
-
-        cat_order    = ['CAT1', 'CAT2', 'CAT3', 'CAT4', 'CAT5', 'GEN']
-        cat_sections = "".join(
+        cat_order     = ['CAT1', 'CAT2', 'CAT3', 'CAT4', 'CAT5', 'GEN']
+        cat_sections  = "".join(
             self._render_incident_section(k, news_data.get(k.lower(), []))
             for k in cat_order
         )
 
-        # ── 統計列 ──
         def _stat_cell(cat_key: str) -> str:
             cfg   = INCIDENT_CATEGORIES[cat_key]
             count = len(news_data.get(cat_key.lower(), []))
@@ -1902,11 +1653,9 @@ class NewsEmailSender:
   <font face="Microsoft JhengHei,Arial,sans-serif" size="1" color="#94a3b8">{short}</font>
 </td>"""
 
-        stat_cells = "".join(_stat_cell(k) for k in cat_order)
-
+        stat_cells  = "".join(_stat_cell(k) for k in cat_order)
         source_grid = self._render_source_grid()
 
-        # ── 命中來源 ──
         source_stats: dict = {}
         for item in news_data.get('all', []):
             key = f"{item['source_icon']} {item['source_name']}"
@@ -1929,17 +1678,16 @@ class NewsEmailSender:
             '本次無命中來源</font></td></tr>'
         )
 
-        # ── 情境說明列（淺色版）──
         legend_rows = ""
         legend_data = [
-            ("CAT1", "#dc2626", "#fef2f2", "#fca5a5", "船舶於波斯灣/荷姆茲海峽週遭被攻擊事件"),
-            ("CAT2", "#b45309", "#fffbeb", "#fcd34d", "海灣國家及美軍基地被攻擊事件"),
-            ("CAT3", "#7c3aed", "#f5f3ff", "#c4b5fd", "伊朗已採取水雷封鎖"),
-            ("CAT4", "#0369a1", "#eff6ff", "#93c5fd", "紅海/曼德海峽胡塞含伊朗攻擊事件"),
-            ("CAT5", "#047857", "#ecfdf5", "#6ee7b7", "航商宣佈採取繞航措施及波斯灣內避難點"),
-            ("GEN",  "#475569", "#f8fafc", "#94a3b8", "其他航運新聞動態"),
+            ("CAT1", "#dc2626", "#fef2f2", "船舶於波斯灣/荷姆茲海峽週遭被攻擊事件"),
+            ("CAT2", "#b45309", "#fffbeb", "海灣國家及美軍基地被攻擊事件"),
+            ("CAT3", "#7c3aed", "#f5f3ff", "伊朗已採取水雷封鎖"),
+            ("CAT4", "#0369a1", "#eff6ff", "紅海/曼德海峽胡塞含伊朗攻擊事件"),
+            ("CAT5", "#047857", "#ecfdf5", "航商宣佈採取繞航措施及波斯灣內避難點"),
+            ("GEN",  "#475569", "#f8fafc", "其他航運新聞動態"),
         ]
-        for cat_key, bar_color, row_bg, label_color, label_text in legend_data:
+        for cat_key, bar_color, row_bg, label_text in legend_data:
             cfg = INCIDENT_CATEGORIES[cat_key]
             legend_rows += f"""
 <tr>
@@ -2011,7 +1759,6 @@ class NewsEmailSender:
   <tr><td style="padding:0;">
     <table width="100%" border="0" cellpadding="0" cellspacing="0"
            style="border-top:3px solid #0f172a;border-bottom:3px solid #0f172a;"><tr>
-      <!-- TOTAL -->
       <td align="center" bgcolor="#0f172a"
           style="padding:16px 6px;width:16%;border-right:2px solid #1e293b;">
         <font face="Arial,sans-serif" size="5" color="#f8fafc"><b>{total_news}</b></font><br>
@@ -2027,7 +1774,8 @@ class NewsEmailSender:
     <table width="100%" border="0" cellpadding="0" cellspacing="0"
            style="border-bottom:2px solid #e2e8f0;">
       <tr>
-        <td colspan="2" bgcolor="#f8fafc" style="padding:9px 16px;border-bottom:1px solid #e2e8f0;">
+        <td colspan="2" bgcolor="#f8fafc"
+            style="padding:9px 16px;border-bottom:1px solid #e2e8f0;">
           <font face="Microsoft JhengHei,Arial,sans-serif" size="2" color="#334155">
             <b>📋&nbsp;情境分類說明</b>
           </font>
@@ -2046,7 +1794,8 @@ class NewsEmailSender:
   <tr><td bgcolor="#ffffff" style="padding:0;">
     <table width="100%" border="0" cellpadding="0" cellspacing="0">
       <tr>
-        <td bgcolor="#f8fafc" style="padding:10px 16px;border-top:2px solid #e2e8f0;border-bottom:1px solid #e2e8f0;">
+        <td bgcolor="#f8fafc"
+            style="padding:10px 16px;border-top:2px solid #e2e8f0;border-bottom:1px solid #e2e8f0;">
           <font face="Microsoft JhengHei,Arial,sans-serif" size="2" color="#334155">
             <b>📊&nbsp;本次新聞來源</b>
           </font>
@@ -2071,7 +1820,7 @@ class NewsEmailSender:
       此內容為自動發送&nbsp;·&nbsp;請勿直接回覆
     </font><br><br>
     <font face="Arial,sans-serif" size="1" color="#cbd5e1">
-      Maritime Intel System v5.1&nbsp;·&nbsp;Powered by Python &amp; GitHub Actions
+      Maritime Intel System v5.2&nbsp;·&nbsp;Powered by Python &amp; GitHub Actions
     </font>
   </td></tr>
 
@@ -2086,7 +1835,7 @@ class NewsEmailSender:
 # ══════════════════════════════════════════════════════════════
 if __name__ == "__main__":
     logger.info("\n" + "=" * 60)
-    logger.info("🚢 航運安全監控系統 v5.0")
+    logger.info("🚢 航運安全監控系統 v5.2")
     logger.info("=" * 60)
 
     run_time   = datetime.now(tz=timezone.utc)
@@ -2109,4 +1858,3 @@ if __name__ == "__main__":
         traceback.print_exc()
         exit(1)
 
-    
