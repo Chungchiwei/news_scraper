@@ -198,8 +198,8 @@ CAT3_KEYWORDS = [
     "Hormuz minefield", "Persian Gulf minefield",
     "mine clearance Gulf", "mine sweeping Gulf",
     "mine sweeping Hormuz",
-    "Hormuz closure", "Strait of Hormuz closure",
-    "Hormuz blockade", "Persian Gulf blockade",
+    "Strait of Hormuz closure",
+    "Persian Gulf blockade",
     "mine the strait", "mining the strait",
     "mining Hormuz", "mining Persian Gulf",
     "Iran mining campaign", "Iranian mining",
@@ -208,11 +208,11 @@ CAT3_KEYWORDS = [
     "tanker traffic Hormuz",
     "oil flow disruption Hormuz",
     # ── 新增：伊朗封鎖荷姆茲（台灣媒體常用句型）──
-    "伊朗封鎖荷姆茲", "伊朗封鎖荷莫茲", "伊朗封鎖霍爾木茲",
+    "伊朗封鎖荷莫茲", "伊朗封鎖霍爾木茲",
     "伊朗控制荷姆茲", "伊朗控制荷莫茲", "伊朗控制霍爾木茲",
     "完全控制荷姆茲", "完全控制荷莫茲", "完全控制霍爾木茲",
-    "荷姆茲海峽封鎖", "荷莫茲海峽封鎖", "霍爾木茲海峽封鎖",
-    "封鎖荷姆茲海峽", "封鎖荷莫茲海峽",
+    "荷莫茲海峽封鎖", "霍爾木茲海峽封鎖",
+    "封鎖荷莫茲海峽",
     "水雷封鎖荷姆茲", "水雷封鎖霍爾木茲",
     "水雷封鎖波斯灣", "水雷封鎖阿曼灣",
     "伊朗布雷", "伊朗水雷威脅",
@@ -344,23 +344,21 @@ CAT5_KEYWORDS = [
     "戰爭附加費", "戰爭險保費上漲",
     "航運保險費率上漲", "繞航費用增加",
     # ── 新增：航運股/ETF（台灣財經媒體）──
-    "航運股震盪", "航運ETF", "航運族群",
-    "運價上漲荷姆茲", "運費上漲荷姆茲",
-    "航商宣布绕航", "航商改道", "航线改道",
-    "绕航好望角", "改走好望角",
-    "避开红海", "避开苏伊士运河",
-    "避开霍尔木兹海峡", "避开波斯湾",
-    "避开亚丁湾", "避开曼德海峡",
-    "马士基绕航", "地中海航运绕航",
-    "达飞轮船绕航", "长荣海运绕航",
-    "中远海运绕航", "阳明海运绕航",
-    "暂停红海航线", "暂停波斯湾航线",
-    "暂停霍尔木兹通行", "暂停苏伊士通行",
-    "波斯湾避难锚地", "波斯湾锚泊等待",
-    "富查伊拉锚地", "科尔法坎锚地",
-    "马斯喀特避难", "萨拉拉避难",
-    "战争附加费", "战争险保费上涨",
-    "航运保险费率上涨", "绕航费用增加",
+    "遶行改道",
+    "遶航好望角", "改走好望角",
+    "避開紅海", "避開蘇伊士運河",
+    "避開荷莫茲海峽", "避開波斯灣",
+    "避開亞丁灣", "避開曼德海峽",
+    "馬士基繞航", "地中海航運繞航",
+    "達飛輪船繞航", "長榮海運繞航",
+    "中遠海運繞航", "陽明海運繞航",
+    "暫停紅海航線", "暫停波斯灣航線",
+    "暫停荷莫茲通行", "暫停蘇伊士通行",
+    "波斯灣避難錨地", "波斯灣錨泊等待",
+    "富查伊拉錨地", "科爾法坎錨地",
+    "馬斯喀特避難", "薩拉拉避難",
+    "戰爭附加費", "戰爭險保費上漲",
+    "航運保險費率上漲", "繞航費用增加",
 ]
 
 GEN_KEYWORDS = [
@@ -505,7 +503,47 @@ BODY_SHIPPING_TERMS = {
     "红海", "波斯湾", "亚丁湾", "海盗",
     "护航", "运费", "船舶", "水雷", "胡塞",
 }
+# ══════════════════════════════════════════════════════════════
+# 財經噪音過濾：標題含任一詞 → 直接排除（即使有航運關鍵字）
+# 邏輯：這類文章是財經分析，不是船舶安全事件報導
+# ══════════════════════════════════════════════════════════════
+FINANCE_NOISE_TITLE_TERMS = {
+    # 股市 / 指數
+    "台股", "股市", "股價", "漲停", "跌停", "大盤", "指數",
+    "外資", "法人", "投信", "自營商", "主力", "籌碼",
+    "加權指數", "櫃買指數", "ETF", "基金", "投資組合",
+    "選股", "存股", "殖利率", "本益比", "市值",
+    "台積電", "聯發科", "鴻海", "台塑", "中鋼",
+    # 財經分析
+    "油價", "能源股", "航運股", "航運ETF", "航運族群",
+    "漲幅", "跌幅", "漲價", "降價", "價格戰",
+    "通膨", "升息", "降息", "央行", "聯準會", "Fed",
+    "GDP", "CPI", "PPI", "PMI",
+    "財報", "營收", "獲利", "EPS", "股息",
+    "大洗牌", "資金輪動", "板塊輪動", "避險情緒",
+    "恐慌指數", "VIX", "風險溢價", "風險資產",
+    "石油危機", "能源危機", "供應鏈風險",   # 分析類標題
+    "為何", "為什麼", "解析", "分析師", "預測",
+    "看好", "看壞", "買進", "賣出", "目標價",
+    "焦點股", "熱門股", "強勢股", "弱勢股",
+    "亮燈", "攻上", "衝關", "守住", "失守",
+    # 英文財經
+    "stock market", "equity", "share price", "investor",
+    "hedge fund", "portfolio", "dividend", "earnings",
+    "oil price", "crude price", "energy stock",
+    "analyst", "forecast", "outlook", "rally", "selloff",
+    "inflation", "interest rate", "fed rate",
+}
 
+# 摘要財經噪音（摘要含 ≥2 個 → 排除）
+FINANCE_NOISE_BODY_TERMS = {
+    "台股", "股市", "股價", "漲停", "跌停", "外資賣超",
+    "ETF", "基金", "投資", "法人", "籌碼",
+    "油價", "能源股", "航運股", "通膨", "升息",
+    "財報", "營收", "獲利", "EPS",
+    "oil price", "crude price", "stock", "equity",
+    "investor", "analyst", "forecast",
+}
 
 # ══════════════════════════════════════════════════════════════
 # RSS 來源設定（已修正：移除重複的 Yahoo新聞）
@@ -975,17 +1013,43 @@ class NewsRssScraper:
 
     # ── 語境驗證 ──
     def _validate_shipping_context(self, title: str, summary: str) -> bool:
+        """
+        語境驗證：
+        Step 1：標題含財經噪音詞 → 直接排除
+        Step 2：摘要含 ≥2 個財經噪音詞 → 排除
+        Step 3：標題含航運詞 → 通過
+        Step 4：摘要含 ≥2 個航運詞 → 通過
+        """
         title_clean   = _html_module.unescape(title)
         summary_clean = _html_module.unescape(summary)
         title_lower   = title_clean.lower()
-        for term in TITLE_SHIPPING_TERMS:
-            if term in title_lower:
-                return True
-        body_hits = sum(
-            1 for term in BODY_SHIPPING_TERMS
-            if term in (title_clean + " " + summary_clean).lower()
+        full_lower    = (title_clean + " " + summary_clean).lower()
+
+        # ── Step 1：標題財經黑名單（直接排除）──
+        for term in FINANCE_NOISE_TITLE_TERMS:
+            if term.lower() in title_lower:
+                return False
+
+        # ── Step 2：摘要財經噪音計數（≥2 個排除）──
+        body_finance_hits = sum(
+            1 for term in FINANCE_NOISE_BODY_TERMS
+            if term.lower() in full_lower
         )
-        return body_hits >= 2
+        if body_finance_hits >= 2:
+            return False
+
+        # ── Step 3：標題含航運詞 → 通過 ──
+        for term in TITLE_SHIPPING_TERMS:
+            if term.lower() in title_lower:
+                return True
+
+        # ── Step 4：摘要含 ≥2 個航運詞 → 通過 ──
+        body_shipping_hits = sum(
+            1 for term in BODY_SHIPPING_TERMS
+            if term.lower() in full_lower
+        )
+        return body_shipping_hits >= 2
+
 
     # ── 情境分類 ──
     def _classify_incident(self, title: str, summary: str) -> str:
@@ -1155,6 +1219,22 @@ class NewsRssScraper:
                 summary_clean = _html_module.unescape(
                     re.sub(r'<[^>]+>', '', summary)
                 ).strip()
+                                # ── 鉅亨網特別過濾：排除純財經分析文章 ──
+                # 標題含「為何」「分析」「預測」「焦點股」等 → 跳過
+                CNYES_SKIP_PATTERNS = [
+                    r'為何', r'為什麼', r'焦點股', r'熱門股',
+                    r'漲停', r'跌停', r'外資', r'法人',
+                    r'ETF', r'基金', r'股息', r'財報',
+                    r'油價.*美元', r'美元.*油價',
+                    r'石油危機', r'能源危機',
+                    r'大洗牌', r'資金輪動',
+                    r'恐慌指數', r'VIX',
+                    r'台股', r'股市',
+                ]
+                if any(re.search(p, title) for p in CNYES_SKIP_PATTERNS):
+                    skipped_ctx += 1
+                    continue
+
                 matched = self._match_keywords(title, summary_clean)
                 if not matched:
                     if not self._validate_shipping_context(title, summary_clean):
