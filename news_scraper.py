@@ -121,6 +121,10 @@ CAT1_KEYWORDS = [
     "tanker struck Persian Gulf", "vessel struck Persian Gulf",
     "ship struck Persian Gulf",
     "armed attack tanker Gulf", "armed boarding Persian Gulf",
+    # NewsBase 專用
+    "tanker traffic halt", "tanker traffic stopped",
+    "vessels struck Gulf", "tanker struck Hormuz",
+    "shipping halt Hormuz", "tanker halt Persian Gulf",
     # 中文（繁體）
     "波斯灣油輪遭攻擊", "波斯灣商船遇襲", "波斯灣貨輪被攻擊",
     "荷姆茲海峽油輪遭攻擊", "荷姆茲海峽商船遇襲",
@@ -213,6 +217,16 @@ CAT3_KEYWORDS = [
     "Hormuz minefield", "Persian Gulf minefield",
     "mine clearance Gulf", "mine sweeping Gulf",
     "mine sweeping Hormuz",
+    # NewsBase 專用（長句分析型標題）
+    "Hormuz closure", "Strait of Hormuz closure",
+    "Hormuz blockade", "Persian Gulf blockade",
+    "mine the strait", "mining the strait",
+    "mining Hormuz", "mining Persian Gulf",
+    "Iran mining campaign", "Iranian mining",
+    "submarine minelaying", "mine laying submarine",
+    "Hormuz oil flow", "Hormuz oil supply",
+    "tanker traffic Hormuz", "tanker traffic halt",
+    "oil flow disruption Hormuz",
     # 中文（繁體）
     "水雷封鎖荷姆茲", "水雷封鎖霍爾木茲",
     "水雷封鎖波斯灣", "水雷封鎖阿曼灣",
@@ -321,6 +335,14 @@ CAT5_KEYWORDS = [
     "additional war risk", "war risk insurance",
     "shipping suspended", "service suspended Red Sea",
     "transit suspended Hormuz", "transit suspended Red Sea",
+    "Gulf bypass route", "bypass Hormuz",
+    "pipeline bypass Gulf", "East-West Pipeline",
+    "Fujairah terminal", "ADCOP pipeline",
+    "oil supply cover", "storage capacity Gulf",
+    "production cut Gulf", "oil evacuation Gulf",
+    "Hormuz disruption supply", "energy security Gulf",
+    "tanker insurance suspended", "insurers suspended",
+    "trading house suspended Gulf",
     # 中文（繁體）
     "航商宣佈繞航", "航商改道", "航線改道",
     "繞航好望角", "改走好望角",
@@ -659,6 +681,14 @@ RSS_SOURCES = [
         "name": "Offshore Energy", "url": "https://www.offshore-energy.biz/feed/",
         "backup_url": None, "extra_urls": [],
         "lang": "en", "icon": "⚡", "category": "航運專業",
+    },
+    {
+        "name": "NewsBase",
+        "url":        "https://newsbase.com/rss",
+        "backup_url": "https://newsbase.com/feed",
+        "extra_urls": [],
+        "lang": "en", "icon": "🛢️", "category": "航運專業",
+        "need_clean": True,
     },
     # ── 國際媒體 ──
     {
