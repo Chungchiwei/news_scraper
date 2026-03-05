@@ -136,7 +136,7 @@ CAT1_KEYWORDS = [
     # ── 新增：荷莫茲（台灣常見異體字）──
     "荷莫茲海峽油輪", "荷莫茲海峽商船", "荷莫茲海峽封鎖",
     "荷莫茲海峽攻擊", "荷莫茲海峽被攻擊",
-    "控制荷莫茲", "封鎖荷莫茲",
+    "控制荷莫茲", "封鎖荷莫茲","擊中"
 ]
 
 CAT2_KEYWORDS = [
@@ -402,7 +402,7 @@ OTHER_KEYWORDS = [
     "制裁油輪", "制裁船隊",
     "護航艦隊", "繁榮衛士行動",
     "戰爭險", "航運保險",
-    "黑海航運", "蘇伊士運河封鎖", "蘇伊士運河通行",
+    "蘇伊士運河封鎖", "蘇伊士運河通行",
     "巴拿馬運河封鎖", "巴拿馬運河關閉",
     "波斯灣航運", "波斯灣油輪",
     "伊朗石油制裁", "伊朗航運制裁",
@@ -417,7 +417,7 @@ OTHER_KEYWORDS = [
     "制裁油轮", "制裁船队",
     "护航舰队", "繁荣卫士行动",
     "战争险", "航运保险",
-    "黑海航运", "苏伊士运河封锁", "苏伊士运河通行",
+    "苏伊士运河封锁", "苏伊士运河通行",
     "巴拿马运河封锁", "巴拿马运河关闭",
     "波斯湾航运", "波斯湾油轮",
     "伊朗石油制裁", "伊朗航运制裁",
@@ -720,6 +720,15 @@ RSS_SOURCES = [
         "lang":     "en",
         "category": "航運專業",
     },
+    {
+    "name":     "Lloyd's List",
+    "icon":     "⚓",
+    "url":      "https://www.lloydslist.com/search#?topic=Red+Sea+Risk",
+    "lang":     "en",
+    "category": "航運專業",
+    "_html_scraper": True,   # 標記為自訂爬蟲，跳過 RSS 下載
+    },
+
     
     # ── 國際媒體 ──
     {
@@ -806,7 +815,10 @@ def clean_xml_content(raw) -> str:
 # ══════════════════════════════════════════════════════════════
 class OneShippingScraper:
     BASE_URL    = "https://www.oneshipping.info"
-    SITEMAP_URL = "https://www.oneshipping.info/sitemap.xml"
+    # 列表頁（航運熱點）
+    LIST_URL    = "https://www.oneshipping.info/hyrd"
+    # 分頁 AJAX API（從 xnPager 行為推導）
+    AJAX_URL    = "https://www.oneshipping.info/umbraco/Surface/NewsListSurface/GetNewsList"
     HEADERS = {
         "User-Agent": (
             "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
@@ -816,7 +828,7 @@ class OneShippingScraper:
         "Accept":          "text/html,application/xhtml+xml,*/*",
         "Accept-Language": "zh-CN,zh;q=0.9",
         "Accept-Encoding": "gzip, deflate",
-        "Referer":         "https://www.oneshipping.info/",
+        "Referer":         "https://www.oneshipping.info/hyrd",
     }
     SOURCE_META = {
         "name":     "壹航運",
@@ -830,94 +842,50 @@ class OneShippingScraper:
         self.hours_back = hours_back
         self.seen_urls: set = set()
 
-    def _get_article_urls_from_sitemap(self) -> list[dict]:
-        try:
-            resp = requests.get(
-                self.SITEMAP_URL, headers=self.HEADERS, timeout=20, verify=False
-            )
-            resp.raise_for_status()
-            xml_text = resp.text
-            pattern = re.compile(
-                r'<url>\s*<loc>(https?://[^<]+/newsinfo/\d+\.html)</loc>'
-                r'(?:\s*<lastmod>([^<]+)</lastmod>)?',
-                re.IGNORECASE | re.DOTALL,
-            )
-            cutoff  = datetime.now(tz=timezone.utc) - timedelta(hours=self.hours_back * 3)
-            results = []
-            for m in pattern.finditer(xml_text):
-                url_str  = m.group(1).strip()
-                lastmod  = m.group(2).strip() if m.group(2) else ''
-                pub_time = None
-                if lastmod:
-                    for fmt in ('%Y-%m-%dT%H:%M:%S%z', '%Y-%m-%d'):
-                        try:
-                            pub_time = datetime.strptime(lastmod[:19], fmt[:len(lastmod[:19])])
-                            if pub_time.tzinfo is None:
-                                pub_time = pub_time.replace(
-                                    tzinfo=timezone(timedelta(hours=8))
-                                ).astimezone(timezone.utc)
-                            break
-                        except ValueError:
-                            continue
-                if pub_time and pub_time < cutoff:
-                    continue
-                results.append({"url": url_str, "lastmod": pub_time})
-            results.sort(
-                key=lambda x: x["lastmod"] or datetime.min.replace(tzinfo=timezone.utc),
-                reverse=True,
-            )
-            return results[:60]
-        except Exception as e:
-            logger.warning(f"    ⚠️  壹航運 sitemap 失敗: {e}")
-            return []
+    # ──────────────────────────────────────────────────────────
+    # Step 1：從列表頁直接解析文章卡片（無需 sitemap）
+    # ──────────────────────────────────────────────────────────
+    def _parse_list_items(self, html: str) -> list[dict]:
+        """
+        解析 <li class="w-list-item"> 結構
+        直接從 data-list-title / data-list-id 屬性取得標題與 ID
+        日期從 <p class="w-list-date w-hide"> 取得
+        """
+        results = []
 
-    def _fetch_article(self, url: str) -> dict | None:
-        try:
-            resp = requests.get(
-                url, headers=self.HEADERS, timeout=15, verify=False, allow_redirects=True
-            )
-            resp.raise_for_status()
-            html = resp.text
-            title = ''
-            for pat in [
-                r'<title[^>]*>([^<]{5,200})</title>',
-                r'<h1[^>]*>([^<]{5,200})</h1>',
-            ]:
-                m = re.search(pat, html, re.IGNORECASE)
-                if m:
-                    title = re.sub(r'\s+', ' ', m.group(1)).strip()
-                    title = re.sub(r'[_\-–|]\s*壹航運.*$', '', title).strip()
-                    if len(title) >= 8:
-                        break
-            if not title:
-                return None
-            time_match = re.search(
-                r'(\d{4}[-/]\d{2}[-/]\d{2}(?:\s+\d{2}:\d{2}(?::\d{2})?)?)', html
-            )
-            pub_str    = time_match.group(1).replace('/', '-') if time_match else ''
-            paragraphs = re.findall(r'<p[^>]*>(.*?)</p>', html, re.IGNORECASE | re.DOTALL)
-            summary_parts = []
-            for p in paragraphs:
-                clean = re.sub(r'<[^>]+>', '', p).strip()
-                clean = re.sub(r'\s+', ' ', clean)
-                if len(clean) > 20:
-                    summary_parts.append(clean)
-                if sum(len(s) for s in summary_parts) >= 300:
-                    break
-            summary = ' '.join(summary_parts)[:300]
-            if len(summary) == 300:
-                summary += '...'
-            return {"title": title, "pub_str": pub_str, "summary": summary}
-        except Exception as e:
-            logger.debug(f"      壹航運文章失敗: {url} → {e}")
-            return None
+        # 匹配每個 <li class="w-list-item"> 區塊
+        li_pattern = re.compile(
+            r'<li[^>]+class="w-list-item"[^>]+'
+            r'data-list-title="([^"]*)"[^>]+'
+            r'data-list-id="(\d+)"[^>]*>.*?'
+            r'<p class="w-list-date w-hide">([^<]*)</p>',
+            re.DOTALL
+        )
 
-    def _parse_pub_time(self, pub_str: str) -> datetime | None:
-        if not pub_str:
+        for m in li_pattern.finditer(html):
+            title   = _html_module.unescape(m.group(1).strip())
+            news_id = m.group(2).strip()
+            date_str = m.group(3).strip()
+            url = f"{self.BASE_URL}/newsinfo/{news_id}.html"
+            results.append({
+                "title":    title,
+                "news_id":  news_id,
+                "url":      url,
+                "date_str": date_str,
+            })
+
+        return results
+
+    # ──────────────────────────────────────────────────────────
+    # Step 2：解析日期字串
+    # ──────────────────────────────────────────────────────────
+    def _parse_date(self, date_str: str) -> datetime | None:
+        if not date_str:
             return None
         for fmt in ('%Y-%m-%d %H:%M:%S', '%Y-%m-%d %H:%M', '%Y-%m-%d'):
             try:
-                dt = datetime.strptime(pub_str.strip(), fmt)
+                dt = datetime.strptime(date_str.strip(), fmt)
+                # 壹航運是中國時間 UTC+8
                 return dt.replace(
                     tzinfo=timezone(timedelta(hours=8))
                 ).astimezone(timezone.utc)
@@ -925,38 +893,137 @@ class OneShippingScraper:
                 continue
         return None
 
+    # ──────────────────────────────────────────────────────────
+    # Step 3：抓取文章內文摘要（只在關鍵字命中後才抓）
+    # ──────────────────────────────────────────────────────────
+    def _fetch_article_summary(self, url: str) -> str:
+        """
+        文章頁結構：內文在 <div class="w-detail-content"> 或 <div class="detail-content">
+        只取前 300 字作為摘要
+        """
+        try:
+            resp = requests.get(
+                url, headers=self.HEADERS, timeout=15,
+                verify=False, allow_redirects=True
+            )
+            resp.raise_for_status()
+            html = resp.text
+
+            # 優先抓文章內文區塊
+            content_patterns = [
+                r'<div[^>]+class="[^"]*w-detail-content[^"]*"[^>]*>(.*?)</div>',
+                r'<div[^>]+class="[^"]*detail-content[^"]*"[^>]*>(.*?)</div>',
+                r'<div[^>]+class="[^"]*article-content[^"]*"[^>]*>(.*?)</div>',
+                r'<div[^>]+id="[^"]*content[^"]*"[^>]*>(.*?)</div>',
+            ]
+            raw_content = ""
+            for pat in content_patterns:
+                m = re.search(pat, html, re.IGNORECASE | re.DOTALL)
+                if m:
+                    raw_content = m.group(1)
+                    break
+
+            # fallback：抓所有 <p> 段落
+            if not raw_content:
+                paragraphs = re.findall(
+                    r'<p[^>]*>(.*?)</p>', html, re.IGNORECASE | re.DOTALL
+                )
+                raw_content = " ".join(paragraphs)
+
+            # 清洗 HTML tag + 解碼實體
+            summary = _html_module.unescape(
+                re.sub(r'<[^>]+>', '', raw_content)
+            )
+            summary = re.sub(r'\s+', ' ', summary).strip()
+            return summary[:300] + ("..." if len(summary) > 300 else "")
+
+        except Exception as e:
+            logger.debug(f"      壹航運內文抓取失敗: {url} → {e}")
+            return ""
+
+    # ──────────────────────────────────────────────────────────
+    # Step 4：主入口 fetch()
+    # ──────────────────────────────────────────────────────────
     def fetch(self, scraper_ref) -> list[dict]:
-        results = []
-        cutoff  = datetime.now(tz=timezone.utc) - timedelta(hours=self.hours_back)
-        logger.info("\n  📡 [中文媒體][zh-CN] 壹航運（sitemap 爬蟲）")
-        candidates = self._get_article_urls_from_sitemap()
-        logger.info(f"    📊 共發現 {len(candidates)} 篇候選文章")
+        results      = []
+        cutoff       = datetime.now(tz=timezone.utc) - timedelta(hours=self.hours_back)
         matched_count = skipped_kw = skipped_time = skipped_dup = 0
+
+        logger.info("\n  📡 [中文媒體][zh-CN] 壹航運（列表頁直接解析）")
+
+        # ── 抓列表頁（第 1 頁，通常 2 小時內的新聞在前幾頁）──
+        try:
+            resp = requests.get(
+                self.LIST_URL, headers=self.HEADERS,
+                timeout=20, verify=False
+            )
+            resp.raise_for_status()
+            html = resp.text
+        except Exception as e:
+            logger.warning(f"    ⚠️  壹航運列表頁失敗: {e}")
+            return results
+
+        candidates = self._parse_list_items(html)
+        logger.info(f"    📊 第 1 頁共發現 {len(candidates)} 篇文章")
+
+        # ── 若第 1 頁最舊文章仍在時間範圍內，繼續抓第 2 頁 ──
+        # （hours_back=2 通常 1 頁就夠，保守抓 2 頁）
+        if candidates:
+            last_date = self._parse_date(candidates[-1]["date_str"])
+            if last_date and last_date >= cutoff:
+                try:
+                    resp2 = requests.get(
+                        self.LIST_URL, headers=self.HEADERS,
+                        timeout=20, verify=False,
+                        params={"page": 2}          # 嘗試 ?page=2
+                    )
+                    if resp2.status_code == 200:
+                        extra = self._parse_list_items(resp2.text)
+                        if extra:
+                            candidates.extend(extra)
+                            logger.info(f"    📊 第 2 頁追加 {len(extra)} 篇")
+                except Exception:
+                    pass
+
+        # ── 逐篇處理 ──
         for cand in candidates:
-            url = cand["url"]
+            url      = cand["url"]
+            title    = cand["title"]
+            date_str = cand["date_str"]
+
+            # 重複檢查
             if url in self.seen_urls:
                 skipped_dup += 1
                 continue
-            detail = self._fetch_article(url)
-            if not detail:
-                skipped_kw += 1
-                continue
-            title   = detail["title"]
-            summary = detail["summary"]
-            pub_str = detail["pub_str"]
-            pub_time = cand["lastmod"] or self._parse_pub_time(pub_str)
-            if pub_time and pub_time < cutoff:
+
+            # 時間過濾（列表頁只有日期，精度到天）
+            pub_time = self._parse_date(date_str)
+            if pub_time is not None and pub_time < cutoff:
                 skipped_time += 1
                 continue
-            matched = scraper_ref._match_keywords(title, summary)
+
+            # ── 先用標題做關鍵字初篩（避免不必要的 HTTP 請求）──
+            title_matched = scraper_ref._match_keywords(title, "")
+            if not title_matched:
+                # 標題沒命中 → 抓內文再試一次
+                summary = self._fetch_article_summary(url)
+                matched = scraper_ref._match_keywords(title, summary)
+            else:
+                # 標題已命中 → 抓內文補充摘要顯示用
+                summary = self._fetch_article_summary(url)
+                matched = scraper_ref._match_keywords(title, summary) or title_matched
+
             if not matched:
                 skipped_kw += 1
                 continue
+
             self.seen_urls.add(url)
             incident_cat = scraper_ref._classify_incident(title, summary)
             pub_display  = (
-                pub_time.strftime('%Y-%m-%d %H:%M UTC') if pub_time else '時間未知'
+                pub_time.strftime('%Y-%m-%d %H:%M UTC')
+                if pub_time else '時間未知'
             )
+
             results.append({
                 'source_name':     self.SOURCE_META['name'],
                 'source_icon':     self.SOURCE_META['icon'],
@@ -970,8 +1037,320 @@ class OneShippingScraper:
                 'incident_cat':    incident_cat,
             })
             matched_count += 1
+
         logger.info(
             f"  📋 壹航運 | 候選 {len(candidates)} | "
+            f"命中 {matched_count} | 無關鍵字 {skipped_kw} | "
+            f"時間 {skipped_time} | 重複 {skipped_dup}"
+        )
+        return results
+    
+# ══════════════════════════════════════════════════════════════
+# Lloyd's List 搜尋頁爬蟲（Red Sea Risk 專題）
+# ══════════════════════════════════════════════════════════════
+class LloydsListScraper:
+    """
+    逆向工程 Lloyd's List 的搜尋 API。
+    搜尋頁背後呼叫的是 Solr/Elasticsearch 風格的 JSON API，
+    透過 requests 直接打 API 取得結構化資料。
+    """
+    # ── 搜尋 API（從瀏覽器 Network tab 逆向取得）──
+    SEARCH_API = (
+        "https://www.lloydslist.com/api/search"
+        "?topic=Red+Sea+Risk"
+        "&publication=Lloyd%27s+List"
+        "&sortBy=date"
+        "&sortOrder=desc"
+        "&perPage=20"
+        "&page=1"
+    )
+    # ── 備用：直接爬搜尋頁 HTML，用 regex 解析 ng-scope ──
+    SEARCH_URL = (
+        "https://www.lloydslist.com/search"
+        "#?page=1&topic=Red+Sea+Risk"
+        "&publication=Lloyd%27s+List"
+        "&sortBy=date&sortOrder=desc&perPage=50"
+    )
+    BASE_URL = "https://www.lloydslist.com"
+
+    HEADERS = {
+        "User-Agent": (
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+            "AppleWebKit/537.36 (KHTML, like Gecko) "
+            "Chrome/122.0.0.0 Safari/537.36"
+        ),
+        "Accept":          "application/json, text/html, */*",
+        "Accept-Language": "en-US,en;q=0.9",
+        "Referer":         "https://www.lloydslist.com/search",
+        "X-Requested-With": "XMLHttpRequest",
+    }
+
+    SOURCE_META = {
+        "name":     "Lloyd's List",
+        "icon":     "⚓",
+        "lang":     "en",
+        "category": "航運專業",
+    }
+
+    def __init__(self, keywords: list, hours_back: int = 2):
+        self.keywords   = keywords
+        self.hours_back = hours_back
+        self.seen_urls: set = set()
+
+    # ──────────────────────────────────────────────────────────
+    # Step 1：嘗試打 JSON API（最乾淨的方式）
+    # ──────────────────────────────────────────────────────────
+    def _fetch_via_api(self) -> list[dict]:
+        """
+        嘗試直接打 Lloyd's List 搜尋 API。
+        回傳格式通常是 {"results": [...], "total": N}
+        每筆包含 title, url, publishedDate, summary, byline 等欄位。
+        """
+        candidates = []
+        # 嘗試多個可能的 API endpoint（從 Network tab 觀察）
+        api_endpoints = [
+            "https://www.lloydslist.com/api/v1/search?topic=Red+Sea+Risk&sortBy=date&sortOrder=desc&perPage=20",
+            "https://www.lloydslist.com/api/search?topic=Red+Sea+Risk&sortBy=date&sortOrder=desc&perPage=20",
+            "https://www.lloydslist.com/umbraco/api/search/results?topic=Red+Sea+Risk&sortBy=date&perPage=20",
+        ]
+        for endpoint in api_endpoints:
+            try:
+                resp = requests.get(
+                    endpoint, headers=self.HEADERS,
+                    timeout=20, verify=False
+                )
+                if resp.status_code == 200:
+                    data = resp.json()
+                    # 嘗試不同的 JSON 結構
+                    items = (
+                        data.get("results") or
+                        data.get("items") or
+                        data.get("data") or
+                        []
+                    )
+                    if items:
+                        logger.info(f"    ✅ Lloyd's List API 命中: {endpoint[:60]}")
+                        for item in items:
+                            candidates.append({
+                                "title":    item.get("title", ""),
+                                "url":      item.get("url") or item.get("link") or "",
+                                "summary":  item.get("summary") or item.get("description") or "",
+                                "date_str": item.get("publishedDate") or item.get("date") or "",
+                                "byline":   item.get("byline") or item.get("author") or "",
+                            })
+                        return candidates
+            except (ValueError, KeyError):
+                # JSON 解析失敗，繼續嘗試下一個
+                continue
+            except Exception as e:
+                logger.debug(f"    Lloyd's List API 嘗試失敗: {endpoint[:50]} → {e}")
+                continue
+        return []  # 所有 API 均失敗，回傳空清單
+
+    # ──────────────────────────────────────────────────────────
+    # Step 2：備用 — 爬 HTML 頁面，用 regex 解析 ng-scope 屬性
+    # ──────────────────────────────────────────────────────────
+    def _fetch_via_html(self) -> list[dict]:
+        """
+        直接爬搜尋結果頁 HTML，用 regex 解析 AngularJS 渲染的資料。
+        從 HTML 中的 data-bookmark-id、href、time[datetime] 等屬性取值。
+        """
+        candidates = []
+        # Lloyd's List 的 # hash 路由需要 JS 渲染，改用靜態搜尋 URL
+        static_urls = [
+            "https://www.lloydslist.com/search?topic=Red+Sea+Risk&sortBy=date&sortOrder=desc&perPage=20",
+            "https://www.lloydslist.com/search?q=Red+Sea+Risk&sortBy=date&perPage=20",
+        ]
+        html = ""
+        for url in static_urls:
+            try:
+                resp = requests.get(
+                    url, headers={**self.HEADERS, "Accept": "text/html"},
+                    timeout=20, verify=False
+                )
+                if resp.status_code == 200 and len(resp.text) > 500:
+                    html = resp.text
+                    logger.info(f"    ✅ Lloyd's List HTML 取得: {len(html)} chars")
+                    break
+            except Exception as e:
+                logger.debug(f"    HTML 爬取失敗: {url[:50]} → {e}")
+                continue
+
+        if not html:
+            return candidates
+
+        # ── 解析文章連結（從 ng-href 或 href 屬性）──
+        # 格式：href="https://www.lloydslist.com/LL{id}/{slug}"
+        link_pattern = re.compile(
+            r'href="(https://www\.lloydslist\.com/LL\d+/[^"]+)"[^>]*'
+            r'[^>]*ng-bind-html="doc\.title"[^>]*>([^<]+)</a>',
+            re.DOTALL
+        )
+        # 備用：從 data-bookmark 屬性的 bookmark_title 取標題
+        bookmark_pattern = re.compile(
+            r'data-analytics="[^"]*bookmark_title[^:]*:\s*&quot;([^&]+)&quot;[^"]*"'
+            r'.*?href="(https://www\.lloydslist\.com/LL\d+/[^"]+)"',
+            re.DOTALL
+        )
+        # 日期：<time datetime="YYYY-MM-DD">
+        date_pattern = re.compile(
+            r'<time\s+datetime="(\d{4}-\d{2}-\d{2})"[^>]*>([^<]+)</time>'
+        )
+        # 摘要：ng-bind-html="doc.summary">...</p>
+        summary_pattern = re.compile(
+            r'ng-bind-html="doc\.summary">([^<]+)</p>'
+        )
+
+        # 提取所有文章區塊（每個 search-result__body）
+        block_pattern = re.compile(
+            r'<div class="search-result__body[^"]*"[^>]*>(.*?)'
+            r'(?=<div class="search-result__body|$)',
+            re.DOTALL
+        )
+
+        for block_m in block_pattern.finditer(html):
+            block = block_m.group(1)
+
+            # 提取連結與標題
+            link_m = re.search(
+                r'href="(https://www\.lloydslist\.com/LL\d+/[^"]+)"[^>]*>([^<]+)</a>',
+                block
+            )
+            if not link_m:
+                continue
+            url_found = link_m.group(1).strip()
+            title     = _html_module.unescape(link_m.group(2).strip())
+
+            # 提取日期
+            date_m   = date_pattern.search(block)
+            date_str = date_m.group(1) if date_m else ""
+
+            # 提取摘要
+            sum_m   = summary_pattern.search(block)
+            summary = _html_module.unescape(sum_m.group(1).strip()) if sum_m else ""
+
+            candidates.append({
+                "title":    title,
+                "url":      url_found,
+                "summary":  summary,
+                "date_str": date_str,
+                "byline":   "",
+            })
+
+        logger.info(f"    📊 HTML 解析到 {len(candidates)} 篇文章")
+        return candidates
+
+    # ──────────────────────────────────────────────────────────
+    # Step 3：解析日期字串 → datetime
+    # ──────────────────────────────────────────────────────────
+    def _parse_date(self, date_str: str) -> datetime | None:
+        if not date_str:
+            return None
+        for fmt in (
+            '%Y-%m-%dT%H:%M:%S%z',
+            '%Y-%m-%dT%H:%M:%SZ',
+            '%Y-%m-%d %H:%M:%S',
+            '%Y-%m-%d',
+            '%d %b %Y',
+            '%B %d, %Y',
+        ):
+            try:
+                dt = datetime.strptime(date_str.strip(), fmt)
+                if dt.tzinfo is None:
+                    # Lloyd's List 總部在英國，預設 UTC
+                    dt = dt.replace(tzinfo=timezone.utc)
+                return dt.astimezone(timezone.utc)
+            except ValueError:
+                continue
+        return None
+
+    # ──────────────────────────────────────────────────────────
+    # Step 4：主入口 fetch()
+    # ──────────────────────────────────────────────────────────
+    def fetch(self, scraper_ref) -> list[dict]:
+        results       = []
+        cutoff        = datetime.now(tz=timezone.utc) - timedelta(hours=self.hours_back)
+        matched_count = skipped_kw = skipped_time = skipped_dup = 0
+
+        logger.info("\n  📡 [航運專業][en] Lloyd's List（Red Sea Risk 專題）")
+
+        # ── 優先嘗試 JSON API，失敗則 fallback 到 HTML 解析 ──
+        candidates = self._fetch_via_api()
+        if not candidates:
+            logger.info("    ⚠️  API 無資料，改用 HTML 解析")
+            candidates = self._fetch_via_html()
+
+        if not candidates:
+            logger.warning("    ⛔ Lloyd's List 所有方式均無資料")
+            return results
+
+        logger.info(f"    📊 共取得 {len(candidates)} 篇候選文章")
+
+        for cand in candidates:
+            url      = cand.get("url", "")
+            title    = cand.get("title", "")
+            summary  = cand.get("summary", "")
+            date_str = cand.get("date_str", "")
+            byline   = cand.get("byline", "")
+
+            if not title or not url:
+                continue
+
+            # 重複過濾
+            if url in self.seen_urls:
+                skipped_dup += 1
+                continue
+
+            # 時間過濾
+            pub_time = self._parse_date(date_str)
+            if pub_time is not None and pub_time < cutoff:
+                skipped_time += 1
+                continue
+
+            # 關鍵字比對（標題 + 摘要）
+            matched = scraper_ref._match_keywords(title, summary)
+            if not matched:
+                # Lloyd's List 是航運專業媒體，放寬語境驗證
+                # 只要標題含航運相關詞就納入
+                title_lower = title.lower()
+                shipping_hit = any(
+                    term.lower() in title_lower
+                    for term in TITLE_SHIPPING_TERMS
+                )
+                if not shipping_hit:
+                    skipped_kw += 1
+                    continue
+                # 強制給一個基礎匹配標籤
+                matched = [("Red Sea Risk", INCIDENT_CATEGORIES["CAT4"]["label"],
+                            INCIDENT_CATEGORIES["CAT4"]["color"])]
+
+            self.seen_urls.add(url)
+            incident_cat = scraper_ref._classify_incident(title, summary)
+            pub_display  = (
+                pub_time.strftime('%Y-%m-%d %H:%M UTC')
+                if pub_time else '時間未知'
+            )
+
+            # 摘要補充 byline 資訊
+            if byline and byline not in summary:
+                summary = f"By {byline} — {summary}" if summary else f"By {byline}"
+
+            results.append({
+                'source_name':     self.SOURCE_META['name'],
+                'source_icon':     self.SOURCE_META['icon'],
+                'source_lang':     self.SOURCE_META['lang'],
+                'source_category': self.SOURCE_META['category'],
+                'title':           title,
+                'summary':         summary[:300] + ("..." if len(summary) > 300 else ""),
+                'link':            url,
+                'published':       pub_display,
+                'matched':         matched,
+                'incident_cat':    incident_cat,
+            })
+            matched_count += 1
+
+        logger.info(
+            f"  📋 Lloyd's List | 候選 {len(candidates)} | "
             f"命中 {matched_count} | 無關鍵字 {skipped_kw} | "
             f"時間 {skipped_time} | 重複 {skipped_dup}"
         )
@@ -1339,11 +1718,21 @@ class NewsRssScraper:
         all_news = []
         for source in self.sources:
             all_news.extend(self.fetch_from_source(source))
+
+        # ── 壹航運 HTML 爬蟲 ──
         oneshipping_scraper = OneShippingScraper(
             keywords   = self.keywords,
             hours_back = self.hours_back,
         )
         all_news.extend(oneshipping_scraper.fetch(self))
+
+        # ── ✅ 新增：Lloyd's List 爬蟲 ──
+        lloyds_scraper = LloydsListScraper(
+            keywords   = self.keywords,
+            hours_back = self.hours_back,
+        )
+        all_news.extend(lloyds_scraper.fetch(self))   # ← 這一行
+
         for cnyes_source in self.cnyes_sources:
             all_news.extend(self.fetch_from_cnyes(cnyes_source))
 
@@ -1757,7 +2146,7 @@ class NewsEmailSender:
             count = len(news_data.get(cat_key.lower(), []))
             short_labels = {
                 "CAT1": "船舶於波斯灣/荷姆茲海峽週遭被攻擊事件",
-                "CAT2": "灣國家及美軍基地被攻擊事件",
+                "CAT2": "海灣國家及美軍基地被攻擊事件",
                 "CAT3": "伊朗已採取水雷封鎖",
                 "CAT4": "紅海/曼德海峽胡塞含伊朗攻擊事件",
                 "CAT5": "航商宣佈採取繞航措施及波斯灣內避難點",
