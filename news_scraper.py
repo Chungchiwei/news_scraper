@@ -1065,7 +1065,7 @@ class NewsRssScraper:
         title_clean   = _html_module.unescape(title)
         summary_clean = _html_module.unescape(summary)
         full_lower    = (title_clean + " " + summary_clean).lower()
-        best_cat = "other"
+        best_cat = "OTHER"
         best_pri = INCIDENT_CATEGORIES["OTHER"]["priority"]
         for kw_lower, cat in INCIDENT_KEYWORD_MAP.items():
             if kw_lower in full_lower:
