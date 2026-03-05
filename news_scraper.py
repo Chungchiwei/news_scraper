@@ -1415,9 +1415,8 @@ class NewsEmailSender:
             return False
         try:
             tpe_time = run_time.astimezone(timezone(timedelta(hours=8)))
-            # ✅ Bug 6 修正：移除殘留的 "11" 前綴
             subject = (
-                f"Maritime Intel News Alert "
+                f"GITHUB_Maritime Intel News Alert "
                 f"({tpe_time.strftime('%m/%d %H:%M')}) "
                 f"— {len(news_data['all'])} 則"
             )
@@ -1851,20 +1850,20 @@ class NewsEmailSender:
         <td valign="middle">
           <font face="Microsoft JhengHei,Arial,sans-serif"
                 size="5" color="#0f172a">
-            <b>🚢&nbsp;WHL Tech_Frm_Maritime Intel News</b>
-          </font><br><br>
+            <b>美伊衝突 — 波斯灣航運安全新聞快報</b>
+          </font><br>
           <font face="Microsoft JhengHei,Arial,sans-serif"
-                size="3" color="#475569">
-            <b>美伊戰爭 — 波斯灣航運安全情報快報</b>
+                size="2" color="#AE3A16">
+            <b>Present by Marine Technology Division_FRM</b>
           </font>
         </td>
         <td align="right" valign="middle">
           <font face="Arial,sans-serif" size="2" color="#64748b">
-            <b>{tpe_str}&nbsp;台北時間</b>
+            <b>最後更新時間:&nbsp{tpe_str}&nbsp;(TPE)</b>
           </font><br><br>
           <table border="0" cellpadding="6" cellspacing="0" bgcolor="#e2e8f0"><tr><td>
             <font face="Arial,sans-serif" size="2" color="#334155">
-              <b>新聞來源&nbsp;{total_sources}&nbsp;個</b>
+              <b>蒐集新聞來源&nbsp;{total_sources}&nbsp;個</b>
             </font>
           </td></tr></table>
         </td>
@@ -1941,7 +1940,6 @@ class NewsEmailSender:
   </td></tr>
       <tr><td>
         <table width="100%" border="0" cellpadding="0" cellspacing="0">
-          {legend_rows}
         </table>
       </td></tr>
     </table>
