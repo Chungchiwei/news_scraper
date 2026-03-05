@@ -713,6 +713,14 @@ RSS_SOURCES = [
         "extra_urls": [],
         "lang": "en", "icon": "🛢️", "category": "航運專業", "need_clean": True,
     },
+    {
+        "name":     "Marine Insight",
+        "icon":     "⚓",
+        "url":      "https://www.marineinsight.com/feed/",
+        "lang":     "en",
+        "category": "航運專業",
+    },
+    
     # ── 國際媒體 ──
     {
         "name": "Reuters",
