@@ -45,42 +45,42 @@ logger = logging.getLogger(__name__)
 # ╚══════════════════════════════════════════════════════════════╝
 INCIDENT_CATEGORIES = {
     "CAT1": {
-        "label":    "船舶於波斯灣/荷姆茲海峽週遭被攻擊事件",
+        "label":    "波斯灣／荷姆茲海峽周邊船舶遭攻擊或扣押事件",
         "icon":     "💥",
         "color":    "#dc2626",
         "bg":       "#fef2f2",
         "priority": 1,
     },
     "CAT2": {
-        "label":    "海灣國家及美軍基地被攻擊事件",
+        "label":    "海灣國家設施及美軍基地遭受攻擊事件",
         "icon":     "🎯",
         "color":    "#b45309",
         "bg":       "#fffbeb",
         "priority": 2,
     },
     "CAT3": {
-        "label":    "伊朗已採取水雷封鎖",
+        "label":    "伊朗水雷布設、封鎖荷姆茲海峽相關事件",
         "icon":     "💣",
         "color":    "#7c3aed",
         "bg":       "#f5f3ff",
         "priority": 3,
     },
     "CAT4": {
-        "label":    "紅海/曼德海峽胡塞含伊朗攻擊事件",
+        "label":    "紅海／曼德海峽胡塞武裝（含伊朗支持勢力）攻擊事件",
         "icon":     "🚀",
         "color":    "#0369a1",
         "bg":       "#eff6ff",
         "priority": 4,
     },
     "CAT5": {
-        "label":    "航商宣佈採取繞航措施及波斯灣內避難點",
+        "label":    "航商繞航改道措施及波斯灣緊急錨泊動態",
         "icon":     "🔀",
         "color":    "#047857",
         "bg":       "#ecfdf5",
         "priority": 5,
     },
     "OTHER": {
-        "label":    "其他航運新聞（非上述五大情境）",
+        "label":    "其他航運安全與市場動態",
         "icon":     "🚢",
         "color":    "#475569",
         "bg":       "#f8fafc",
@@ -90,343 +90,861 @@ INCIDENT_CATEGORIES = {
 
 # ══════════════════════════════════════════════════════════════
 # 關鍵字定義
+# 優先權：CAT1 強制覆蓋；CAT2–OTHER 依序 setdefault（不覆蓋）
 # ══════════════════════════════════════════════════════════════
+
+# ──────────────────────────────────────────────────────────────
+# CAT1：波斯灣／荷姆茲海峽周邊船舶遭攻擊或扣押
+# ──────────────────────────────────────────────────────────────
 CAT1_KEYWORDS = [
-    "tanker attack Persian Gulf", "vessel attack Persian Gulf",
-    "ship attack Persian Gulf", "tanker attack Gulf of Oman",
-    "vessel attack Gulf of Oman", "ship attack Gulf of Oman",
-    "tanker attack Strait of Hormuz", "vessel attack Strait of Hormuz",
-    "ship attack Strait of Hormuz", "tanker attack Hormuz",
-    "vessel seized Persian Gulf", "tanker seized Persian Gulf",
-    "ship seized Persian Gulf", "vessel seized Gulf of Oman",
-    "tanker seized Strait of Hormuz",
-    "IRGC vessel seizure", "IRGC tanker seizure",
-    "IRGC seized vessel", "IRGC seized tanker",
-    "Iranian seizure tanker", "Iranian seizure vessel",
-    "Iranian navy seized", "Iranian navy tanker",
-    "tanker hijacked Persian Gulf", "vessel hijacked Persian Gulf",
+    # ── 英文：波斯灣攻擊 ──
+    "tanker attack Persian Gulf",
+    "vessel attack Persian Gulf",
+    "ship attack Persian Gulf",
     "merchant vessel attacked Gulf",
-    "drone attack tanker Gulf", "missile attack tanker Gulf",
-    "explosion tanker Persian Gulf", "explosion vessel Persian Gulf",
-    "tanker struck Persian Gulf", "vessel struck Persian Gulf",
+    "armed attack tanker Gulf",
+    "armed boarding Persian Gulf",
+    "drone attack tanker Gulf",
+    "missile attack tanker Gulf",
+    "explosion tanker Persian Gulf",
+    "explosion vessel Persian Gulf",
+    "tanker struck Persian Gulf",
+    "vessel struck Persian Gulf",
     "ship struck Persian Gulf",
-    "armed attack tanker Gulf", "armed boarding Persian Gulf",
-    "tanker traffic halt", "tanker traffic stopped",
-    "vessels struck Gulf", "tanker struck Hormuz",
-    "shipping halt Hormuz", "tanker halt Persian Gulf",
-    "波斯灣油輪遭攻擊", "波斯灣商船遇襲", "波斯灣貨輪被攻擊",
-    "荷姆茲海峽油輪遭攻擊", "荷姆茲海峽商船遇襲",
-    "霍爾木茲海峽油輪遭攻擊", "霍爾木茲海峽商船遇襲",
-    "阿曼灣油輪遭攻擊", "阿曼灣商船遇襲",
-    "波斯灣油輪被扣押", "波斯灣商船被扣押",
-    "革命衛隊扣押油輪", "革命衛隊扣押商船",
-    "伊朗海軍扣押油輪", "伊朗海軍扣押商船",
-    "伊朗扣押船隻", "伊朗扣押油輪",
-    "波斯灣無人機攻船", "波斯灣飛彈攻船",
+    "vessels struck Gulf",
+
+    # ── 英文：阿曼灣攻擊 ──
+    "tanker attack Gulf of Oman",
+    "vessel attack Gulf of Oman",
+    "ship attack Gulf of Oman",
+    "attack Gulf of Oman",
+    "Gulf of Oman incident",
+
+    # ── 英文：荷姆茲海峽攻擊 ──
+    "tanker attack Strait of Hormuz",
+    "vessel attack Strait of Hormuz",
+    "ship attack Strait of Hormuz",
+    "tanker attack Hormuz",
+    "tanker struck Hormuz",
+
+    # ── 英文：船舶扣押／劫持 ──
+    "vessel seized Persian Gulf",
+    "tanker seized Persian Gulf",
+    "ship seized Persian Gulf",
+    "vessel seized Gulf of Oman",
+    "tanker seized Strait of Hormuz",
+    "tanker hijacked Persian Gulf",
+    "vessel hijacked Persian Gulf",
+    "IRGC vessel seizure",
+    "IRGC tanker seizure",
+    "IRGC seized vessel",
+    "IRGC seized tanker",
+    "Iranian seizure tanker",
+    "Iranian seizure vessel",
+    "Iranian navy seized",
+    "Iranian navy tanker",
+
+    # ── 英文：航運中斷 ──
+    "tanker traffic halt",
+    "tanker traffic stopped",
+    "shipping halt Hormuz",
+    "tanker halt Persian Gulf",
+
+    # ── 繁體中文：波斯灣攻擊 ──
+    "波斯灣油輪遭攻擊",
+    "波斯灣商船遇襲",
+    "波斯灣貨輪被攻擊",
+    "波斯灣無人機攻船",
+    "波斯灣飛彈攻船",
     "波斯灣武裝登船",
-    "波斯湾油轮遭攻击", "波斯湾商船遇袭", "波斯湾货轮被攻击",
-    "霍尔木兹海峡油轮遭攻击", "霍尔木兹海峡商船遇袭",
-    "阿曼湾油轮遭攻击", "阿曼湾商船遇袭",
-    "波斯湾油轮被扣押", "波斯湾商船被扣押",
-    "革命卫队扣押油轮", "革命卫队扣押商船",
-    "伊朗海军扣押油轮", "伊朗海军扣押商船",
-    "伊朗巡防艦","魚雷",
-    "伊朗扣押船只", "伊朗扣押油轮",
-    "波斯湾无人机攻船", "波斯湾导弹攻船",
-    # ── 新增：荷莫茲（台灣常見異體字）──
-    "荷莫茲海峽油輪", "荷莫茲海峽商船", "荷莫茲海峽封鎖",
-    "荷莫茲海峽攻擊", "荷莫茲海峽被攻擊",
-    "控制荷莫茲", "封鎖荷莫茲","擊中"
+
+    # ── 繁體中文：荷姆茲海峽攻擊（含異體字）──
+    "荷姆茲海峽油輪遭攻擊",
+    "荷姆茲海峽商船遇襲",
+    "霍爾木茲海峽油輪遭攻擊",
+    "霍爾木茲海峽商船遇襲",
+    "荷莫茲海峽油輪",
+    "荷莫茲海峽商船",
+    "荷莫茲海峽攻擊",
+    "荷莫茲海峽被攻擊",
+
+    # ── 繁體中文：阿曼灣攻擊 ──
+    "阿曼灣油輪遭攻擊",
+    "阿曼灣商船遇襲",
+
+    # ── 繁體中文：船舶扣押 ──
+    "波斯灣油輪被扣押",
+    "波斯灣商船被扣押",
+    "革命衛隊扣押油輪",
+    "革命衛隊扣押商船",
+    "伊朗海軍扣押油輪",
+    "伊朗海軍扣押商船",
+    "伊朗扣押船隻",
+    "伊朗扣押油輪",
+
+    # ── 繁體中文：具體武器攻擊（詞組，非單詞）──
+    "飛彈擊中油輪",
+    "無人機擊中商船",
+    "砲彈擊中油輪",
+    "伊朗巡防艦攻擊",
+    "伊朗巡防艦扣押",
+
+    # ── 簡體中文：波斯灣攻擊 ──
+    "波斯湾油轮遭攻击",
+    "波斯湾商船遇袭",
+    "波斯湾货轮被攻击",
+    "波斯湾无人机攻船",
+    "波斯湾导弹攻船",
+
+    # ── 簡體中文：荷姆茲海峽攻擊 ──
+    "霍尔木兹海峡油轮遭攻击",
+    "霍尔木兹海峡商船遇袭",
+
+    # ── 簡體中文：阿曼灣攻擊 ──
+    "阿曼湾油轮遭攻击",
+    "阿曼湾商船遇袭",
+
+    # ── 簡體中文：船舶扣押 ──
+    "波斯湾油轮被扣押",
+    "波斯湾商船被扣押",
+    "革命卫队扣押油轮",
+    "革命卫队扣押商船",
+    "伊朗海军扣押油轮",
+    "伊朗海军扣押商船",
+    "伊朗扣押船只",
+    "伊朗扣押油轮",
+
+    # ── 簡體中文：具體武器攻擊 ──
+    "导弹击中油轮",
+    "无人机击中商船",
+    "炮弹击中油轮",
 ]
 
+# ──────────────────────────────────────────────────────────────
+# CAT2：海灣國家設施及美軍基地遭受攻擊
+# ──────────────────────────────────────────────────────────────
 CAT2_KEYWORDS = [
-    "US military base attack Gulf", "US base attack Middle East",
-    "US base attacked Iraq", "US base attacked Syria",
-    "US base attacked Kuwait", "US base attacked Bahrain",
-    "US base attacked Qatar", "US base attacked UAE",
-    "US Navy attacked Gulf", "US warship attacked Gulf",
-    "Fifth Fleet attacked", "CENTCOM base attack",
-    "drone attack US base", "missile attack US base",
-    "ballistic missile US base", "cruise missile US base",
-    "attack on Saudi Arabia", "attack on UAE",
-    "attack on Kuwait", "attack on Bahrain",
-    "attack on Qatar", "attack on Oman",
-    "Saudi Arabia oil facility attack", "Saudi Aramco attack",
-    "Gulf state attacked", "Gulf country attacked",
-    "Abu Dhabi attack", "Dubai attack",
-    "Riyadh attack", "Manama attack",
-    "Al Udeid attack", "Al Dhafra attack",
-    "Camp Arifjan attack", "NSA Bahrain attack",
-    "美軍基地遭攻擊", "美軍基地被攻擊", "美軍基地受攻擊",
-    "美國海軍遭攻擊", "美軍艦艇遭攻擊",
-    "第五艦隊遭攻擊", "中央司令部基地遭攻擊",
-    "沙烏地阿拉伯遭攻擊", "沙烏地油田遭攻擊",
-    "阿拉伯聯合大公國遭攻擊", "科威特遭攻擊",
-    "巴林遭攻擊", "卡達遭攻擊", "阿曼遭攻擊",
-    "阿布達比遭攻擊", "杜拜遭攻擊",
-    "利雅德遭攻擊", "沙烏地阿美遭攻擊",
-    "海灣國家遭攻擊", "海灣地區美軍遭攻擊",
-    "無人機攻擊美軍基地", "飛彈攻擊美軍基地",
-    "彈道飛彈攻擊海灣", "巡弋飛彈攻擊海灣",
-    "美军基地遭攻击", "美军基地被攻击", "美军基地受攻击",
-    "美国海军遭攻击", "美军舰艇遭攻击",
-    "第五舰队遭攻击", "中央司令部基地遭攻击",
-    "沙特阿拉伯遭攻击", "沙特油田遭攻击",
-    "阿联酋遭攻击", "科威特遭攻击",
-    "巴林遭攻击", "卡塔尔遭攻击", "阿曼遭攻击",
-    "阿布扎比遭攻击", "迪拜遭攻击",
-    "利雅得遭攻击", "沙特阿美遭攻击",
-    "海湾国家遭攻击", "海湾地区美军遭攻击",
-    "无人机攻击美军基地", "导弹攻击美军基地",
-    "弹道导弹攻击海湾", "巡航导弹攻击海湾",
+    # ── 英文：美軍基地 ──
+    "US military base attack Gulf",
+    "US base attack Middle East",
+    "US base attacked Iraq",
+    "US base attacked Syria",
+    "US base attacked Kuwait",
+    "US base attacked Bahrain",
+    "US base attacked Qatar",
+    "US base attacked UAE",
+    "US Navy attacked Gulf",
+    "US warship attacked Gulf",
+    "Fifth Fleet attacked",
+    "CENTCOM base attack",
+    "drone attack US base",
+    "missile attack US base",
+    "ballistic missile US base",
+    "cruise missile US base",
+
+    # ── 英文：具名基地 ──
+    "Al Udeid attack",
+    "Al Dhafra attack",
+    "Camp Arifjan attack",
+    "NSA Bahrain attack",
+
+    # ── 英文：海灣國家遭攻擊 ──
+    "attack on Saudi Arabia",
+    "attack on UAE",
+    "attack on Kuwait",
+    "attack on Bahrain",
+    "attack on Qatar",
+    "attack on Oman",
+    "Saudi Arabia oil facility attack",
+    "Saudi Aramco attack",
+    "Gulf state attacked",
+    "Gulf country attacked",
+    "Abu Dhabi attack",
+    "Dubai attack",
+    "Riyadh attack",
+    "Manama attack",
+
+    # ── 繁體中文：美軍基地 ──
+    "美軍基地遭攻擊",
+    "美軍基地被攻擊",
+    "美軍基地受攻擊",
+    "美國海軍遭攻擊",
+    "美軍艦艇遭攻擊",
+    "第五艦隊遭攻擊",
+    "中央司令部基地遭攻擊",
+    "無人機攻擊美軍基地",
+    "飛彈攻擊美軍基地",
+    "彈道飛彈攻擊海灣",
+    "巡弋飛彈攻擊海灣",
+
+    # ── 繁體中文：海灣國家 ──
+    "沙烏地阿拉伯遭攻擊",
+    "沙烏地油田遭攻擊",
+    "阿拉伯聯合大公國遭攻擊",
+    "科威特遭攻擊",
+    "巴林遭攻擊",
+    "卡達遭攻擊",
+    "阿曼遭攻擊",
+    "阿布達比遭攻擊",
+    "杜拜遭攻擊",
+    "利雅德遭攻擊",
+    "沙烏地阿美遭攻擊",
+    "海灣國家遭攻擊",
+    "海灣地區美軍遭攻擊",
+
+    # ── 簡體中文：美軍基地 ──
+    "美军基地遭攻击",
+    "美军基地被攻击",
+    "美军基地受攻击",
+    "美国海军遭攻击",
+    "美军舰艇遭攻击",
+    "第五舰队遭攻击",
+    "中央司令部基地遭攻击",
+    "无人机攻击美军基地",
+    "导弹攻击美军基地",
+    "弹道导弹攻击海湾",
+    "巡航导弹攻击海湾",
+
+    # ── 簡體中文：海灣國家 ──
+    "沙特阿拉伯遭攻击",
+    "沙特油田遭攻击",
+    "阿联酋遭攻击",
+    "科威特遭攻击",
+    "巴林遭攻击",
+    "卡塔尔遭攻击",
+    "阿曼遭攻击",
+    "阿布扎比遭攻击",
+    "迪拜遭攻击",
+    "利雅得遭攻击",
+    "沙特阿美遭攻击",
+    "海湾国家遭攻击",
+    "海湾地区美军遭攻击",
 ]
 
+# ──────────────────────────────────────────────────────────────
+# CAT3：伊朗水雷布設、封鎖荷姆茲海峽
+# 注意：魚雷屬水下武器，歸入本類；純油流/航運狀況詞移至 OTHER
+# ──────────────────────────────────────────────────────────────
 CAT3_KEYWORDS = [
-    "sea mine Strait of Hormuz", "naval mine Strait of Hormuz",
-    "sea mine Persian Gulf", "naval mine Persian Gulf",
-    "sea mine Gulf of Oman", "naval mine Gulf of Oman",
-    "mine threat Hormuz", "mine threat Persian Gulf",
+    # ── 英文：水雷威脅 ──
+    "sea mine Strait of Hormuz",
+    "naval mine Strait of Hormuz",
+    "sea mine Persian Gulf",
+    "naval mine Persian Gulf",
+    "sea mine Gulf of Oman",
+    "naval mine Gulf of Oman",
+    "mine threat Hormuz",
+    "mine threat Persian Gulf",
     "mine threat Gulf of Oman",
-    "Iran mine laying", "Iran mine threat",
-    "Iran naval mine", "Iran sea mine",
-    "Iran mine warfare", "Iran mine blockade",
-    "IRGC mine laying", "IRGC mine threat",
-    "limpet mine tanker", "limpet mine vessel",
-    "limpet mine Gulf", "limpet mine Hormuz",
-    "mine explosion tanker", "mine explosion vessel",
-    "mine strike tanker", "mine strike vessel",
-    "mine detonation ship", "underwater mine tanker",
-    "Hormuz minefield", "Persian Gulf minefield",
-    "mine clearance Gulf", "mine sweeping Gulf",
-    "mine sweeping Hormuz",
+    "Hormuz minefield",
+    "Persian Gulf minefield",
+
+    # ── 英文：伊朗布雷行動 ──
+    "Iran mine laying",
+    "Iran mine threat",
+    "Iran naval mine",
+    "Iran sea mine",
+    "Iran mine warfare",
+    "Iran mine blockade",
+    "Iranian mining",
+    "Iran mining campaign",
+    "IRGC mine laying",
+    "IRGC mine threat",
+    "submarine minelaying",
+    "mine laying submarine",
+
+    # ── 英文：水雷攻擊船舶 ──
+    "limpet mine tanker",
+    "limpet mine vessel",
+    "limpet mine Gulf",
+    "limpet mine Hormuz",
+    "mine explosion tanker",
+    "mine explosion vessel",
+    "mine strike tanker",
+    "mine strike vessel",
+    "mine detonation ship",
+    "underwater mine tanker",
+
+    # ── 英文：魚雷攻擊 ──
+    "torpedo attack tanker",
+    "torpedo attack vessel Gulf",
+    "torpedo strike Persian Gulf",
+
+    # ── 英文：砲擊船舶（水下/水面封鎖情境）──
+    "tanker shelled",
+    "vessel shelled Hormuz",
+    "tanker fired upon",
+    "vessel fired upon Gulf",
+
+    # ── 英文：封鎖與掃雷 ──
     "Strait of Hormuz closure",
     "Persian Gulf blockade",
-    "mine the strait", "mining the strait",
-    "mining Hormuz", "mining Persian Gulf",
-    "Iran mining campaign", "Iranian mining",
-    "submarine minelaying", "mine laying submarine",
-    "Hormuz oil flow", "Hormuz oil supply",
-    "tanker traffic Hormuz",
-    "oil flow disruption Hormuz",
-    # ── 新增：伊朗封鎖荷姆茲（台灣媒體常用句型）──
-    "伊朗封鎖荷莫茲", "伊朗封鎖霍爾木茲",
-    "伊朗控制荷姆茲", "伊朗控制荷莫茲", "伊朗控制霍爾木茲",
-    "完全控制荷姆茲", "完全控制荷莫茲", "完全控制霍爾木茲",
-    "荷莫茲海峽封鎖", "霍爾木茲海峽封鎖",
+    "mine the strait",
+    "mining the strait",
+    "mining Hormuz",
+    "mining Persian Gulf",
+    "mine clearance Gulf",
+    "mine sweeping Gulf",
+    "mine sweeping Hormuz",
+
+    # ── 繁體中文：水雷威脅 ──
+    "水雷封鎖荷姆茲",
+    "水雷封鎖霍爾木茲",
+    "水雷封鎖波斯灣",
+    "水雷封鎖阿曼灣",
+    "荷姆茲水雷",
+    "波斯灣水雷",
+    "阿曼灣水雷",
+    "荷莫茲海峽封鎖",
+    "霍爾木茲海峽封鎖",
     "封鎖荷莫茲海峽",
-    "水雷封鎖荷姆茲", "水雷封鎖霍爾木茲",
-    "水雷封鎖波斯灣", "水雷封鎖阿曼灣",
-    "伊朗布雷", "伊朗水雷威脅",
-    "伊朗水雷攻擊", "伊朗水雷封鎖",
-    "革命衛隊布雷", "革命衛隊水雷",
-    "磁吸水雷油輪", "磁吸水雷商船",
-    "水雷爆炸油輪", "水雷爆炸商船",
-    "水雷擊中油輪", "水雷擊中商船",
-    "荷姆茲水雷", "波斯灣水雷",
-    "阿曼灣水雷", "掃雷行動海灣",
-    "水雷清除荷姆茲", "水雷威脅航運",
-    "水雷攻擊船隻", "水雷攻擊油輪",
-    "水雷封锁霍尔木兹", "水雷封锁波斯湾",
+
+    # ── 繁體中文：伊朗布雷行動 ──
+    "伊朗封鎖荷莫茲",
+    "伊朗封鎖霍爾木茲",
+    "伊朗控制荷姆茲",
+    "伊朗控制荷莫茲",
+    "伊朗控制霍爾木茲",
+    "完全控制荷姆茲",
+    "完全控制荷莫茲",
+    "完全控制霍爾木茲",
+    "控制荷莫茲",
+    "封鎖荷莫茲",
+    "伊朗布雷",
+    "伊朗水雷威脅",
+    "伊朗水雷攻擊",
+    "伊朗水雷封鎖",
+    "革命衛隊布雷",
+    "革命衛隊水雷",
+
+    # ── 繁體中文：水雷攻擊船舶 ──
+    "磁吸水雷油輪",
+    "磁吸水雷商船",
+    "水雷爆炸油輪",
+    "水雷爆炸商船",
+    "水雷擊中油輪",
+    "水雷擊中商船",
+    "水雷攻擊船隻",
+    "水雷攻擊油輪",
+    "水雷威脅航運",
+
+    # ── 繁體中文：魚雷攻擊 ──
+    "魚雷攻擊油輪",
+    "魚雷攻擊商船",
+    "魚雷攻擊波斯灣",
+
+    # ── 繁體中文：砲擊船舶 ──
+    "油輪被砲擊",
+    "油輪遭砲擊",
+    "商船被砲擊",
+
+    # ── 繁體中文：掃雷 ──
+    "掃雷行動海灣",
+    "水雷清除荷姆茲",
+
+    # ── 簡體中文：水雷威脅 ──
+    "水雷封锁霍尔木兹",
+    "水雷封锁波斯湾",
     "水雷封锁阿曼湾",
-    "伊朗水雷威胁", "伊朗水雷攻击", "伊朗水雷封锁",
-    "革命卫队布雷", "革命卫队水雷",
-    "磁吸水雷油轮", "磁吸水雷商船",
-    "水雷爆炸油轮", "水雷爆炸商船",
-    "水雷击中油轮", "水雷击中商船",
-    "霍尔木兹水雷", "波斯湾水雷",
-    "阿曼湾水雷", "扫雷行动海湾",
-    "水雷清除霍尔木兹", "水雷威胁航运",
-    "水雷攻击船只", "水雷攻击油轮",
-    # ── 新增：油輪被砲擊（CAT3 情境）──
-    "油輪被砲擊", "油輪遭砲擊", "商船被砲擊",
-    "油輪被炮弹击中", "油轮遭炮击", "商船被炮弹击中",
-    "tanker shelled", "vessel shelled Hormuz",
-    "tanker fired upon", "vessel fired upon Gulf",
+    "霍尔木兹水雷",
+    "波斯湾水雷",
+    "阿曼湾水雷",
+
+    # ── 簡體中文：伊朗布雷行動 ──
+    "伊朗水雷威胁",
+    "伊朗水雷攻击",
+    "伊朗水雷封锁",
+    "革命卫队布雷",
+    "革命卫队水雷",
+
+    # ── 簡體中文：水雷攻擊船舶 ──
+    "磁吸水雷油轮",
+    "磁吸水雷商船",
+    "水雷爆炸油轮",
+    "水雷爆炸商船",
+    "水雷击中油轮",
+    "水雷击中商船",
+    "水雷攻击船只",
+    "水雷攻击油轮",
+    "水雷威胁航运",
+
+    # ── 簡體中文：魚雷攻擊 ──
+    "鱼雷攻击油轮",
+    "鱼雷攻击商船",
+    "鱼雷攻击波斯湾",
+
+    # ── 簡體中文：砲擊船舶 ──
+    "油轮被炮弹击中",
+    "油轮遭炮击",
+    "商船被炮弹击中",
+
+    # ── 簡體中文：掃雷 ──
+    "扫雷行动海湾",
+    "水雷清除霍尔木兹",
 ]
 
+# ──────────────────────────────────────────────────────────────
+# CAT4：紅海／曼德海峽胡塞武裝（含伊朗支持勢力）攻擊
+# ──────────────────────────────────────────────────────────────
 CAT4_KEYWORDS = [
-    "Houthi attack", "Houthi missile", "Houthi drone",
-    "Houthi ship attack", "Houthi tanker attack",
-    "Houthi vessel attack", "Houthi Red Sea",
-    "Houthi Bab el-Mandeb", "Houthi shipping",
-    "Houthi ballistic missile", "Houthi cruise missile",
-    "Houthi anti-ship missile", "Houthi naval drone",
-    "Houthi underwater drone", "Houthi USV attack",
-    "Red Sea attack", "Red Sea incident",
-    "Red Sea shipping attack", "Red Sea tanker attack",
-    "Red Sea vessel attack", "Red Sea missile attack",
+    # ── 英文：胡塞攻擊 ──
+    "Houthi attack",
+    "Houthi missile",
+    "Houthi drone",
+    "Houthi ship attack",
+    "Houthi tanker attack",
+    "Houthi vessel attack",
+    "Houthi Red Sea",
+    "Houthi Bab el-Mandeb",
+    "Houthi shipping",
+    "Houthi ballistic missile",
+    "Houthi cruise missile",
+    "Houthi anti-ship missile",
+    "Houthi naval drone",
+    "Houthi underwater drone",
+    "Houthi USV attack",
+
+    # ── 英文：紅海事件 ──
+    "Red Sea attack",
+    "Red Sea incident",
+    "Red Sea shipping attack",
+    "Red Sea tanker attack",
+    "Red Sea vessel attack",
+    "Red Sea missile attack",
     "Red Sea drone attack",
-    "Bab el-Mandeb attack", "Bab el-Mandeb incident",
-    "Bab el-Mandeb shipping", "Bab el-Mandeb tanker",
-    "Gulf of Aden attack", "Gulf of Aden incident",
-    "Gulf of Aden tanker attack", "Gulf of Aden vessel attack",
-    "Yemen attack shipping", "Yemen missile ship",
-    "Ansarallah attack", "Ansarallah shipping",
+
+    # ── 英文：曼德海峽 ──
+    "Bab el-Mandeb attack",
+    "Bab el-Mandeb incident",
+    "Bab el-Mandeb shipping",
+    "Bab el-Mandeb tanker",
+
+    # ── 英文：亞丁灣 ──
+    "Gulf of Aden attack",
+    "Gulf of Aden incident",
+    "Gulf of Aden tanker attack",
+    "Gulf of Aden vessel attack",
+
+    # ── 英文：葉門／伊朗代理人 ──
+    "Yemen attack shipping",
+    "Yemen missile ship",
+    "Ansarallah attack",
+    "Ansarallah shipping",
     "Iranian-backed attack shipping",
-    "Iran proxy attack tanker", "Iran proxy Red Sea",
-    "胡塞攻擊", "胡塞飛彈", "胡塞無人機",
-    "胡塞攻擊船隻", "胡塞攻擊油輪",
-    "胡塞攻擊商船", "胡塞紅海攻擊",
-    "胡塞曼德海峽攻擊", "胡塞反艦飛彈",
-    "胡塞彈道飛彈攻船", "胡塞巡弋飛彈攻船",
-    "胡塞水面無人艇", "胡塞水下無人艇",
-    "紅海攻擊", "紅海船隻遇襲",
-    "紅海油輪遭攻擊", "紅海商船遇襲",
-    "紅海飛彈攻擊", "紅海無人機攻擊",
-    "曼德海峽攻擊", "曼德海峽船隻遇襲",
-    "亞丁灣攻擊", "亞丁灣油輪遭攻擊",
-    "葉門攻擊船隻", "葉門飛彈攻船",
-    "伊朗代理人攻擊船", "伊朗支持攻擊航運",
-    "胡塞攻击", "胡塞导弹", "胡塞无人机",
-    "胡塞攻击船只", "胡塞攻击油轮",
-    "胡塞攻击商船", "胡塞红海攻击",
-    "胡塞曼德海峡攻击", "胡塞反舰导弹",
-    "胡塞弹道导弹攻船", "胡塞巡航导弹攻船",
-    "胡塞水面无人艇", "胡塞水下无人艇",
-    "红海攻击", "红海船只遇袭",
-    "红海油轮遭攻击", "红海商船遇袭",
-    "红海导弹攻击", "红海无人机攻击",
-    "曼德海峡攻击", "曼德海峡船只遇袭",
-    "亚丁湾攻击", "亚丁湾油轮遭攻击",
-    "也门攻击船只", "也门导弹攻船",
-    "伊朗代理人攻击船", "伊朗支持攻击航运",
+    "Iran proxy attack tanker",
+    "Iran proxy Red Sea",
+
+    # ── 繁體中文：胡塞攻擊 ──
+    "胡塞攻擊",
+    "胡塞飛彈",
+    "胡塞無人機",
+    "胡塞攻擊船隻",
+    "胡塞攻擊油輪",
+    "胡塞攻擊商船",
+    "胡塞紅海攻擊",
+    "胡塞曼德海峽攻擊",
+    "胡塞反艦飛彈",
+    "胡塞彈道飛彈攻船",
+    "胡塞巡弋飛彈攻船",
+    "胡塞水面無人艇",
+    "胡塞水下無人艇",
+
+    # ── 繁體中文：紅海事件 ──
+    "紅海攻擊",
+    "紅海船隻遇襲",
+    "紅海油輪遭攻擊",
+    "紅海商船遇襲",
+    "紅海飛彈攻擊",
+    "紅海無人機攻擊",
+
+    # ── 繁體中文：曼德海峽 ──
+    "曼德海峽攻擊",
+    "曼德海峽船隻遇襲",
+
+    # ── 繁體中文：亞丁灣 ──
+    "亞丁灣攻擊",
+    "亞丁灣油輪遭攻擊",
+
+    # ── 繁體中文：葉門／伊朗代理人 ──
+    "葉門攻擊船隻",
+    "葉門飛彈攻船",
+    "伊朗代理人攻擊船",
+    "伊朗支持攻擊航運",
+
+    # ── 簡體中文：胡塞攻擊 ──
+    "胡塞攻击",
+    "胡塞导弹",
+    "胡塞无人机",
+    "胡塞攻击船只",
+    "胡塞攻击油轮",
+    "胡塞攻击商船",
+    "胡塞红海攻击",
+    "胡塞曼德海峡攻击",
+    "胡塞反舰导弹",
+    "胡塞弹道导弹攻船",
+    "胡塞巡航导弹攻船",
+    "胡塞水面无人艇",
+    "胡塞水下无人艇",
+
+    # ── 簡體中文：紅海事件 ──
+    "红海攻击",
+    "红海船只遇袭",
+    "红海油轮遭攻击",
+    "红海商船遇袭",
+    "红海导弹攻击",
+    "红海无人机攻击",
+
+    # ── 簡體中文：曼德海峽 ──
+    "曼德海峡攻击",
+    "曼德海峡船只遇袭",
+
+    # ── 簡體中文：亞丁灣 ──
+    "亚丁湾攻击",
+    "亚丁湾油轮遭攻击",
+
+    # ── 簡體中文：葉門／伊朗代理人 ──
+    "也门攻击船只",
+    "也门导弹攻船",
+    "伊朗代理人攻击船",
+    "伊朗支持攻击航运",
 ]
 
+# ──────────────────────────────────────────────────────────────
+# CAT5：航商繞航改道措施及波斯灣緊急錨泊動態
+# 注意：「改道」單詞過泛已移除，保留詞組形式
+# ──────────────────────────────────────────────────────────────
 CAT5_KEYWORDS = [
-    "vessel rerouting", "ship diversion", "vessel diversion",
-    "rerouting Cape of Good Hope", "Cape of Good Hope rerouting",
-    "Cape routing", "Cape diversion",
-    "avoiding Red Sea", "avoiding Suez Canal",
-    "avoiding Strait of Hormuz", "avoiding Persian Gulf",
-    "avoiding Gulf of Aden", "avoiding Bab el-Mandeb",
-    "Red Sea avoidance", "Hormuz avoidance",
-    "shipping line reroute", "carrier reroute",
-    "container line reroute", "tanker reroute",
-    "Maersk reroute", "MSC reroute", "CMA CGM reroute",
-    "Evergreen reroute", "COSCO reroute",
-    "shipping suspended Red Sea", "shipping suspended Gulf",
-    "port of refuge Persian Gulf", "anchorage Persian Gulf",
-    "safe anchorage Gulf", "refuge anchorage Gulf",
-    "vessels anchored Gulf", "ships waiting Gulf",
-    "Fujairah anchorage", "Khor Fakkan anchorage",
-    "Muscat anchorage", "Salalah refuge",
-    "war risk surcharge", "war risk premium",
-    "additional war risk", "war risk insurance",
-    "shipping suspended", "service suspended Red Sea",
-    "transit suspended Hormuz", "transit suspended Red Sea",
-    "Gulf bypass route", "bypass Hormuz",
-    "pipeline bypass Gulf", "East-West Pipeline",
-    "Fujairah terminal", "ADCOP pipeline",
-    "oil supply cover", "storage capacity Gulf",
-    "production cut Gulf", "oil evacuation Gulf",
-    "Hormuz disruption supply", "energy security Gulf",
-    "tanker insurance suspended", "insurers suspended",
+    # ── 英文：繞航改道 ──
+    "vessel rerouting",
+    "ship diversion",
+    "vessel diversion",
+    "rerouting Cape of Good Hope",
+    "Cape of Good Hope rerouting",
+    "Cape routing",
+    "Cape diversion",
+    "Gulf bypass route",
+    "bypass Hormuz",
+
+    # ── 英文：迴避特定水域 ──
+    "avoiding Red Sea",
+    "avoiding Suez Canal",
+    "avoiding Strait of Hormuz",
+    "avoiding Persian Gulf",
+    "avoiding Gulf of Aden",
+    "avoiding Bab el-Mandeb",
+    "Red Sea avoidance",
+    "Hormuz avoidance",
+
+    # ── 英文：航商宣佈 ──
+    "shipping line reroute",
+    "carrier reroute",
+    "container line reroute",
+    "tanker reroute",
+    "Maersk reroute",
+    "MSC reroute",
+    "CMA CGM reroute",
+    "Evergreen reroute",
+    "COSCO reroute",
+    "shipping suspended Red Sea",
+    "shipping suspended Gulf",
+    "service suspended Red Sea",
+    "transit suspended Hormuz",
+    "transit suspended Red Sea",
+    "booking freeze Gulf",
+    "booking cancelled Gulf",
+    "ONE cancelled bookings",
+    "container booking freeze",
+
+    # ── 英文：錨泊避難 ──
+    "port of refuge Persian Gulf",
+    "anchorage Persian Gulf",
+    "safe anchorage Gulf",
+    "refuge anchorage Gulf",
+    "vessels anchored Gulf",
+    "ships waiting Gulf",
+    "Fujairah anchorage",
+    "Khor Fakkan anchorage",
+    "Muscat anchorage",
+    "Salalah refuge",
+
+    # ── 英文：戰爭險與保險 ──
+    "war risk surcharge",
+    "war risk premium",
+    "additional war risk",
+    "war risk insurance",
+    "tanker insurance suspended",
+    "insurers suspended",
+    "tanker insurance Gulf",
+    "government backstop tanker",
+    "insurance backstop shipping",
+
+    # ── 英文：護航 ──
+    "US escort tanker",
+    "navy escort tanker Hormuz",
+    "US Navy escort Gulf",
+
+    # ── 英文：替代管線／能源安全 ──
+    "pipeline bypass Gulf",
+    "East-West Pipeline",
+    "Fujairah terminal",
+    "ADCOP pipeline",
+    "oil supply cover",
+    "storage capacity Gulf",
+    "Hormuz disruption supply",
+    "energy security Gulf",
     "trading house suspended Gulf",
-    # ── 新增：保險/護航（台灣媒體常用）──
-    "tanker insurance Gulf", "US escort tanker",
-    "navy escort tanker Hormuz", "US Navy escort Gulf",
-    "government backstop tanker", "insurance backstop shipping",
-    "booking freeze Gulf", "booking cancelled Gulf",
-    "ONE cancelled bookings", "container booking freeze",
-    "航商宣佈繞航", "航商改道", "航線改道",
-    "繞航好望角", "改走好望角",
-    "避開紅海", "避開蘇伊士運河",
-    "避開荷姆茲海峽", "避開霍爾木茲海峽",
-    "避開波斯灣", "避開亞丁灣",
-    "避開曼德海峽",
-    "馬士基繞航", "地中海航運繞航",
-    "達飛輪船繞航", "長榮海運繞航",
-    "中遠海運繞航", "陽明海運繞航",
-    "暫停紅海航線", "暫停波斯灣航線",
-    "暫停荷姆茲通行", "暫停蘇伊士通行",
-    "波斯灣避難錨地", "波斯灣錨泊等待",
-    "富查伊拉錨地", "科爾法坎錨地",
-    "馬斯喀特避難", "薩拉拉避難",
-    "戰爭附加費", "戰爭險保費上漲",
-    "航運保險費率上漲", "繞航費用增加",
-    # ── 新增：航運股/ETF（台灣財經媒體）──
+
+    # ── 繁體中文：繞航改道 ──
+    "航商宣佈繞航",
+    "航商改道",
+    "航線改道",
+    "繞航好望角",
+    "改走好望角",
     "遶行改道",
-    "遶航好望角", "改走好望角",
-    "避開紅海", "避開蘇伊士運河",
-    "避開荷莫茲海峽", "避開波斯灣",
-    "避開亞丁灣", "避開曼德海峽",
-    "馬士基繞航", "地中海航運繞航",
-    "達飛輪船繞航", "長榮海運繞航",
-    "中遠海運繞航", "陽明海運繞航",
-    "暫停紅海航線", "暫停波斯灣航線",
-    "暫停荷莫茲通行", "暫停蘇伊士通行",
-    "波斯灣避難錨地", "波斯灣錨泊等待",
-    "富查伊拉錨地", "科爾法坎錨地",
-    "馬斯喀特避難", "薩拉拉避難",
-    "戰爭附加費", "戰爭險保費上漲",
-    "航運保險費率上漲", "繞航費用增加",
+    "遶航好望角",
+    "繞航費用增加",
+
+    # ── 繁體中文：迴避特定水域 ──
+    "避開紅海",
+    "避開蘇伊士運河",
+    "避開荷姆茲海峽",
+    "避開霍爾木茲海峽",
+    "避開荷莫茲海峽",
+    "避開波斯灣",
+    "避開亞丁灣",
+    "避開曼德海峽",
+
+    # ── 繁體中文：航商宣佈 ──
+    "馬士基繞航",
+    "地中海航運繞航",
+    "達飛輪船繞航",
+    "長榮海運繞航",
+    "中遠海運繞航",
+    "陽明海運繞航",
+    "暫停紅海航線",
+    "暫停波斯灣航線",
+    "暫停荷姆茲通行",
+    "暫停荷莫茲通行",
+    "暫停蘇伊士通行",
+
+    # ── 繁體中文：錨泊避難 ──
+    "波斯灣避難錨地",
+    "波斯灣錨泊等待",
+    "富查伊拉錨地",
+    "科爾法坎錨地",
+    "馬斯喀特避難",
+    "薩拉拉避難",
+
+    # ── 繁體中文：戰爭險與保險 ──
+    "戰爭附加費",
+    "戰爭險保費上漲",
+    "航運保險費率上漲",
 ]
 
+# ──────────────────────────────────────────────────────────────
+# OTHER：其他航運安全與市場動態
+# 注意：純油流/航運狀況詞（原 CAT3 誤放）已移入此處
+# ──────────────────────────────────────────────────────────────
 OTHER_KEYWORDS = [
-    "oil tanker", "product tanker", "chemical tanker",
-    "VLCC", "ULCC", "Aframax", "Suezmax",
-    "LNG carrier", "LNG tanker", "LPG carrier",
-    "container ship", "containership", "container vessel",
-    "bulk carrier", "bulk vessel",
-    "merchant vessel", "merchant ship",
-    "cargo vessel", "newbuilding", "shipbuilding order",
-    "freight rate", "shipping rate", "charter rate",
-    "bunker fuel", "shipping cost",
-    "port congestion", "port closure", "port blockade",
-    "channel closure", "waterway closure",
-    "UKMTO alert", "UKMTO incident", "IMB piracy",
-    "maritime piracy", "ship hijacking", "vessel hijacking",
-    "armed robbery at sea",
-    "crew kidnapped", "seafarer kidnapped", "crew hostage",
-    "maritime security incident", "maritime security alert",
-    "shadow fleet tanker", "dark fleet vessel",
-    "sanctioned vessel", "sanctioned tanker",
-    "shipping sanctions", "tanker sanctions",
-    "Iran oil sanctions", "Iran shipping sanctions",
-    "naval escort shipping", "Operation Prosperity Guardian",
-    "CTF-151", "Combined Maritime Forces",
-    "Black Sea shipping", "Black Sea tanker",
-    "Suez Canal closure", "Suez Canal transit",
-    "Panama Canal closure", "Panama Canal transit",
-    "Persian Gulf shipping", "Persian Gulf tanker",
+    # ── 英文：船型 ──
+    "oil tanker",
+    "product tanker",
+    "chemical tanker",
+    "VLCC",
+    "ULCC",
+    "Aframax",
+    "Suezmax",
+    "LNG carrier",
+    "LNG tanker",
+    "LPG carrier",
+    "container ship",
+    "containership",
+    "container vessel",
+    "bulk carrier",
+    "bulk vessel",
+    "merchant vessel",
+    "merchant ship",
+    "cargo vessel",
+    "newbuilding",
+    "shipbuilding order",
+
+    # ── 英文：運費與市場 ──
+    "freight rate",
+    "shipping rate",
+    "charter rate",
+    "bunker fuel",
+    "shipping cost",
+
+    # ── 英文：港口與水道 ──
+    "port congestion",
+    "port closure",
+    "port blockade",
+    "channel closure",
+    "waterway closure",
+    "Suez Canal closure",
+    "Suez Canal transit",
+    "Panama Canal closure",
+    "Panama Canal transit",
+    "Persian Gulf shipping",
+    "Persian Gulf tanker",
     "Gulf of Oman shipping",
-    "油輪", "成品油輪", "化學品船", "貨櫃船", "散裝船",
-    "液化天然氣船", "液化石油氣船", "商船", "貨輪",
-    "超大型油輪", "新造船",
-    "商船停航", "貨輪停航", "航運停航",
-    "運費上漲", "運價", "航運市場", "造船訂單",
-    "港口封閉", "港口擁堵",
-    "海盜攻擊", "海盜劫船", "武裝登船",
-    "船員被劫", "船員被扣押",
-    "影子船隊", "黑名單船舶",
-    "制裁油輪", "制裁船隊",
-    "護航艦隊", "繁榮衛士行動",
-    "戰爭險", "航運保險",
-    "蘇伊士運河封鎖", "蘇伊士運河通行",
-    "巴拿馬運河封鎖", "巴拿馬運河關閉",
-    "波斯灣航運", "波斯灣油輪",
-    "伊朗石油制裁", "伊朗航運制裁",
-    "油船", "成品油船", "化学品船", "集装箱船", "散装船",
-    "液化天然气船", "货轮", "超大型油轮",
-    "商船停航", "货轮停航", "航运停航",
-    "运费上涨", "运价", "航运市场", "造船订单",
-    "港口封闭", "港口拥堵",
-    "海盗攻击", "海盗劫船", "武装登船",
-    "船员被劫", "船员被扣押",
-    "影子船队", "黑名单船舶",
-    "制裁油轮", "制裁船队",
-    "护航舰队", "繁荣卫士行动",
-    "战争险", "航运保险",
-    "苏伊士运河封锁", "苏伊士运河通行",
-    "巴拿马运河封锁", "巴拿马运河关闭",
-    "波斯湾航运", "波斯湾油轮",
-    "伊朗石油制裁", "伊朗航运制裁",
+
+    # ── 英文：原 CAT3 誤放之油流詞（移入 OTHER）──
+    "tanker traffic Hormuz",
+    "Hormuz oil flow",
+    "Hormuz oil supply",
+    "oil flow disruption Hormuz",
+
+    # ── 英文：海事安全事件 ──
+    "UKMTO alert",
+    "UKMTO incident",
+    "IMB piracy",
+    "maritime piracy",
+    "ship hijacking",
+    "vessel hijacking",
+    "armed robbery at sea",
+    "crew kidnapped",
+    "seafarer kidnapped",
+    "crew hostage",
+    "maritime security incident",
+    "maritime security alert",
+
+    # ── 英文：影子船隊與制裁 ──
+    "shadow fleet tanker",
+    "dark fleet vessel",
+    "sanctioned vessel",
+    "sanctioned tanker",
+    "shipping sanctions",
+    "tanker sanctions",
+    "Iran oil sanctions",
+    "Iran shipping sanctions",
+
+    # ── 英文：護航行動 ──
+    "naval escort shipping",
+    "Operation Prosperity Guardian",
+    "CTF-151",
+    "Combined Maritime Forces",
+
+    # ── 英文：黑海 ──
+    "Black Sea shipping",
+    "Black Sea tanker",
+
+    # ── 繁體中文：船型 ──
+    "油輪",
+    "成品油輪",
+    "化學品船",
+    "貨櫃船",
+    "散裝船",
+    "液化天然氣船",
+    "液化石油氣船",
+    "商船",
+    "貨輪",
+    "超大型油輪",
+    "新造船",
+
+    # ── 繁體中文：運費與市場 ──
+    "運費上漲",
+    "運價",
+    "航運市場",
+    "造船訂單",
+
+    # ── 繁體中文：港口與水道 ──
+    "港口封閉",
+    "港口擁堵",
+    "商船停航",
+    "貨輪停航",
+    "航運停航",
+    "蘇伊士運河封鎖",
+    "蘇伊士運河通行",
+    "巴拿馬運河封鎖",
+    "巴拿馬運河關閉",
+    "波斯灣航運",
+    "波斯灣油輪",
+
+    # ── 繁體中文：海事安全事件 ──
+    "海盜攻擊",
+    "海盜劫船",
+    "武裝登船",
+    "船員被劫",
+    "船員被扣押",
+
+    # ── 繁體中文：影子船隊與制裁 ──
+    "影子船隊",
+    "黑名單船舶",
+    "制裁油輪",
+    "制裁船隊",
+    "伊朗石油制裁",
+    "伊朗航運制裁",
+
+    # ── 繁體中文：護航行動 ──
+    "護航艦隊",
+    "繁榮衛士行動",
+
+    # ── 繁體中文：保險 ──
+    "戰爭險",
+    "航運保險",
+
+    # ── 簡體中文：船型 ──
+    "油船",
+    "成品油船",
+    "化学品船",
+    "集装箱船",
+    "散装船",
+    "液化天然气船",
+    "货轮",
+    "超大型油轮",
+
+    # ── 簡體中文：運費與市場 ──
+    "运费上涨",
+    "运价",
+    "航运市场",
+    "造船订单",
+
+    # ── 簡體中文：港口與水道 ──
+    "港口封闭",
+    "港口拥堵",
+    "商船停航",
+    "货轮停航",
+    "航运停航",
+    "苏伊士运河封锁",
+    "苏伊士运河通行",
+    "巴拿马运河封锁",
+    "巴拿马运河关闭",
+    "波斯湾航运",
+    "波斯湾油轮",
+
+    # ── 簡體中文：海事安全事件 ──
+    "海盗攻击",
+    "海盗劫船",
+    "武装登船",
+    "船员被劫",
+    "船员被扣押",
+
+    # ── 簡體中文：影子船隊與制裁 ──
+    "影子船队",
+    "黑名单船舶",
+    "制裁油轮",
+    "制裁船队",
+    "伊朗石油制裁",
+    "伊朗航运制裁",
+
+    # ── 簡體中文：護航行動 ──
+    "护航舰队",
+    "繁荣卫士行动",
+
+    # ── 簡體中文：保險 ──
+    "战争险",
+    "航运保险",
 ]
 
-# ── 建立情境關鍵字對照表 ──
+# ══════════════════════════════════════════════════════════════
+# 建立情境關鍵字對照表
+# 設計原則：CAT1 強制覆蓋（最高優先權）；CAT2–OTHER 依序 setdefault
+# ══════════════════════════════════════════════════════════════
 INCIDENT_KEYWORD_MAP: dict[str, str] = {}
+
 for _kw in CAT1_KEYWORDS:
-    INCIDENT_KEYWORD_MAP[_kw.lower()] = "CAT1"
+    INCIDENT_KEYWORD_MAP[_kw.lower()] = "CAT1"          # 強制覆蓋，最高優先
 for _kw in CAT2_KEYWORDS:
     INCIDENT_KEYWORD_MAP.setdefault(_kw.lower(), "CAT2")
 for _kw in CAT3_KEYWORDS:
@@ -438,6 +956,7 @@ for _kw in CAT5_KEYWORDS:
 for _kw in OTHER_KEYWORDS:
     INCIDENT_KEYWORD_MAP.setdefault(_kw.lower(), "OTHER")
 
+# ── 去重後的完整關鍵字清單 ──
 _ALL_RAW = (
     CAT1_KEYWORDS + CAT2_KEYWORDS + CAT3_KEYWORDS +
     CAT4_KEYWORDS + CAT5_KEYWORDS + OTHER_KEYWORDS
@@ -457,78 +976,101 @@ logger.info(
     f"去重後: {len(ALL_KEYWORDS)} 個"
 )
 
-
 # ══════════════════════════════════════════════════════════════
 # 語境驗證詞集
+# 設計原則：只保留真正的航運操作術語，移除純財經詞彙
 # ══════════════════════════════════════════════════════════════
 TITLE_SHIPPING_TERMS = {
+    # ── 英文：船舶與貨物 ──
     "tanker", "vessel", "ship", "shipping", "maritime",
     "fleet", "cargo", "freight", "port", "canal",
     "strait", "suez", "hormuz", "panama",
     "vlcc", "lng", "lpg", "bunker", "charter",
     "seafarer", "crew", "piracy", "hijack",
+    # ── 英文：地理水域 ──
     "red sea", "gulf of aden", "persian gulf",
-    "bab el-mandeb", "container ship", "bulk carrier",
-    "houthi", "irgc", "mine", "blockade",
-    # ── 新增：荷莫茲（台灣常見異體）──
+    "bab el-mandeb", "gulf of oman",
+    # ── 英文：船型 ──
+    "container ship", "bulk carrier",
+    # ── 英文：安全事件 ──
+    "houthi", "irgc", "mine", "blockade", "attack",
+    # ── 繁體中文：荷姆茲異體字 ──
     "荷莫茲", "荷姆茲", "霍爾木茲",
+    # ── 繁體中文：船舶與貨物 ──
     "油輪", "貨輪", "商船", "貨櫃船", "散裝船",
     "航運", "海運", "港口", "運河", "海峽",
-    "紅海", "波斯灣", "亞丁灣", "海盜", "劫船",
-    "護航", "戰爭險", "運費", "船舶",
-    "水雷", "布雷", "掃雷", "胡塞",
+    "船舶", "護航", "運費",
+    # ── 繁體中文：地理水域 ──
+    "紅海", "波斯灣", "亞丁灣", "阿曼灣",
+    # ── 繁體中文：安全事件 ──
+    "海盜", "劫船", "水雷", "布雷", "掃雷", "胡塞",
+    "戰爭險", "航運保險",
+    # ── 簡體中文：船舶與貨物 ──
     "油船", "货轮", "集装箱船", "散装船",
     "航运", "海运", "港口", "运河", "海峡",
-    "红海", "波斯湾", "亚丁湾", "海盗", "劫船",
-    "护航", "战争险", "运费", "船舶",
-    "水雷", "布雷", "扫雷", "胡塞",
-    # ── 新增：台灣財經媒體常用詞 ──
-    "航運股", "航運ETF", "航運族群", "運價",
+    "船舶", "护航", "运费",
+    # ── 簡體中文：地理水域 ──
+    "红海", "波斯湾", "亚丁湾", "阿曼湾",
+    # ── 簡體中文：安全事件 ──
+    "海盗", "劫船", "水雷", "布雷", "扫雷", "胡塞",
+    "战争险", "航运保险",
 }
 
 BODY_SHIPPING_TERMS = {
+    # ── 英文 ──
     "tanker", "vessel", "ship", "shipping", "maritime",
     "fleet", "cargo", "freight", "port", "canal",
     "strait", "hormuz", "suez", "panama",
     "vlcc", "lng", "lpg", "bunker", "charter",
-    "seafarer", "crew", "piracy", "red sea",
-    "gulf of aden", "persian gulf", "houthi",
-    "mine", "irgc",
+    "seafarer", "crew", "piracy",
+    "red sea", "gulf of aden", "persian gulf", "gulf of oman",
+    "houthi", "mine", "irgc",
+    # ── 繁體中文 ──
     "荷莫茲", "荷姆茲", "霍爾木茲",
     "油輪", "貨輪", "商船", "貨櫃船",
     "航運", "海運", "港口", "運河", "海峽",
-    "紅海", "波斯灣", "亞丁灣", "海盜",
-    "護航", "運費", "船舶", "水雷", "胡塞",
+    "紅海", "波斯灣", "亞丁灣", "阿曼灣",
+    "海盜", "護航", "運費", "船舶", "水雷", "胡塞",
+    # ── 簡體中文 ──
     "油船", "货轮", "集装箱船",
     "航运", "海运", "港口", "运河", "海峡",
-    "红海", "波斯湾", "亚丁湾", "海盗",
-    "护航", "运费", "船舶", "水雷", "胡塞",
+    "红海", "波斯湾", "亚丁湾", "阿曼湾",
+    "海盗", "护航", "运费", "船舶", "水雷", "胡塞",
 }
+
 # ══════════════════════════════════════════════════════════════
-# 財經噪音過濾：標題含任一詞 → 直接排除（即使有航運關鍵字）
-# 邏輯：這類文章是財經分析，不是船舶安全事件報導
+# 財經噪音過濾
+# 設計原則：
+#   標題噪音 → 單一詞命中即觸發排除
+#   摘要噪音 → 命中 ≥2 個才觸發排除
+#   「運價」「航運股」等詞已從噪音集合移除，
+#   改由呼叫端以「不含 CAT1–CAT4 地理關鍵字」的組合條件判斷
 # ══════════════════════════════════════════════════════════════
 FINANCE_NOISE_TITLE_TERMS = {
-    # 股市 / 指數
+    # ── 股市 / 指數 ──
     "台股", "股市", "股價", "漲停", "跌停", "大盤", "指數",
     "外資", "法人", "投信", "自營商", "主力", "籌碼",
     "加權指數", "櫃買指數", "ETF", "基金", "投資組合",
     "選股", "存股", "殖利率", "本益比", "市值",
     "台積電", "聯發科", "鴻海", "台塑", "中鋼",
-    # 財經分析
-    "油價", "能源股", "航運股", "航運ETF", "航運族群",
+
+    # ── 財經分析 ──
+    "油價", "能源股",
     "漲幅", "跌幅", "漲價", "降價", "價格戰",
     "通膨", "升息", "降息", "央行", "聯準會", "Fed",
     "GDP", "CPI", "PPI", "PMI",
     "財報", "營收", "獲利", "EPS", "股息",
     "大洗牌", "資金輪動", "板塊輪動", "避險情緒",
     "恐慌指數", "VIX", "風險溢價", "風險資產",
-    "石油危機", "能源危機", "供應鏈風險",   # 分析類標題
+
+    # ── 分析類標題用語（非事件報導）──
+    "石油危機", "能源危機", "供應鏈風險",
     "為何", "為什麼", "解析", "分析師", "預測",
     "看好", "看壞", "買進", "賣出", "目標價",
     "焦點股", "熱門股", "強勢股", "弱勢股",
     "亮燈", "攻上", "衝關", "守住", "失守",
-    # 英文財經
+
+    # ── 英文財經 ──
     "stock market", "equity", "share price", "investor",
     "hedge fund", "portfolio", "dividend", "earnings",
     "oil price", "crude price", "energy stock",
@@ -536,11 +1078,11 @@ FINANCE_NOISE_TITLE_TERMS = {
     "inflation", "interest rate", "fed rate",
 }
 
-# 摘要財經噪音（摘要含 ≥2 個 → 排除）
+# 摘要財經噪音（命中 ≥2 個才觸發排除）
 FINANCE_NOISE_BODY_TERMS = {
     "台股", "股市", "股價", "漲停", "跌停", "外資賣超",
     "ETF", "基金", "投資", "法人", "籌碼",
-    "油價", "能源股", "航運股", "通膨", "升息",
+    "油價", "能源股", "通膨", "升息",
     "財報", "營收", "獲利", "EPS",
     "oil price", "crude price", "stock", "equity",
     "investor", "analyst", "forecast",
