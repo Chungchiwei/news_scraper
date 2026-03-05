@@ -1370,7 +1370,7 @@ class NewsRssScraper:
             f"   🇨🇳 大陸新聞媒體: {len(zh_cn_news)} 筆\n"
             f"   🚢 航運專業: {len(shipping_news)} 筆\n"
             f"   🌐 國際新聞媒體: {len(intl_news)} 筆\n"
-            f"   📰 總計:     {len(all_news)} 筆\n"
+            f"   📰 本次新聞總計:     {len(all_news)} 筆\n"
             f"\n📊 最終結果（情境分類）:\n"
             f"   💥 CAT1: {len(cat1_news)} 筆\n"
             f"   🎯 CAT2: {len(cat2_news)} 筆\n"
@@ -1889,7 +1889,7 @@ class NewsEmailSender:
         </font><br><br>
         <font face="Arial,sans-serif" size="3" color="#ffffff">📰</font><br>
         <font face="Microsoft JhengHei,Arial,sans-serif"
-              size="3" color="#dbeafe"><b>總計</b></font>
+              size="3" color="#dbeafe"><b>本次新聞總計</b></font>
       </td>
       {stat_cells}
     </tr></table>
