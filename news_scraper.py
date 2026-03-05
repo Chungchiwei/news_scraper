@@ -130,6 +130,7 @@ CAT1_KEYWORDS = [
     "波斯湾油轮被扣押", "波斯湾商船被扣押",
     "革命卫队扣押油轮", "革命卫队扣押商船",
     "伊朗海军扣押油轮", "伊朗海军扣押商船",
+    "伊朗巡防艦","魚雷",
     "伊朗扣押船只", "伊朗扣押油轮",
     "波斯湾无人机攻船", "波斯湾导弹攻船",
     # ── 新增：荷莫茲（台灣常見異體字）──
@@ -1412,7 +1413,7 @@ class NewsEmailSender:
         try:
             tpe_time = run_time.astimezone(timezone(timedelta(hours=8)))
             subject  = (
-                f"GITHUB_Maritime Intel News Alert "
+                f"11GITHUB_Maritime Intel News Alert "
                 f"({tpe_time.strftime('%m/%d %H:%M')}) "
                 f"— {len(news_data['all'])} 則"
             )
@@ -1698,7 +1699,7 @@ class NewsEmailSender:
         tpe_str       = run_time.astimezone(timezone(timedelta(hours=8))).strftime('%Y-%m-%d %H:%M')
         total_sources = len(RSS_SOURCES) + len(CNYES_SOURCES)
         total_news    = len(news_data['all'])
-        cat_order     = ['CAT1', 'CAT2', 'CAT3', 'CAT4', 'CAT5', 'GEN']
+        cat_order     = ['CAT1', 'CAT2', 'CAT3', 'CAT4', 'CAT5', 'OTHER']
         cat_sections  = "".join(
             self._render_incident_section(k, news_data.get(k.lower(), []))
             for k in cat_order
@@ -1713,7 +1714,7 @@ class NewsEmailSender:
                 "CAT3": "伊朗已採取水雷封鎖",
                 "CAT4": "紅海/曼德海峽胡塞含伊朗攻擊事件",
                 "CAT5": "航商宣佈採取繞航措施及波斯灣內避難點",
-                "GEN":  "其他航運新聞動態",
+                "OTHER":  "其他航運新聞動態",
             }
             short = short_labels.get(cat_key, cat_key)
             if count > 0:
@@ -1765,7 +1766,7 @@ class NewsEmailSender:
             ("CAT3", "#7c3aed", "#f5f3ff", "伊朗已採取水雷封鎖"),
             ("CAT4", "#0369a1", "#eff6ff", "紅海/曼德海峽胡塞含伊朗攻擊事件"),
             ("CAT5", "#047857", "#ecfdf5", "航商宣佈採取繞航措施及波斯灣內避難點"),
-            ("GEN",  "#475569", "#f8fafc", "其他航運新聞動態"),
+            ("OTHER",  "#475569", "#f8fafc", "其他航運新聞動態"),
         ]
         for cat_key, bar_color, row_bg, label_text in legend_data:
             cfg = INCIDENT_CATEGORIES[cat_key]
@@ -1795,76 +1796,43 @@ class NewsEmailSender:
 
   <!-- ══ HEADER ══ -->
   <tr><td bgcolor="#0f172a">
-    <table width="100%" border="0" cellpadding="0" cellspacing="0"><tr>
-      <td style="padding:22px 24px 18px 24px;" valign="middle">
-        <font face="Microsoft JhengHei,Arial,sans-serif" size="5" color="#f8fafc">
-          <b>🚢&nbsp;Maritime Intel</b>
-        </font><br>
-        <font face="Microsoft JhengHei,Arial,sans-serif" size="2" color="#94a3b8">
-          航運安全情報快報
-        </font>
-      </td>
-      <td style="padding:22px 24px 18px 0;" align="right" valign="middle">
-        <font face="Arial,sans-serif" size="2" color="#94a3b8">
-          {tpe_str}&nbsp;台北時間
+    <table width="100%" border="0" cellpadding="0" cellspacing="0" bgcolor="#f8fafc">
+    <tr>
+        <td style="padding:22px 24px 18px 24px;" valign="middle">
+        <font face="Microsoft JhengHei,Arial,sans-serif" size="5" color="#0f172a">
+            <b>🚢&nbsp;WHL Tech_Frm_Maritime Intel News </b>
         </font><br><br>
-        <table border="0" cellpadding="5" cellspacing="0" bgcolor="#1e293b"><tr><td>
-          <font face="Arial,sans-serif" size="1" color="#64748b">
-            來源&nbsp;{total_sources}&nbsp;個&nbsp;&nbsp;|&nbsp;&nbsp;關鍵字&nbsp;{len(ALL_KEYWORDS)}&nbsp;個
-          </font>
-        </td></tr></table>
+        <font face="Microsoft JhengHei,Arial,sans-serif" size="3" color="#475569">
+            <b>美伊戰爭-波斯灣航運安全情報快報</b>
+        </font>
+        </td>
+        <td style="padding:22px 24px 18px 0;" align="right" valign="middle">
+        <font face="Arial,sans-serif" size="2" color="#64748b">
+            <b>{tpe_str}&nbsp;台北時間</b>
+        </font><br><br>
+        <table border="0" cellpadding="6" cellspacing="0" bgcolor="#e2e8f0" style="border-radius:4px;">
+            <tr><td>
+            <font face="Arial,sans-serif" size="2" color="#334155">
+                <b>新聞來源&nbsp;{total_sources}&nbsp;個</b>
+            </font>
+            </td></tr>
+        </table>
+        </td>
+    </tr>
+    </table>
       </td>
     </tr></table>
-  </td></tr>
-
-  <!-- ══ 監控來源清單 ══ -->
-  <tr><td bgcolor="#ffffff" style="padding:0;">
-    <table width="100%" border="0" cellpadding="0" cellspacing="0">
-      <tr><td bgcolor="#f8fafc" style="padding:11px 18px;border-bottom:2px solid #e2e8f0;">
-        <font face="Microsoft JhengHei,Arial,sans-serif" size="2" color="#334155">
-          <b>📡&nbsp;新聞來源清單</b>
-        </font>
-        &nbsp;&nbsp;
-        <font face="Arial,sans-serif" size="1" color="#94a3b8">
-          共&nbsp;{total_sources}&nbsp;個&nbsp;·&nbsp;RSS&nbsp;+&nbsp;JSON&nbsp;API
-        </font>
-      </td></tr>
-      <tr><td style="padding:16px 16px 8px 16px;">
-        {source_grid}
-      </td></tr>
-    </table>
-  </td></tr>
-
   <!-- ══ 快速統計列 ══ -->
   <tr><td style="padding:0;">
     <table width="100%" border="0" cellpadding="0" cellspacing="0"
            style="border-top:3px solid #0f172a;border-bottom:3px solid #0f172a;"><tr>
-      <td align="center" bgcolor="#0f172a"
-          style="padding:16px 6px;width:16%;border-right:2px solid #1e293b;">
-        <font face="Arial,sans-serif" size="5" color="#f8fafc"><b>{total_news}</b></font><br>
-        <font face="Arial,sans-serif" size="2" color="#64748b">📰</font><br>
-        <font face="Microsoft JhengHei,Arial,sans-serif" size="1" color="#64748b">總計</font>
-      </td>
+    <td align="center" bgcolor="#2563eb" style="padding:16px 6px;width:16%;border-right:2px solid #1e293b;">
+        <font face="Arial,sans-serif" size="6" color="#ffffff"><b>{total_news}</b></font><br><br>
+        <font face="Arial,sans-serif" size="3" color="#ffffff">📰</font><br>
+        <font face="Microsoft JhengHei,Arial,sans-serif" size="3" color="#dbeafe"><b>總計</b></font>
+    </td>
       {stat_cells}
     </tr></table>
-  </td></tr>
-
-  <!-- ══ 情境說明 ══ -->
-  <tr><td bgcolor="#ffffff" style="padding:0;">
-    <table width="100%" border="0" cellpadding="0" cellspacing="0"
-           style="border-bottom:2px solid #e2e8f0;">
-      <tr>
-        <td colspan="2" bgcolor="#f8fafc"
-            style="padding:9px 16px;border-bottom:1px solid #e2e8f0;">
-          <font face="Microsoft JhengHei,Arial,sans-serif" size="2" color="#334155">
-            <b>📋&nbsp;情境分類說明</b>
-          </font>
-        </td>
-      </tr>
-      {legend_rows}
-    </table>
-  </td></tr>
-
   <!-- ══ 五大情境新聞主體 ══ -->
   <tr><td bgcolor="#f8fafc" style="padding:16px;">
     {cat_sections}
@@ -1892,6 +1860,25 @@ class NewsEmailSender:
       </td></tr>
     </table>
   </td></tr>
+    </td></tr>
+
+  <!-- ══ 監控來源清單 ══ -->
+  <tr><td bgcolor="#ffffff" style="padding:0;">
+    <table width="100%" border="0" cellpadding="0" cellspacing="0">
+      <tr><td bgcolor="#f8fafc" style="padding:11px 18px;border-bottom:2px solid #e2e8f0;">
+        <font face="Microsoft JhengHei,Arial,sans-serif" size="2" color="#334155">
+          <b>📡&nbsp;新聞來源清單</b>
+        </font>
+        &nbsp;&nbsp;
+        <font face="Arial,sans-serif" size="1" color="#94a3b8">
+          共&nbsp;{total_sources}&nbsp;個&nbsp;·&nbsp;RSS&nbsp;+&nbsp;JSON&nbsp;API
+        </font>
+      </td></tr>
+      <tr><td style="padding:16px 16px 8px 16px;">
+        {source_grid}
+      </td></tr>
+    </table>
+  </td></tr>
 
   <!-- ══ FOOTER ══ -->
   <tr><td bgcolor="#f8fafc" align="center"
@@ -1900,7 +1887,7 @@ class NewsEmailSender:
       此內容為自動發送&nbsp;·&nbsp;請勿直接回覆
     </font><br><br>
     <font face="Arial,sans-serif" size="1" color="#cbd5e1">
-      Maritime Intel System v5.2&nbsp;·&nbsp;Powered by Python &amp; GitHub Actions
+      Maritime Intel New System &nbsp;·&nbsp; by WHL Fleet Risk Management
     </font>
   </td></tr>
 
