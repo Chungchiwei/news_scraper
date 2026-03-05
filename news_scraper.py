@@ -1057,8 +1057,8 @@ class NewsRssScraper:
         title_clean   = _html_module.unescape(title)
         summary_clean = _html_module.unescape(summary)
         full_lower    = (title_clean + " " + summary_clean).lower()
-        best_cat = "GEN"
-        best_pri = INCIDENT_CATEGORIES["GEN"]["priority"]
+        best_cat = "other"
+        best_pri = INCIDENT_CATEGORIES["OTHER"]["priority"]
         for kw_lower, cat in INCIDENT_KEYWORD_MAP.items():
             if kw_lower in full_lower:
                 pri = INCIDENT_CATEGORIES[cat]["priority"]
@@ -1078,7 +1078,7 @@ class NewsRssScraper:
         for kw in self.keywords:
             kw_lower = kw.lower()
             if kw_lower in full_lower and kw not in seen_kw:
-                cat = INCIDENT_KEYWORD_MAP.get(kw_lower, "GEN")
+                cat = INCIDENT_KEYWORD_MAP.get(kw_lower, "OTHER")
                 cfg = INCIDENT_CATEGORIES[cat]
                 matched.append((kw, cfg["label"], cfg["color"]))
                 seen_kw.add(kw)
@@ -1442,8 +1442,8 @@ class NewsEmailSender:
     # ──────────────────────────────────────────────────────────
     @staticmethod
     def _render_card(item: dict) -> str:
-        cat_cfg      = INCIDENT_CATEGORIES.get(item.get('incident_cat', 'GEN'),
-                                               INCIDENT_CATEGORIES['GEN'])
+        cat_cfg      = INCIDENT_CATEGORIES.get(item.get('incident_cat', 'other'),
+                                               INCIDENT_CATEGORIES['OTHER'])
         border_color = cat_cfg['color']
         pub = item['published']
         if pub != '時間未知':
