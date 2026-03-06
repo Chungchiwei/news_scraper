@@ -1047,36 +1047,24 @@ BODY_SHIPPING_TERMS = {
 #   改由呼叫端以「不含 CAT1–CAT4 地理關鍵字」的組合條件判斷
 # ══════════════════════════════════════════════════════════════
 FINANCE_NOISE_TITLE_TERMS = {
-    # ── 股市 / 指數 ──
+    # ── 只保留「純財經、與航運完全無關」的詞 ──
     "台股", "股市", "股價", "漲停", "跌停", "大盤", "指數",
     "外資", "法人", "投信", "自營商", "主力", "籌碼",
     "加權指數", "櫃買指數", "ETF", "基金", "投資組合",
     "選股", "存股", "殖利率", "本益比", "市值",
     "台積電", "聯發科", "鴻海", "台塑", "中鋼",
-
-    # ── 財經分析 ──
-    "油價", "能源股",
+    "財報", "營收", "獲利", "EPS", "股息",
     "漲幅", "跌幅", "漲價", "降價", "價格戰",
     "通膨", "升息", "降息", "央行", "聯準會", "Fed",
     "GDP", "CPI", "PPI", "PMI",
-    "財報", "營收", "獲利", "EPS", "股息",
-    "大洗牌", "資金輪動", "板塊輪動", "避險情緒",
-    "恐慌指數", "VIX", "風險溢價", "風險資產",
-
-    # ── 分析類標題用語（非事件報導）──
-    "石油危機", "能源危機", "供應鏈風險",
-    "為何", "為什麼", "解析", "分析師", "預測",
-    "看好", "看壞", "買進", "賣出", "目標價",
+    "大洗牌", "資金輪動", "板塊輪動",
+    "恐慌指數", "VIX", "風險溢價",
     "焦點股", "熱門股", "強勢股", "弱勢股",
     "亮燈", "攻上", "衝關", "守住", "失守",
-
-    # ── 英文財經 ──
-    "stock market", "equity", "share price", "investor",
+    "stock market", "equity", "share price",
     "hedge fund", "portfolio", "dividend", "earnings",
-    "oil price", "crude price", "energy stock",
-    "analyst", "forecast", "outlook", "rally", "selloff",
-    "inflation", "interest rate", "fed rate",
-}
+    "inflation", "interest rate", "central bank", "Fed",
+    "GDP", "CPI", "PMI", "VIX",}
 
 # 摘要財經噪音（命中 ≥2 個才觸發排除）
 FINANCE_NOISE_BODY_TERMS = {
@@ -1955,10 +1943,16 @@ class NewsRssScraper:
         title_lower   = title_clean.lower()
         full_lower    = (title_clean + " " + summary_clean).lower()
 
-        # ── Step 1：標題財經黑名單（直接排除）──
-        for term in FINANCE_NOISE_TITLE_TERMS:
+        # ── 豁免：標題含高確信度航運詞，直接通過，不做財經過濾 ──
+        HIGH_CONFIDENCE_TERMS = {
+            "houthi", "irgc", "hormuz", "荷姆茲", "荷莫茲", "霍爾木茲",
+            "red sea", "紅海", "persian gulf", "波斯灣",
+            "tanker attack", "vessel attack", "ship attack",
+            "胡塞", "水雷", "油輪遭攻擊", "商船遇襲",
+        }
+        for term in HIGH_CONFIDENCE_TERMS:
             if term.lower() in title_lower:
-                return False
+                return True  # 直接通過，不做任何財經過濾
 
         # ── Step 2：摘要財經噪音計數（≥2 個排除）──
         body_finance_hits = sum(
