@@ -41,7 +41,7 @@ logger = logging.getLogger(__name__)
 
 
 # ╔══════════════════════════════════════════════════════════════╗
-# ║              五大情境分類定義                                 ║
+# ║             五大情境分類定義                                 ║
 # ╚══════════════════════════════════════════════════════════════╝
 INCIDENT_CATEGORIES = {
     "CAT1": {
@@ -90,861 +90,185 @@ INCIDENT_CATEGORIES = {
 
 # ══════════════════════════════════════════════════════════════
 # 關鍵字定義
-# 優先權：CAT1 強制覆蓋；CAT2–OTHER 依序 setdefault（不覆蓋）
 # ══════════════════════════════════════════════════════════════
 
-# ──────────────────────────────────────────────────────────────
-# CAT1：波斯灣／荷姆茲海峽周邊船舶遭攻擊或扣押
-# ──────────────────────────────────────────────────────────────
 CAT1_KEYWORDS = [
-    # ── 英文：波斯灣攻擊 ──
-    "tanker attack Persian Gulf",
-    "vessel attack Persian Gulf",
-    "ship attack Persian Gulf",
-    "merchant vessel attacked Gulf",
-    "armed attack tanker Gulf",
-    "armed boarding Persian Gulf",
-    "drone attack tanker Gulf",
-    "missile attack tanker Gulf",
-    "explosion tanker Persian Gulf",
-    "explosion vessel Persian Gulf",
-    "tanker struck Persian Gulf",
-    "vessel struck Persian Gulf",
-    "ship struck Persian Gulf",
-    "vessels struck Gulf",
-
-    # ── 英文：阿曼灣攻擊 ──
-    "tanker attack Gulf of Oman",
-    "vessel attack Gulf of Oman",
-    "ship attack Gulf of Oman",
-    "attack Gulf of Oman",
-    "Gulf of Oman incident",
-
-    # ── 英文：荷姆茲海峽攻擊 ──
-    "tanker attack Strait of Hormuz",
-    "vessel attack Strait of Hormuz",
-    "ship attack Strait of Hormuz",
-    "tanker attack Hormuz",
-    "tanker struck Hormuz",
-
-    # ── 英文：船舶扣押／劫持 ──
-    "vessel seized Persian Gulf",
-    "tanker seized Persian Gulf",
-    "ship seized Persian Gulf",
-    "vessel seized Gulf of Oman",
-    "tanker seized Strait of Hormuz",
-    "tanker hijacked Persian Gulf",
-    "vessel hijacked Persian Gulf",
-    "IRGC vessel seizure",
-    "IRGC tanker seizure",
-    "IRGC seized vessel",
-    "IRGC seized tanker",
-    "Iranian seizure tanker",
-    "Iranian seizure vessel",
-    "Iranian navy seized",
-    "Iranian navy tanker",
-
-    # ── 英文：航運中斷 ──
-    "tanker traffic halt",
-    "tanker traffic stopped",
-    "shipping halt Hormuz",
-    "tanker halt Persian Gulf",
-
-    # ── 繁體中文：波斯灣攻擊 ──
-    "波斯灣油輪遭攻擊",
-    "波斯灣商船遇襲",
-    "波斯灣貨輪被攻擊",
-    "波斯灣無人機攻船",
-    "波斯灣飛彈攻船",
-    "波斯灣武裝登船",
-
-    # ── 繁體中文：荷姆茲海峽攻擊（含異體字）──
-    "荷姆茲海峽油輪遭攻擊",
-    "荷姆茲海峽商船遇襲",
-    "霍爾木茲海峽油輪遭攻擊",
-    "霍爾木茲海峽商船遇襲",
-    "荷莫茲海峽油輪",
-    "荷莫茲海峽商船",
-    "荷莫茲海峽攻擊",
-    "荷莫茲海峽被攻擊",
-
-    # ── 繁體中文：阿曼灣攻擊 ──
-    "阿曼灣油輪遭攻擊",
-    "阿曼灣商船遇襲",
-
-    # ── 繁體中文：船舶扣押 ──
-    "波斯灣油輪被扣押",
-    "波斯灣商船被扣押",
-    "革命衛隊扣押油輪",
-    "革命衛隊扣押商船",
-    "伊朗海軍扣押油輪",
-    "伊朗海軍扣押商船",
-    "伊朗扣押船隻",
-    "伊朗扣押油輪",
-
-    # ── 繁體中文：具體武器攻擊（詞組，非單詞）──
-    "飛彈擊中油輪",
-    "無人機擊中商船",
-    "砲彈擊中油輪",
-    "伊朗巡防艦攻擊",
-    "伊朗巡防艦扣押",
-
-    # ── 簡體中文：波斯灣攻擊 ──
-    "波斯湾油轮遭攻击",
-    "波斯湾商船遇袭",
-    "波斯湾货轮被攻击",
-    "波斯湾无人机攻船",
-    "波斯湾导弹攻船",
-
-    # ── 簡體中文：荷姆茲海峽攻擊 ──
-    "霍尔木兹海峡油轮遭攻击",
-    "霍尔木兹海峡商船遇袭",
-
-    # ── 簡體中文：阿曼灣攻擊 ──
-    "阿曼湾油轮遭攻击",
-    "阿曼湾商船遇袭",
-
-    # ── 簡體中文：船舶扣押 ──
-    "波斯湾油轮被扣押",
-    "波斯湾商船被扣押",
-    "革命卫队扣押油轮",
-    "革命卫队扣押商船",
-    "伊朗海军扣押油轮",
-    "伊朗海军扣押商船",
-    "伊朗扣押船只",
-    "伊朗扣押油轮",
-
-    # ── 簡體中文：具體武器攻擊 ──
-    "导弹击中油轮",
-    "无人机击中商船",
+    "tanker attack Persian Gulf", "vessel attack Persian Gulf", "ship attack Persian Gulf",
+    "merchant vessel attacked Gulf", "armed attack tanker Gulf", "armed boarding Persian Gulf",
+    "drone attack tanker Gulf", "missile attack tanker Gulf", "explosion tanker Persian Gulf",
+    "explosion vessel Persian Gulf", "tanker struck Persian Gulf", "vessel struck Persian Gulf",
+    "ship struck Persian Gulf", "vessels struck Gulf", "tanker attack Gulf of Oman",
+    "vessel attack Gulf of Oman", "ship attack Gulf of Oman", "attack Gulf of Oman",
+    "Gulf of Oman incident", "tanker attack Strait of Hormuz", "vessel attack Strait of Hormuz",
+    "ship attack Strait of Hormuz", "tanker attack Hormuz", "tanker struck Hormuz",
+    "vessel seized Persian Gulf", "tanker seized Persian Gulf", "ship seized Persian Gulf",
+    "vessel seized Gulf of Oman", "tanker seized Strait of Hormuz", "tanker hijacked Persian Gulf",
+    "vessel hijacked Persian Gulf", "IRGC vessel seizure", "IRGC tanker seizure",
+    "IRGC seized vessel", "IRGC seized tanker", "Iranian seizure tanker", "Iranian seizure vessel",
+    "Iranian navy seized", "Iranian navy tanker", "tanker traffic halt", "tanker traffic stopped",
+    "shipping halt Hormuz", "tanker halt Persian Gulf", "波斯灣油輪遭攻擊", "波斯灣商船遇襲",
+    "波斯灣貨輪被攻擊", "波斯灣無人機攻船", "波斯灣飛彈攻船", "波斯灣武裝登船",
+    "荷姆茲海峽油輪遭攻擊", "荷姆茲海峽商船遇襲", "霍爾木茲海峽油輪遭攻擊",
+    "霍爾木茲海峽商船遇襲", "荷莫茲海峽油輪", "荷莫茲海峽商船", "荷莫茲海峽攻擊",
+    "荷莫茲海峽被攻擊", "阿曼灣油輪遭攻擊", "阿曼灣商船遇襲", "波斯灣油輪被扣押",
+    "波斯灣商船被扣押", "革命衛隊扣押油輪", "革命衛隊扣押商船", "伊朗海軍扣押油輪",
+    "伊朗海軍扣押商船", "伊朗扣押船隻", "伊朗扣押油輪", "飛彈擊中油輪", "無人機擊中商船",
+    "砲彈擊中油輪", "伊朗巡防艦攻擊", "伊朗巡防艦扣押", "波斯湾油轮遭攻击", "波斯湾商船遇袭",
+    "波斯湾货轮被攻击", "波斯湾无人机攻船", "波斯湾导弹攻船", "霍尔木兹海峡油轮遭攻击",
+    "霍尔木兹海峡商船遇袭", "阿曼湾油轮遭攻击", "阿曼湾商船遇袭", "波斯湾油轮被扣押",
+    "波斯湾商船被扣押", "革命卫队扣押油轮", "革命卫队扣押商船", "伊朗海军扣押油轮",
+    "伊朗海军扣押商船", "伊朗扣押船只", "伊朗扣押油轮", "导弹击中油轮", "无人机击中商船",
     "炮弹击中油轮",
 ]
 
-# ──────────────────────────────────────────────────────────────
-# CAT2：海灣國家設施及美軍基地遭受攻擊
-# ──────────────────────────────────────────────────────────────
 CAT2_KEYWORDS = [
-    # ── 英文：美軍基地 ──
-    "US military base attack Gulf",
-    "US base attack Middle East",
-    "US base attacked Iraq",
-    "US base attacked Syria",
-    "US base attacked Kuwait",
-    "US base attacked Bahrain",
-    "US base attacked Qatar",
-    "US base attacked UAE",
-    "US Navy attacked Gulf",
-    "US warship attacked Gulf",
-    "Fifth Fleet attacked",
-    "CENTCOM base attack",
-    "drone attack US base",
-    "missile attack US base",
-    "ballistic missile US base",
-    "cruise missile US base",
-
-    # ── 英文：具名基地 ──
-    "Al Udeid attack",
-    "Al Dhafra attack",
-    "Camp Arifjan attack",
-    "NSA Bahrain attack",
-
-    # ── 英文：海灣國家遭攻擊 ──
-    "attack on Saudi Arabia",
-    "attack on UAE",
-    "attack on Kuwait",
-    "attack on Bahrain",
-    "attack on Qatar",
-    "attack on Oman",
-    "Saudi Arabia oil facility attack",
-    "Saudi Aramco attack",
-    "Gulf state attacked",
-    "Gulf country attacked",
-    "Abu Dhabi attack",
-    "Dubai attack",
-    "Riyadh attack",
-    "Manama attack",
-
-    # ── 繁體中文：美軍基地 ──
-    "美軍基地遭攻擊",
-    "美軍基地被攻擊",
-    "美軍基地受攻擊",
-    "美國海軍遭攻擊",
-    "美軍艦艇遭攻擊",
-    "第五艦隊遭攻擊",
-    "中央司令部基地遭攻擊",
-    "無人機攻擊美軍基地",
-    "飛彈攻擊美軍基地",
-    "彈道飛彈攻擊海灣",
-    "巡弋飛彈攻擊海灣",
-
-    # ── 繁體中文：海灣國家 ──
-    "沙烏地阿拉伯遭攻擊",
-    "沙烏地油田遭攻擊",
-    "阿拉伯聯合大公國遭攻擊",
-    "科威特遭攻擊",
-    "巴林遭攻擊",
-    "卡達遭攻擊",
-    "阿曼遭攻擊",
-    "阿布達比遭攻擊",
-    "杜拜遭攻擊",
-    "利雅德遭攻擊",
-    "沙烏地阿美遭攻擊",
-    "海灣國家遭攻擊",
-    "海灣地區美軍遭攻擊",
-
-    # ── 簡體中文：美軍基地 ──
-    "美军基地遭攻击",
-    "美军基地被攻击",
-    "美军基地受攻击",
-    "美国海军遭攻击",
-    "美军舰艇遭攻击",
-    "第五舰队遭攻击",
-    "中央司令部基地遭攻击",
-    "无人机攻击美军基地",
-    "导弹攻击美军基地",
-    "弹道导弹攻击海湾",
-    "巡航导弹攻击海湾",
-
-    # ── 簡體中文：海灣國家 ──
-    "沙特阿拉伯遭攻击",
-    "沙特油田遭攻击",
-    "阿联酋遭攻击",
-    "科威特遭攻击",
-    "巴林遭攻击",
-    "卡塔尔遭攻击",
-    "阿曼遭攻击",
-    "阿布扎比遭攻击",
-    "迪拜遭攻击",
-    "利雅得遭攻击",
-    "沙特阿美遭攻击",
-    "海湾国家遭攻击",
+    "US military base attack Gulf", "US base attack Middle East", "US base attacked Iraq",
+    "US base attacked Syria", "US base attacked Kuwait", "US base attacked Bahrain",
+    "US base attacked Qatar", "US base attacked UAE", "US Navy attacked Gulf",
+    "US warship attacked Gulf", "Fifth Fleet attacked", "CENTCOM base attack",
+    "drone attack US base", "missile attack US base", "ballistic missile US base",
+    "cruise missile US base", "Al Udeid attack", "Al Dhafra attack", "Camp Arifjan attack",
+    "NSA Bahrain attack", "attack on Saudi Arabia", "attack on UAE", "attack on Kuwait",
+    "attack on Bahrain", "attack on Qatar", "attack on Oman", "Saudi Arabia oil facility attack",
+    "Saudi Aramco attack", "Gulf state attacked", "Gulf country attacked", "Abu Dhabi attack",
+    "Dubai attack", "Riyadh attack", "Manama attack", "美軍基地遭攻擊", "美軍基地被攻擊",
+    "美軍基地受攻擊", "美國海軍遭攻擊", "美軍艦艇遭攻擊", "第五艦隊遭攻擊",
+    "中央司令部基地遭攻擊", "無人機攻擊美軍基地", "飛彈攻擊美軍基地", "彈道飛彈攻擊海灣",
+    "巡弋飛彈攻擊海灣", "沙烏地阿拉伯遭攻擊", "沙烏地油田遭攻擊", "阿拉伯聯合大公國遭攻擊",
+    "科威特遭攻擊", "巴林遭攻擊", "卡達遭攻擊", "阿曼遭攻擊", "阿布達比遭攻擊",
+    "杜拜遭攻擊", "利雅德遭攻擊", "沙烏地阿美遭攻擊", "海灣國家遭攻擊", "海灣地區美軍遭攻擊",
+    "美军基地遭攻击", "美军基地被攻击", "美军基地受攻击", "美国海军遭攻击", "美军舰艇遭攻击",
+    "第五舰队遭攻击", "中央司令部基地遭攻击", "无人机攻击美军基地", "导弹攻击美军基地",
+    "弹道导弹攻击海湾", "巡航导弹攻击海湾", "沙特阿拉伯遭攻击", "沙特油田遭攻击",
+    "阿联酋遭攻击", "科威特遭攻击", "巴林遭攻击", "卡塔尔遭攻击", "阿曼遭攻击",
+    "阿布扎比遭攻击", "迪拜遭攻击", "利雅得遭攻击", "沙特阿美遭攻击", "海湾国家遭攻击",
     "海湾地区美军遭攻击",
 ]
 
-# ──────────────────────────────────────────────────────────────
-# CAT3：伊朗水雷布設、封鎖荷姆茲海峽
-# 注意：魚雷屬水下武器，歸入本類；純油流/航運狀況詞移至 OTHER
-# ──────────────────────────────────────────────────────────────
 CAT3_KEYWORDS = [
-    # ── 英文：水雷威脅 ──
-    "sea mine Strait of Hormuz",
-    "naval mine Strait of Hormuz",
-    "sea mine Persian Gulf",
-    "naval mine Persian Gulf",
-    "sea mine Gulf of Oman",
-    "naval mine Gulf of Oman",
-    "mine threat Hormuz",
-    "mine threat Persian Gulf",
-    "mine threat Gulf of Oman",
-    "Hormuz minefield",
-    "Persian Gulf minefield",
-
-    # ── 英文：伊朗布雷行動 ──
-    "Iran mine laying",
-    "Iran mine threat",
-    "Iran naval mine",
-    "Iran sea mine",
-    "Iran mine warfare",
-    "Iran mine blockade",
-    "Iranian mining",
-    "Iran mining campaign",
-    "IRGC mine laying",
-    "IRGC mine threat",
-    "submarine minelaying",
-    "mine laying submarine",
-
-    # ── 英文：水雷攻擊船舶 ──
-    "limpet mine tanker",
-    "limpet mine vessel",
-    "limpet mine Gulf",
-    "limpet mine Hormuz",
-    "mine explosion tanker",
-    "mine explosion vessel",
-    "mine strike tanker",
-    "mine strike vessel",
-    "mine detonation ship",
-    "underwater mine tanker",
-
-    # ── 英文：魚雷攻擊 ──
-    "torpedo attack tanker",
-    "torpedo attack vessel Gulf",
-    "torpedo strike Persian Gulf",
-
-    # ── 英文：砲擊船舶（水下/水面封鎖情境）──
-    "tanker shelled",
-    "vessel shelled Hormuz",
-    "tanker fired upon",
-    "vessel fired upon Gulf",
-
-    # ── 英文：封鎖與掃雷 ──
-    "Strait of Hormuz closure",
-    "Persian Gulf blockade",
-    "mine the strait",
-    "mining the strait",
-    "mining Hormuz",
-    "mining Persian Gulf",
-    "mine clearance Gulf",
-    "mine sweeping Gulf",
-    "mine sweeping Hormuz",
-
-    # ── 繁體中文：水雷威脅 ──
-    "水雷封鎖荷姆茲",
-    "水雷封鎖霍爾木茲",
-    "水雷封鎖波斯灣",
-    "水雷封鎖阿曼灣",
-    "荷姆茲水雷",
-    "波斯灣水雷",
-    "阿曼灣水雷",
-    "荷莫茲海峽封鎖",
-    "霍爾木茲海峽封鎖",
-    "封鎖荷莫茲海峽",
-
-    # ── 繁體中文：伊朗布雷行動 ──
-    "伊朗封鎖荷莫茲",
-    "伊朗封鎖霍爾木茲",
-    "伊朗控制荷姆茲",
-    "伊朗控制荷莫茲",
-    "伊朗控制霍爾木茲",
-    "完全控制荷姆茲",
-    "完全控制荷莫茲",
-    "完全控制霍爾木茲",
-    "控制荷莫茲",
-    "封鎖荷莫茲",
-    "伊朗布雷",
-    "伊朗水雷威脅",
-    "伊朗水雷攻擊",
-    "伊朗水雷封鎖",
-    "革命衛隊布雷",
-    "革命衛隊水雷",
-
-    # ── 繁體中文：水雷攻擊船舶 ──
-    "磁吸水雷油輪",
-    "磁吸水雷商船",
-    "水雷爆炸油輪",
-    "水雷爆炸商船",
-    "水雷擊中油輪",
-    "水雷擊中商船",
-    "水雷攻擊船隻",
-    "水雷攻擊油輪",
-    "水雷威脅航運",
-
-    # ── 繁體中文：魚雷攻擊 ──
-    "魚雷攻擊油輪",
-    "魚雷攻擊商船",
-    "魚雷攻擊波斯灣",
-
-    # ── 繁體中文：砲擊船舶 ──
-    "油輪被砲擊",
-    "油輪遭砲擊",
-    "商船被砲擊",
-
-    # ── 繁體中文：掃雷 ──
-    "掃雷行動海灣",
-    "水雷清除荷姆茲",
-
-    # ── 簡體中文：水雷威脅 ──
-    "水雷封锁霍尔木兹",
-    "水雷封锁波斯湾",
-    "水雷封锁阿曼湾",
-    "霍尔木兹水雷",
-    "波斯湾水雷",
-    "阿曼湾水雷",
-
-    # ── 簡體中文：伊朗布雷行動 ──
-    "伊朗水雷威胁",
-    "伊朗水雷攻击",
-    "伊朗水雷封锁",
-    "革命卫队布雷",
-    "革命卫队水雷",
-
-    # ── 簡體中文：水雷攻擊船舶 ──
-    "磁吸水雷油轮",
-    "磁吸水雷商船",
-    "水雷爆炸油轮",
-    "水雷爆炸商船",
-    "水雷击中油轮",
-    "水雷击中商船",
-    "水雷攻击船只",
-    "水雷攻击油轮",
-    "水雷威胁航运",
-
-    # ── 簡體中文：魚雷攻擊 ──
-    "鱼雷攻击油轮",
-    "鱼雷攻击商船",
-    "鱼雷攻击波斯湾",
-
-    # ── 簡體中文：砲擊船舶 ──
-    "油轮被炮弹击中",
-    "油轮遭炮击",
-    "商船被炮弹击中",
-
-    # ── 簡體中文：掃雷 ──
-    "扫雷行动海湾",
-    "水雷清除霍尔木兹",
+    "sea mine Strait of Hormuz", "naval mine Strait of Hormuz", "sea mine Persian Gulf",
+    "naval mine Persian Gulf", "sea mine Gulf of Oman", "naval mine Gulf of Oman",
+    "mine threat Hormuz", "mine threat Persian Gulf", "mine threat Gulf of Oman",
+    "Hormuz minefield", "Persian Gulf minefield", "Iran mine laying", "Iran mine threat",
+    "Iran naval mine", "Iran sea mine", "Iran mine warfare", "Iran mine blockade",
+    "Iranian mining", "Iran mining campaign", "IRGC mine laying", "IRGC mine threat",
+    "submarine minelaying", "mine laying submarine", "limpet mine tanker", "limpet mine vessel",
+    "limpet mine Gulf", "limpet mine Hormuz", "mine explosion tanker", "mine explosion vessel",
+    "mine strike tanker", "mine strike vessel", "mine detonation ship", "underwater mine tanker",
+    "torpedo attack tanker", "torpedo attack vessel Gulf", "torpedo strike Persian Gulf",
+    "tanker shelled", "vessel shelled Hormuz", "tanker fired upon", "vessel fired upon Gulf",
+    "Strait of Hormuz closure", "Persian Gulf blockade", "mine the strait", "mining the strait",
+    "mining Hormuz", "mining Persian Gulf", "mine clearance Gulf", "mine sweeping Gulf",
+    "mine sweeping Hormuz", "水雷封鎖荷姆茲", "水雷封鎖霍爾木茲", "水雷封鎖波斯灣",
+    "水雷封鎖阿曼灣", "荷姆茲水雷", "波斯灣水雷", "阿曼灣水雷", "荷莫茲海峽封鎖",
+    "霍爾木茲海峽封鎖", "封鎖荷莫茲海峽", "伊朗封鎖荷莫茲", "伊朗封鎖霍爾木茲",
+    "伊朗控制荷姆茲", "伊朗控制荷莫茲", "伊朗控制霍爾木茲", "完全控制荷姆茲",
+    "完全控制荷莫茲", "完全控制霍爾木茲", "控制荷莫茲", "封鎖荷莫茲", "伊朗布雷",
+    "伊朗水雷威脅", "伊朗水雷攻擊", "伊朗水雷封鎖", "革命衛隊布雷", "革命衛隊水雷",
+    "磁吸水雷油輪", "磁吸水雷商船", "水雷爆炸油輪", "水雷爆炸商船", "水雷擊中油輪",
+    "水雷擊中商船", "水雷攻擊船隻", "水雷攻擊油輪", "水雷威脅航運", "魚雷攻擊油輪",
+    "魚雷攻擊商船", "魚雷攻擊波斯灣", "油輪被砲擊", "油輪遭砲擊", "商船被砲擊",
+    "掃雷行動海灣", "水雷清除荷姆茲", "水雷封锁霍尔木兹", "水雷封锁波斯湾", "水雷封锁阿曼湾",
+    "霍尔木兹水雷", "波斯湾水雷", "阿曼湾水雷", "伊朗水雷威胁", "伊朗水雷攻击",
+    "伊朗水雷封锁", "革命卫队布雷", "革命卫队水雷", "磁吸水雷油轮", "磁吸水雷商船",
+    "水雷爆炸油轮", "水雷爆炸商船", "水雷击中油轮", "水雷击中商船", "水雷攻击船只",
+    "水雷攻击油轮", "水雷威胁航运", "鱼雷攻击油轮", "鱼雷攻击商船", "鱼雷攻击波斯湾",
+    "油轮被炮弹击中", "油轮遭炮击", "商船被炮弹击中", "扫雷行动海湾", "水雷清除霍尔木兹",
 ]
 
-# ──────────────────────────────────────────────────────────────
-# CAT4：紅海／曼德海峽胡塞武裝（含伊朗支持勢力）攻擊
-# ──────────────────────────────────────────────────────────────
 CAT4_KEYWORDS = [
-    # ── 英文：胡塞攻擊 ──
-    "Houthi attack",
-    "Houthi missile",
-    "Houthi drone",
-    "Houthi ship attack",
-    "Houthi tanker attack",
-    "Houthi vessel attack",
-    "Houthi Red Sea",
-    "Houthi Bab el-Mandeb",
-    "Houthi shipping",
-    "Houthi ballistic missile",
-    "Houthi cruise missile",
-    "Houthi anti-ship missile",
-    "Houthi naval drone",
-    "Houthi underwater drone",
-    "Houthi USV attack",
-
-    # ── 英文：紅海事件 ──
-    "Red Sea attack",
-    "Red Sea incident",
-    "Red Sea shipping attack",
-    "Red Sea tanker attack",
-    "Red Sea vessel attack",
-    "Red Sea missile attack",
-    "Red Sea drone attack",
-
-    # ── 英文：曼德海峽 ──
-    "Bab el-Mandeb attack",
-    "Bab el-Mandeb incident",
-    "Bab el-Mandeb shipping",
-    "Bab el-Mandeb tanker",
-
-    # ── 英文：亞丁灣 ──
-    "Gulf of Aden attack",
-    "Gulf of Aden incident",
-    "Gulf of Aden tanker attack",
-    "Gulf of Aden vessel attack",
-
-    # ── 英文：葉門／伊朗代理人 ──
-    "Yemen attack shipping",
-    "Yemen missile ship",
-    "Ansarallah attack",
-    "Ansarallah shipping",
-    "Iranian-backed attack shipping",
-    "Iran proxy attack tanker",
-    "Iran proxy Red Sea",
-
-    # ── 繁體中文：胡塞攻擊 ──
-    "胡塞攻擊",
-    "胡塞飛彈",
-    "胡塞無人機",
-    "胡塞攻擊船隻",
-    "胡塞攻擊油輪",
-    "胡塞攻擊商船",
-    "胡塞紅海攻擊",
-    "胡塞曼德海峽攻擊",
-    "胡塞反艦飛彈",
-    "胡塞彈道飛彈攻船",
-    "胡塞巡弋飛彈攻船",
-    "胡塞水面無人艇",
-    "胡塞水下無人艇",
-
-    # ── 繁體中文：紅海事件 ──
-    "紅海攻擊",
-    "紅海船隻遇襲",
-    "紅海油輪遭攻擊",
-    "紅海商船遇襲",
-    "紅海飛彈攻擊",
-    "紅海無人機攻擊",
-
-    # ── 繁體中文：曼德海峽 ──
-    "曼德海峽攻擊",
-    "曼德海峽船隻遇襲",
-
-    # ── 繁體中文：亞丁灣 ──
-    "亞丁灣攻擊",
-    "亞丁灣油輪遭攻擊",
-
-    # ── 繁體中文：葉門／伊朗代理人 ──
-    "葉門攻擊船隻",
-    "葉門飛彈攻船",
-    "伊朗代理人攻擊船",
-    "伊朗支持攻擊航運",
-
-    # ── 簡體中文：胡塞攻擊 ──
-    "胡塞攻击",
-    "胡塞导弹",
-    "胡塞无人机",
-    "胡塞攻击船只",
-    "胡塞攻击油轮",
-    "胡塞攻击商船",
-    "胡塞红海攻击",
-    "胡塞曼德海峡攻击",
-    "胡塞反舰导弹",
-    "胡塞弹道导弹攻船",
-    "胡塞巡航导弹攻船",
-    "胡塞水面无人艇",
-    "胡塞水下无人艇",
-
-    # ── 簡體中文：紅海事件 ──
-    "红海攻击",
-    "红海船只遇袭",
-    "红海油轮遭攻击",
-    "红海商船遇袭",
-    "红海导弹攻击",
-    "红海无人机攻击",
-
-    # ── 簡體中文：曼德海峽 ──
-    "曼德海峡攻击",
-    "曼德海峡船只遇袭",
-
-    # ── 簡體中文：亞丁灣 ──
-    "亚丁湾攻击",
-    "亚丁湾油轮遭攻击",
-
-    # ── 簡體中文：葉門／伊朗代理人 ──
-    "也门攻击船只",
-    "也门导弹攻船",
-    "伊朗代理人攻击船",
+    "Houthi attack", "Houthi missile", "Houthi drone", "Houthi ship attack",
+    "Houthi tanker attack", "Houthi vessel attack", "Houthi Red Sea", "Houthi Bab el-Mandeb",
+    "Houthi shipping", "Houthi ballistic missile", "Houthi cruise missile",
+    "Houthi anti-ship missile", "Houthi naval drone", "Houthi underwater drone",
+    "Houthi USV attack", "Red Sea attack", "Red Sea incident", "Red Sea shipping attack",
+    "Red Sea tanker attack", "Red Sea vessel attack", "Red Sea missile attack",
+    "Red Sea drone attack", "Bab el-Mandeb attack", "Bab el-Mandeb incident",
+    "Bab el-Mandeb shipping", "Bab el-Mandeb tanker", "Gulf of Aden attack",
+    "Gulf of Aden incident", "Gulf of Aden tanker attack", "Gulf of Aden vessel attack",
+    "Yemen attack shipping", "Yemen missile ship", "Ansarallah attack", "Ansarallah shipping",
+    "Iranian-backed attack shipping", "Iran proxy attack tanker", "Iran proxy Red Sea",
+    "胡塞攻擊", "胡塞飛彈", "胡塞無人機", "胡塞攻擊船隻", "胡塞攻擊油輪", "胡塞攻擊商船",
+    "胡塞紅海攻擊", "胡塞曼德海峽攻擊", "胡塞反艦飛彈", "胡塞彈道飛彈攻船",
+    "胡塞巡弋飛彈攻船", "胡塞水面無人艇", "胡塞水下無人艇", "紅海攻擊", "紅海船隻遇襲",
+    "紅海油輪遭攻擊", "紅海商船遇襲", "紅海飛彈攻擊", "紅海無人機攻擊", "曼德海峽攻擊",
+    "曼德海峽船隻遇襲", "亞丁灣攻擊", "亞丁灣油輪遭攻擊", "葉門攻擊船隻", "葉門飛彈攻船",
+    "伊朗代理人攻擊船", "伊朗支持攻擊航運", "胡塞攻击", "胡塞导弹", "胡塞无人机",
+    "胡塞攻击船只", "胡塞攻击油轮", "胡塞攻击商船", "胡塞红海攻击", "胡塞曼德海峡攻击",
+    "胡塞反舰导弹", "胡塞弹道导弹攻船", "胡塞巡航导弹攻船", "胡塞水面无人艇",
+    "胡塞水下无人艇", "红海攻击", "红海船只遇袭", "红海油轮遭攻击", "红海商船遇袭",
+    "红海导弹攻击", "红海无人机攻击", "曼德海峡攻击", "曼德海峡船只遇袭", "亚丁湾攻击",
+    "亚丁湾油轮遭攻击", "也门攻击船只", "也门导弹攻船", "伊朗代理人攻击船",
     "伊朗支持攻击航运",
 ]
 
-# ──────────────────────────────────────────────────────────────
-# CAT5：航商繞航改道措施及波斯灣緊急錨泊動態
-# 注意：「改道」單詞過泛已移除，保留詞組形式
-# ──────────────────────────────────────────────────────────────
 CAT5_KEYWORDS = [
-    # ── 英文：繞航改道 ──
-    "vessel rerouting",
-    "ship diversion",
-    "vessel diversion",
-    "rerouting Cape of Good Hope",
-    "Cape of Good Hope rerouting",
-    "Cape routing",
-    "Cape diversion",
-    "Gulf bypass route",
-    "bypass Hormuz",
-
-    # ── 英文：迴避特定水域 ──
-    "avoiding Red Sea",
-    "avoiding Suez Canal",
-    "avoiding Strait of Hormuz",
-    "avoiding Persian Gulf",
-    "avoiding Gulf of Aden",
-    "avoiding Bab el-Mandeb",
-    "Red Sea avoidance",
-    "Hormuz avoidance",
-
-    # ── 英文：航商宣佈 ──
-    "shipping line reroute",
-    "carrier reroute",
-    "container line reroute",
-    "tanker reroute",
-    "Maersk reroute",
-    "MSC reroute",
-    "CMA CGM reroute",
-    "Evergreen reroute",
-    "COSCO reroute",
-    "shipping suspended Red Sea",
-    "shipping suspended Gulf",
-    "service suspended Red Sea",
-    "transit suspended Hormuz",
-    "transit suspended Red Sea",
-    "booking freeze Gulf",
-    "booking cancelled Gulf",
-    "ONE cancelled bookings",
-    "container booking freeze",
-
-    # ── 英文：錨泊避難 ──
-    "port of refuge Persian Gulf",
-    "anchorage Persian Gulf",
-    "safe anchorage Gulf",
-    "refuge anchorage Gulf",
-    "vessels anchored Gulf",
-    "ships waiting Gulf",
-    "Fujairah anchorage",
-    "Khor Fakkan anchorage",
-    "Muscat anchorage",
-    "Salalah refuge",
-
-    # ── 英文：戰爭險與保險 ──
-    "war risk surcharge",
-    "war risk premium",
-    "additional war risk",
-    "war risk insurance",
-    "tanker insurance suspended",
-    "insurers suspended",
-    "tanker insurance Gulf",
-    "government backstop tanker",
-    "insurance backstop shipping",
-
-    # ── 英文：護航 ──
-    "US escort tanker",
-    "navy escort tanker Hormuz",
-    "US Navy escort Gulf",
-
-    # ── 英文：替代管線／能源安全 ──
-    "pipeline bypass Gulf",
-    "East-West Pipeline",
-    "Fujairah terminal",
-    "ADCOP pipeline",
-    "oil supply cover",
-    "storage capacity Gulf",
-    "Hormuz disruption supply",
-    "energy security Gulf",
-    "trading house suspended Gulf",
-
-    # ── 繁體中文：繞航改道 ──
-    "航商宣佈繞航",
-    "航商改道",
-    "航線改道",
-    "繞航好望角",
-    "改走好望角",
-    "遶行改道",
-    "遶航好望角",
-    "繞航費用增加",
-
-    # ── 繁體中文：迴避特定水域 ──
-    "避開紅海",
-    "避開蘇伊士運河",
-    "避開荷姆茲海峽",
-    "避開霍爾木茲海峽",
-    "避開荷莫茲海峽",
-    "避開波斯灣",
-    "避開亞丁灣",
-    "避開曼德海峽",
-
-    # ── 繁體中文：航商宣佈 ──
-    "馬士基繞航",
-    "地中海航運繞航",
-    "達飛輪船繞航",
-    "長榮海運繞航",
-    "中遠海運繞航",
-    "陽明海運繞航",
-    "暫停紅海航線",
-    "暫停波斯灣航線",
-    "暫停荷姆茲通行",
-    "暫停荷莫茲通行",
-    "暫停蘇伊士通行",
-
-    # ── 繁體中文：錨泊避難 ──
-    "波斯灣避難錨地",
-    "波斯灣錨泊等待",
-    "富查伊拉錨地",
-    "科爾法坎錨地",
-    "馬斯喀特避難",
-    "薩拉拉避難",
-
-    # ── 繁體中文：戰爭險與保險 ──
-    "戰爭附加費",
-    "戰爭險保費上漲",
-    "航運保險費率上漲",
+    "vessel rerouting", "ship diversion", "vessel diversion", "rerouting Cape of Good Hope",
+    "Cape of Good Hope rerouting", "Cape routing", "Cape diversion", "Gulf bypass route",
+    "bypass Hormuz", "avoiding Red Sea", "avoiding Suez Canal", "avoiding Strait of Hormuz",
+    "avoiding Persian Gulf", "avoiding Gulf of Aden", "avoiding Bab el-Mandeb",
+    "Red Sea avoidance", "Hormuz avoidance", "shipping line reroute", "carrier reroute",
+    "container line reroute", "tanker reroute", "Maersk reroute", "MSC reroute",
+    "CMA CGM reroute", "Evergreen reroute", "COSCO reroute", "shipping suspended Red Sea",
+    "shipping suspended Gulf", "service suspended Red Sea", "transit suspended Hormuz",
+    "transit suspended Red Sea", "booking freeze Gulf", "booking cancelled Gulf",
+    "ONE cancelled bookings", "container booking freeze", "port of refuge Persian Gulf",
+    "anchorage Persian Gulf", "safe anchorage Gulf", "refuge anchorage Gulf",
+    "vessels anchored Gulf", "ships waiting Gulf", "Fujairah anchorage", "Khor Fakkan anchorage",
+    "Muscat anchorage", "Salalah refuge", "war risk surcharge", "war risk premium",
+    "additional war risk", "war risk insurance", "tanker insurance suspended",
+    "insurers suspended", "tanker insurance Gulf", "government backstop tanker",
+    "insurance backstop shipping", "US escort tanker", "navy escort tanker Hormuz",
+    "US Navy escort Gulf", "pipeline bypass Gulf", "East-West Pipeline", "Fujairah terminal",
+    "ADCOP pipeline", "oil supply cover", "storage capacity Gulf", "Hormuz disruption supply",
+    "energy security Gulf", "trading house suspended Gulf", "航商宣佈繞航", "航商改道",
+    "航線改道", "繞航好望角", "改走好望角", "遶行改道", "遶航好望角", "繞航費用增加",
+    "避開紅海", "避開蘇伊士運河", "避開荷姆茲海峽", "避開霍爾木茲海峽", "避開荷莫茲海峽",
+    "避開波斯灣", "避開亞丁灣", "避開曼德海峽", "馬士基繞航", "地中海航運繞航",
+    "達飛輪船繞航", "長榮海運繞航", "中遠海運繞航", "陽明海運繞航", "暫停紅海航線",
+    "暫停波斯灣航線", "暫停荷姆茲通行", "暫停荷莫茲通行", "暫停蘇伊士通行",
+    "波斯灣避難錨地", "波斯灣錨泊等待", "富查伊拉錨地", "科爾法坎錨地", "馬斯喀特避難",
+    "薩拉拉避難", "戰爭附加費", "戰爭險保費上漲", "航運保險費率上漲",
 ]
 
-# ──────────────────────────────────────────────────────────────
-# OTHER：其他航運安全與市場動態
-# 注意：純油流/航運狀況詞（原 CAT3 誤放）已移入此處
-# ──────────────────────────────────────────────────────────────
 OTHER_KEYWORDS = [
-    # ── 英文：船型 ──
-    "oil tanker",
-    "product tanker",
-    "chemical tanker",
-    "VLCC",
-    "ULCC",
-    "Aframax",
-    "Suezmax",
-    "LNG carrier",
-    "LNG tanker",
-    "LPG carrier",
-    "container ship",
-    "containership",
-    "container vessel",
-    "bulk carrier",
-    "bulk vessel",
-    "merchant vessel",
-    "merchant ship",
-    "cargo vessel",
-    "newbuilding",
-    "shipbuilding order",
-
-    # ── 英文：運費與市場 ──
-    "freight rate",
-    "shipping rate",
-    "charter rate",
-    "bunker fuel",
-    "shipping cost",
-
-    # ── 英文：港口與水道 ──
-    "port congestion",
-    "port closure",
-    "port blockade",
-    "channel closure",
-    "waterway closure",
-    "Suez Canal closure",
-    "Suez Canal transit",
-    "Panama Canal closure",
-    "Panama Canal transit",
-    "Persian Gulf shipping",
-    "Persian Gulf tanker",
-    "Gulf of Oman shipping",
-
-    # ── 英文：原 CAT3 誤放之油流詞（移入 OTHER）──
-    "tanker traffic Hormuz",
-    "Hormuz oil flow",
-    "Hormuz oil supply",
-    "oil flow disruption Hormuz",
-
-    # ── 英文：海事安全事件 ──
-    "UKMTO alert",
-    "UKMTO incident",
-    "IMB piracy",
-    "maritime piracy",
-    "ship hijacking",
-    "vessel hijacking",
-    "armed robbery at sea",
-    "crew kidnapped",
-    "seafarer kidnapped",
-    "crew hostage",
-    "maritime security incident",
-    "maritime security alert",
-
-    # ── 英文：影子船隊與制裁 ──
-    "shadow fleet tanker",
-    "dark fleet vessel",
-    "sanctioned vessel",
-    "sanctioned tanker",
-    "shipping sanctions",
-    "tanker sanctions",
-    "Iran oil sanctions",
-    "Iran shipping sanctions",
-
-    # ── 英文：護航行動 ──
-    "naval escort shipping",
-    "Operation Prosperity Guardian",
-    "CTF-151",
-    "Combined Maritime Forces",
-
-    # ── 英文：黑海 ──
-    "Black Sea shipping",
-    "Black Sea tanker",
-
-    # ── 繁體中文：船型 ──
-    "油輪",
-    "成品油輪",
-    "化學品船",
-    "貨櫃船",
-    "散裝船",
-    "液化天然氣船",
-    "液化石油氣船",
-    "商船",
-    "貨輪",
-    "超大型油輪",
-    "新造船",
-
-    # ── 繁體中文：運費與市場 ──
-    "運費上漲",
-    "運價",
-    "航運市場",
-    "造船訂單",
-
-    # ── 繁體中文：港口與水道 ──
-    "港口封閉",
-    "港口擁堵",
-    "商船停航",
-    "貨輪停航",
-    "航運停航",
-    "蘇伊士運河封鎖",
-    "蘇伊士運河通行",
-    "巴拿馬運河封鎖",
-    "巴拿馬運河關閉",
-    "波斯灣航運",
-    "波斯灣油輪",
-
-    # ── 繁體中文：海事安全事件 ──
-    "海盜攻擊",
-    "海盜劫船",
-    "武裝登船",
-    "船員被劫",
-    "船員被扣押",
-
-    # ── 繁體中文：影子船隊與制裁 ──
-    "影子船隊",
-    "黑名單船舶",
-    "制裁油輪",
-    "制裁船隊",
-    "伊朗石油制裁",
-    "伊朗航運制裁",
-
-    # ── 繁體中文：護航行動 ──
-    "護航艦隊",
-    "繁榮衛士行動",
-
-    # ── 繁體中文：保險 ──
-    "戰爭險",
-    "航運保險",
-
-    # ── 簡體中文：船型 ──
-    "油船",
-    "成品油船",
-    "化学品船",
-    "集装箱船",
-    "散装船",
-    "液化天然气船",
-    "货轮",
-    "超大型油轮",
-
-    # ── 簡體中文：運費與市場 ──
-    "运费上涨",
-    "运价",
-    "航运市场",
-    "造船订单",
-
-    # ── 簡體中文：港口與水道 ──
-    "港口封闭",
-    "港口拥堵",
-    "商船停航",
-    "货轮停航",
-    "航运停航",
-    "苏伊士运河封锁",
-    "苏伊士运河通行",
-    "巴拿马运河封锁",
-    "巴拿马运河关闭",
-    "波斯湾航运",
-    "波斯湾油轮",
-
-    # ── 簡體中文：海事安全事件 ──
-    "海盗攻击",
-    "海盗劫船",
-    "武装登船",
-    "船员被劫",
-    "船员被扣押",
-
-    # ── 簡體中文：影子船隊與制裁 ──
-    "影子船队",
-    "黑名单船舶",
-    "制裁油轮",
-    "制裁船队",
-    "伊朗石油制裁",
-    "伊朗航运制裁",
-
-    # ── 簡體中文：護航行動 ──
-    "护航舰队",
-    "繁荣卫士行动",
-
-    # ── 簡體中文：保險 ──
-    "战争险",
-    "航运保险",
+    "oil tanker", "product tanker", "chemical tanker", "VLCC", "ULCC", "Aframax", "Suezmax",
+    "LNG carrier", "LNG tanker", "LPG carrier", "container ship", "containership",
+    "container vessel", "bulk carrier", "bulk vessel", "merchant vessel", "merchant ship",
+    "cargo vessel", "newbuilding", "shipbuilding order", "freight rate", "shipping rate",
+    "charter rate", "bunker fuel", "shipping cost", "port congestion", "port closure",
+    "port blockade", "channel closure", "waterway closure", "Suez Canal closure",
+    "Suez Canal transit", "Panama Canal closure", "Panama Canal transit", "Persian Gulf shipping",
+    "Persian Gulf tanker", "Gulf of Oman shipping", "tanker traffic Hormuz", "Hormuz oil flow",
+    "Hormuz oil supply", "oil flow disruption Hormuz", "UKMTO alert", "UKMTO incident",
+    "IMB piracy", "mar maritime piracy", "ship hijacking", "vessel hijacking",
+    "armed robbery at sea", "crew kidnapped", "seafarer kidnapped", "crew hostage",
+    "maritime security incident", "maritime security alert", "shadow fleet tanker",
+    "dark fleet vessel", "sanctioned vessel", "sanctioned tanker", "shipping sanctions",
+    "tanker sanctions", "Iran oil sanctions", "Iran shipping sanctions", "naval escort shipping",
+    "Operation Prosperity Guardian", "CTF-151", "Combined Maritime Forces", "Black Sea shipping",
+    "Black Sea tanker", "油輪", "成品油輪", "化學品船", "貨櫃船", "散裝船", "液化天然氣船",
+    "液化石油氣船", "商船", "貨輪", "超大型油輪", "新造船", "運費上漲", "運價", "航運市場",
+    "造船訂單", "港口封閉", "港口擁堵", "商船停航", "貨輪停航", "航運停航", "蘇伊士運河封鎖",
+    "蘇伊士運河通行", "巴拿馬運河封鎖", "巴拿馬運河關閉", "波斯灣航運", "波斯灣油輪",
+    "海盜攻擊", "海盜劫船", "武裝登船", "船員被劫", "船員被扣押", "影子船隊", "黑名單船舶",
+    "制裁油輪", "制裁船隊", "伊朗石油制裁", "伊朗航運制裁", "護航艦隊", "繁榮衛士行動",
+    "戰爭險", "航運保險", "油船", "成品油船", "化学品船", "集装箱船", "散装船",
+    "液化天然气船", "货轮", "超大型油轮", "运费上涨", "运价", "航运市场", "造船订单",
+    "港口封闭", "港口拥堵", "商船停航", "货轮停航", "航运停航", "苏伊士运河封锁",
+    "苏伊士运河通行", "巴拿马运河封锁", "巴拿马运河关闭", "波斯湾航运", "波斯湾油轮",
+    "海盗攻击", "海盗劫船", "武装登船", "船员被劫", "船员被扣押", "影子船队", "黑名单船舶",
+    "制裁油轮", "制裁船队", "伊朗石油制裁", "伊朗航运制裁", "护航舰队", "繁荣卫士行动",
+    "战争险", "航运保险",
 ]
 
 # ══════════════════════════════════════════════════════════════
 # 建立情境關鍵字對照表
-# 設計原則：CAT1 強制覆蓋（最高優先權）；CAT2–OTHER 依序 setdefault
 # ══════════════════════════════════════════════════════════════
 INCIDENT_KEYWORD_MAP: dict[str, str] = {}
 
 for _kw in CAT1_KEYWORDS:
-    INCIDENT_KEYWORD_MAP[_kw.lower()] = "CAT1"          # 強制覆蓋，最高優先
+    INCIDENT_KEYWORD_MAP[_kw.lower()] = "CAT1"
 for _kw in CAT2_KEYWORDS:
     INCIDENT_KEYWORD_MAP.setdefault(_kw.lower(), "CAT2")
 for _kw in CAT3_KEYWORDS:
@@ -956,7 +280,6 @@ for _kw in CAT5_KEYWORDS:
 for _kw in OTHER_KEYWORDS:
     INCIDENT_KEYWORD_MAP.setdefault(_kw.lower(), "OTHER")
 
-# ── 去重後的完整關鍵字清單 ──
 _ALL_RAW = (
     CAT1_KEYWORDS + CAT2_KEYWORDS + CAT3_KEYWORDS +
     CAT4_KEYWORDS + CAT5_KEYWORDS + OTHER_KEYWORDS
@@ -968,116 +291,51 @@ for _kw in _ALL_RAW:
         ALL_KEYWORDS.append(_kw)
         _seen_kw.add(_kw.lower())
 
-logger.info(
-    f"📚 關鍵字載入 | "
-    f"CAT1: {len(CAT1_KEYWORDS)} | CAT2: {len(CAT2_KEYWORDS)} | "
-    f"CAT3: {len(CAT3_KEYWORDS)} | CAT4: {len(CAT4_KEYWORDS)} | "
-    f"CAT5: {len(CAT5_KEYWORDS)} | 其他: {len(OTHER_KEYWORDS)} | "
-    f"去重後: {len(ALL_KEYWORDS)} 個"
-)
-
 # ══════════════════════════════════════════════════════════════
 # 語境驗證詞集
-# 設計原則：只保留真正的航運操作術語，移除純財經詞彙
 # ══════════════════════════════════════════════════════════════
 TITLE_SHIPPING_TERMS = {
-    # ── 英文：船舶與貨物 ──
-    "tanker", "vessel", "ship", "shipping", "maritime",
-    "fleet", "cargo", "freight", "port", "canal",
-    "strait", "suez", "hormuz", "panama",
-    "vlcc", "lng", "lpg", "bunker", "charter",
-    "seafarer", "crew", "piracy", "hijack",
-    # ── 英文：地理水域 ──
-    "red sea", "gulf of aden", "persian gulf",
-    "bab el-mandeb", "gulf of oman",
-    # ── 英文：船型 ──
-    "container ship", "bulk carrier",
-    # ── 英文：安全事件 ──
-    "houthi", "irgc", "mine", "blockade", "attack",
-    # ── 繁體中文：荷姆茲異體字 ──
-    "荷莫茲", "荷姆茲", "霍爾木茲",
-    # ── 繁體中文：船舶與貨物 ──
-    "油輪", "貨輪", "商船", "貨櫃船", "散裝船",
-    "航運", "海運", "港口", "運河", "海峽",
-    "船舶", "護航", "運費",
-    # ── 繁體中文：地理水域 ──
-    "紅海", "波斯灣", "亞丁灣", "阿曼灣",
-    # ── 繁體中文：安全事件 ──
-    "海盜", "劫船", "水雷", "布雷", "掃雷", "胡塞",
-    "戰爭險", "航運保險",
-    # ── 簡體中文：船舶與貨物 ──
-    "油船", "货轮", "集装箱船", "散装船",
-    "航运", "海运", "港口", "运河", "海峡",
-    "船舶", "护航", "运费",
-    # ── 簡體中文：地理水域 ──
-    "红海", "波斯湾", "亚丁湾", "阿曼湾",
-    # ── 簡體中文：安全事件 ──
-    "海盗", "劫船", "水雷", "布雷", "扫雷", "胡塞",
-    "战争险", "航运保险",
+    "tanker", "vessel", "ship", "shipping", "maritime", "fleet", "cargo", "freight", "port", "canal",
+    "strait", "suez", "hormuz", "panama", "vlcc", "lng", "lpg", "bunker", "charter", "seafarer", "crew", "piracy", "hijack",
+    "red sea", "gulf of aden", "persian gulf", "bab el-mandeb", "gulf of oman",
+    "container ship", "bulk carrier", "houthi", "irgc", "mine", "blockade", "attack",
+    "荷莫茲", "荷姆茲", "霍爾木茲", "油輪", "貨輪", "商船", "貨櫃船", "散裝船",
+    "航運", "海運", "港口", "運河", "海峽", "船舶", "護航", "運費",
+    "紅海", "波斯灣", "亞丁灣", "阿曼灣", "海盜", "劫船", "水雷", "布雷", "掃雷", "胡塞", "戰爭險", "航運保險",
+    "油船", "货轮", "集装箱船", "散装船", "航运", "海运", "港口", "运河", "海峡",
+    "船舶", "护航", "运费", "红海", "波斯湾", "亚丁湾", "阿曼湾", "海盗", "劫船", "水雷", "布雷", "扫雷", "胡塞", "战争险", "航运保险",
 }
 
 BODY_SHIPPING_TERMS = {
-    # ── 英文 ──
-    "tanker", "vessel", "ship", "shipping", "maritime",
-    "fleet", "cargo", "freight", "port", "canal",
-    "strait", "hormuz", "suez", "panama",
-    "vlcc", "lng", "lpg", "bunker", "charter",
-    "seafarer", "crew", "piracy",
-    "red sea", "gulf of aden", "persian gulf", "gulf of oman",
-    "houthi", "mine", "irgc",
-    # ── 繁體中文 ──
-    "荷莫茲", "荷姆茲", "霍爾木茲",
-    "油輪", "貨輪", "商船", "貨櫃船",
-    "航運", "海運", "港口", "運河", "海峽",
-    "紅海", "波斯灣", "亞丁灣", "阿曼灣",
+    "tanker", "vessel", "ship", "shipping", "maritime", "fleet", "cargo", "freight", "port", "canal",
+    "strait", "hormuz", "suez", "panama", "vlcc", "lng", "lpg", "bunker", "charter", "seafarer", "crew", "piracy",
+    "red sea", "gulf of aden", "persian gulf", "gulf of oman", "houthi", "mine", "irgc",
+    "荷莫茲", "荷姆茲", "霍爾木茲", "油輪", "貨輪", "商船", "貨櫃船",
+    "航運", "海運", "港口", "運河", "海峽", "紅海", "波斯灣", "亞丁灣", "阿曼灣",
     "海盜", "護航", "運費", "船舶", "水雷", "胡塞",
-    # ── 簡體中文 ──
-    "油船", "货轮", "集装箱船",
-    "航运", "海运", "港口", "运河", "海峡",
-    "红海", "波斯湾", "亚丁湾", "阿曼湾",
-    "海盗", "护航", "运费", "船舶", "水雷", "胡塞",
+    "油船", "货轮", "集装箱船", "航运", "海运", "港口", "运河", "海峡",
+    "红海", "波斯湾", "亚丁湾", "阿曼湾", "海盗", "护航", "运费", "船舶", "水雷", "胡塞",
 }
 
-# ══════════════════════════════════════════════════════════════
-# 財經噪音過濾
-# 設計原則：
-#   標題噪音 → 單一詞命中即觸發排除
-#   摘要噪音 → 命中 ≥2 個才觸發排除
-#   「運價」「航運股」等詞已從噪音集合移除，
-#   改由呼叫端以「不含 CAT1–CAT4 地理關鍵字」的組合條件判斷
-# ══════════════════════════════════════════════════════════════
 FINANCE_NOISE_TITLE_TERMS = {
-    # ── 只保留「純財經、與航運完全無關」的詞 ──
-    "台股", "股市", "股價", "漲停", "跌停", "大盤", "指數",
-    "外資", "法人", "投信", "自營商", "主力", "籌碼",
-    "加權指數", "櫃買指數", "ETF", "基金", "投資組合",
-    "選股", "存股", "殖利率", "本益比", "市值",
-    "台積電", "聯發科", "鴻海", "台塑", "中鋼",
-    "財報", "營收", "獲利", "EPS", "股息",
-    "漲幅", "跌幅", "漲價", "降價", "價格戰",
-    "通膨", "升息", "降息", "央行", "聯準會", "Fed",
-    "GDP", "CPI", "PPI", "PMI",
-    "大洗牌", "資金輪動", "板塊輪動",
-    "恐慌指數", "VIX", "風險溢價",
-    "焦點股", "熱門股", "強勢股", "弱勢股",
-    "亮燈", "攻上", "衝關", "守住", "失守",
-    "stock market", "equity", "share price",
-    "hedge fund", "portfolio", "dividend", "earnings",
-    "inflation", "interest rate", "central bank", "Fed",
-    "GDP", "CPI", "PMI", "VIX",}
+    "台股", "股市", "股價", "漲停", "跌停", "大盤", "指數", "外資", "法人", "投信", "自營商", "主力", "籌碼",
+    "加權指數", "櫃買指數", "ETF", "基金", "投資組合", "選股", "存股", "殖利率", "本益比", "市值",
+    "台積電", "聯發科", "鴻海", "台塑", "中鋼", "財報", "營收", "獲利", "EPS", "股息",
+    "漲幅", "跌幅", "漲價", "降價", "價格戰", "通膨", "升息", "降息", "央行", "聯準會", "Fed",
+    "GDP", "CPI", "PPI", "PMI", "大洗牌", "資金輪動", "板塊輪動", "恐慌指數", "VIX", "風險溢價",
+    "焦點股", "熱門股", "強勢股", "弱勢股", "亮燈", "攻上", "衝關", "守住", "失守",
+    "stock market", "equity", "share price", "hedge fund", "portfolio", "dividend", "earnings",
+    "inflation", "interest rate", "central bank", "Fed", "GDP", "CPI", "PMI", "VIX",
+}
 
-# 摘要財經噪音（命中 ≥2 個才觸發排除）
 FINANCE_NOISE_BODY_TERMS = {
-    "台股", "股市", "股價", "漲停", "跌停", "外資賣超",
-    "ETF", "基金", "投資", "法人", "籌碼",
-    "油價", "能源股", "通膨", "升息",
-    "財報", "營收", "獲利", "EPS",
-    "oil price", "crude price", "stock", "equity",
-    "investor", "analyst", "forecast",
+    "台股", "股市", "股價", "漲停", "跌停", "外資賣超", "ETF", "基金", "投資", "法人", "籌碼",
+    "油價", "能源股", "通膨", "升息", "財報", "營收", "獲利", "EPS",
+    "oil price", "crude price", "stock", "equity", "investor", "analyst", "forecast",
 }
 
 # ══════════════════════════════════════════════════════════════
-# RSS 來源設定（已修正：移除重複的 Yahoo新聞）
+# RSS 來源設定 (已修正失效連結)
 # ══════════════════════════════════════════════════════════════
 RSS_SOURCES = [
     # ── 中文媒體（台灣）──
@@ -1102,9 +360,8 @@ RSS_SOURCES = [
         "lang": "zh-TW", "icon": "🏛️", "category": "中文媒體", "need_clean": True,
     },
     {
-        # ✅ Bug 1 修正：移除重複定義，只保留一個 Yahoo新聞
         "name": "Yahoo新聞", "url": "https://tw.news.yahoo.com/rss/world",
-        "backup_url": "https://tw.news.yahoo.com/rss/", "extra_urls": [],
+        "backup_url": None, "extra_urls": [], # 已修復：將無效的根目錄拿掉
         "lang": "zh-TW", "icon": "🟣", "category": "中文媒體",
     },
     {
@@ -1251,21 +508,19 @@ RSS_SOURCES = [
         "category": "航運專業",
     },
     {
-    "name":     "Lloyd's List",
-    "icon":     "⚓",
-    "url":      "https://www.lloydslist.com/search#?topic=Red+Sea+Risk",
-    "lang":     "en",
-    "category": "航運專業",
-    "_html_scraper": True,   # 標記為自訂爬蟲，跳過 RSS 下載
+        "name":     "Lloyd's List",
+        "icon":     "⚓",
+        "url":      "https://www.lloydslist.com/search#?topic=Red+Sea+Risk",
+        "lang":     "en",
+        "category": "航運專業",
+        "_html_scraper": True,
     },
-
-    
     # ── 國際媒體 ──
     {
         "name": "Reuters",
-        "url":        "https://feeds.reuters.com/reuters/worldNews",
-        "backup_url": "https://news.yahoo.com/rss/world",
-        "extra_urls": [],
+        "url":        "https://news.yahoo.com/rss/world", # 已修復：官方關閉，改用 Yahoo 版
+        "backup_url": "https://rsshub.app/reuters/world", # 備用改為 RSSHub
+        "extra_urls": ["https://rsshub.rssforever.com/reuters/world"],
         "lang": "en", "icon": "🌐", "category": "國際媒體",
     },
     {
@@ -1288,9 +543,22 @@ RSS_SOURCES = [
         "name": "AP News",
         "url":        "https://rsshub.app/apnews/topics/world-news",
         "backup_url": "https://rsshub.rssforever.com/apnews/topics/world-news",
-        "extra_urls": ["https://feeds.apnews.com/rss/apf-topnews"],
-        "lang": "en", "icon": "📡", "category": "國際媒體", "need_clean": True,
+        "extra_urls": [], # 已修復：移除失效官方網址
+        "lang": "en", 
+        "icon": "📡", 
+        "category": "國際媒體", 
+        "need_clean": True,
     },
+    {
+    "name": "HOCC",
+    "url":  "https://hocc.example.com/feed/",          # ← 換成真實 RSS URL
+    "backup_url": "https://hocc.example.com/rss/",
+    "extra_urls": [],
+    "lang": "en",          # 或 zh-CN / en
+    "icon": "🚢",
+    "category": "國際媒體",   # 或 "中文媒體"
+    "need_clean": True,        # 若 XML 有亂碼問題就開啟
+},
 ]
 
 # ══════════════════════════════════════════════════════════════
@@ -1345,9 +613,7 @@ def clean_xml_content(raw) -> str:
 # ══════════════════════════════════════════════════════════════
 class OneShippingScraper:
     BASE_URL    = "https://www.oneshipping.info"
-    # 列表頁（航運熱點）
     LIST_URL    = "https://www.oneshipping.info/hyrd"
-    # 分頁 AJAX API（從 xnPager 行為推導）
     AJAX_URL    = "https://www.oneshipping.info/umbraco/Surface/NewsListSurface/GetNewsList"
     HEADERS = {
         "User-Agent": (
@@ -1372,18 +638,8 @@ class OneShippingScraper:
         self.hours_back = hours_back
         self.seen_urls: set = set()
 
-    # ──────────────────────────────────────────────────────────
-    # Step 1：從列表頁直接解析文章卡片（無需 sitemap）
-    # ──────────────────────────────────────────────────────────
     def _parse_list_items(self, html: str) -> list[dict]:
-        """
-        解析 <li class="w-list-item"> 結構
-        直接從 data-list-title / data-list-id 屬性取得標題與 ID
-        日期從 <p class="w-list-date w-hide"> 取得
-        """
         results = []
-
-        # 匹配每個 <li class="w-list-item"> 區塊
         li_pattern = re.compile(
             r'<li[^>]+class="w-list-item"[^>]+'
             r'data-list-title="([^"]*)"[^>]+'
@@ -1391,7 +647,6 @@ class OneShippingScraper:
             r'<p class="w-list-date w-hide">([^<]*)</p>',
             re.DOTALL
         )
-
         for m in li_pattern.finditer(html):
             title   = _html_module.unescape(m.group(1).strip())
             news_id = m.group(2).strip()
@@ -1403,19 +658,14 @@ class OneShippingScraper:
                 "url":      url,
                 "date_str": date_str,
             })
-
         return results
 
-    # ──────────────────────────────────────────────────────────
-    # Step 2：解析日期字串
-    # ──────────────────────────────────────────────────────────
     def _parse_date(self, date_str: str) -> datetime | None:
         if not date_str:
             return None
         for fmt in ('%Y-%m-%d %H:%M:%S', '%Y-%m-%d %H:%M', '%Y-%m-%d'):
             try:
                 dt = datetime.strptime(date_str.strip(), fmt)
-                # 壹航運是中國時間 UTC+8
                 return dt.replace(
                     tzinfo=timezone(timedelta(hours=8))
                 ).astimezone(timezone.utc)
@@ -1423,14 +673,7 @@ class OneShippingScraper:
                 continue
         return None
 
-    # ──────────────────────────────────────────────────────────
-    # Step 3：抓取文章內文摘要（只在關鍵字命中後才抓）
-    # ──────────────────────────────────────────────────────────
     def _fetch_article_summary(self, url: str) -> str:
-        """
-        文章頁結構：內文在 <div class="w-detail-content"> 或 <div class="detail-content">
-        只取前 300 字作為摘要
-        """
         try:
             resp = requests.get(
                 url, headers=self.HEADERS, timeout=15,
@@ -1439,7 +682,6 @@ class OneShippingScraper:
             resp.raise_for_status()
             html = resp.text
 
-            # 優先抓文章內文區塊
             content_patterns = [
                 r'<div[^>]+class="[^"]*w-detail-content[^"]*"[^>]*>(.*?)</div>',
                 r'<div[^>]+class="[^"]*detail-content[^"]*"[^>]*>(.*?)</div>',
@@ -1453,14 +695,12 @@ class OneShippingScraper:
                     raw_content = m.group(1)
                     break
 
-            # fallback：抓所有 <p> 段落
             if not raw_content:
                 paragraphs = re.findall(
                     r'<p[^>]*>(.*?)</p>', html, re.IGNORECASE | re.DOTALL
                 )
                 raw_content = " ".join(paragraphs)
 
-            # 清洗 HTML tag + 解碼實體
             summary = _html_module.unescape(
                 re.sub(r'<[^>]+>', '', raw_content)
             )
@@ -1471,9 +711,6 @@ class OneShippingScraper:
             logger.debug(f"      壹航運內文抓取失敗: {url} → {e}")
             return ""
 
-    # ──────────────────────────────────────────────────────────
-    # Step 4：主入口 fetch()
-    # ──────────────────────────────────────────────────────────
     def fetch(self, scraper_ref) -> list[dict]:
         results      = []
         cutoff       = datetime.now(tz=timezone.utc) - timedelta(hours=self.hours_back)
@@ -1481,7 +718,6 @@ class OneShippingScraper:
 
         logger.info("\n  📡 [中文媒體][zh-CN] 壹航運（列表頁直接解析）")
 
-        # ── 抓列表頁（第 1 頁，通常 2 小時內的新聞在前幾頁）──
         try:
             resp = requests.get(
                 self.LIST_URL, headers=self.HEADERS,
@@ -1496,8 +732,6 @@ class OneShippingScraper:
         candidates = self._parse_list_items(html)
         logger.info(f"    📊 第 1 頁共發現 {len(candidates)} 篇文章")
 
-        # ── 若第 1 頁最舊文章仍在時間範圍內，繼續抓第 2 頁 ──
-        # （hours_back=2 通常 1 頁就夠，保守抓 2 頁）
         if candidates:
             last_date = self._parse_date(candidates[-1]["date_str"])
             if last_date and last_date >= cutoff:
@@ -1505,7 +739,7 @@ class OneShippingScraper:
                     resp2 = requests.get(
                         self.LIST_URL, headers=self.HEADERS,
                         timeout=20, verify=False,
-                        params={"page": 2}          # 嘗試 ?page=2
+                        params={"page": 2}
                     )
                     if resp2.status_code == 200:
                         extra = self._parse_list_items(resp2.text)
@@ -1515,31 +749,25 @@ class OneShippingScraper:
                 except Exception:
                     pass
 
-        # ── 逐篇處理 ──
         for cand in candidates:
             url      = cand["url"]
             title    = cand["title"]
             date_str = cand["date_str"]
 
-            # 重複檢查
             if url in self.seen_urls:
                 skipped_dup += 1
                 continue
 
-            # 時間過濾（列表頁只有日期，精度到天）
             pub_time = self._parse_date(date_str)
             if pub_time is not None and pub_time < cutoff:
                 skipped_time += 1
                 continue
 
-            # ── 先用標題做關鍵字初篩（避免不必要的 HTTP 請求）──
             title_matched = scraper_ref._match_keywords(title, "")
             if not title_matched:
-                # 標題沒命中 → 抓內文再試一次
                 summary = self._fetch_article_summary(url)
                 matched = scraper_ref._match_keywords(title, summary)
             else:
-                # 標題已命中 → 抓內文補充摘要顯示用
                 summary = self._fetch_article_summary(url)
                 matched = scraper_ref._match_keywords(title, summary) or title_matched
 
@@ -1576,15 +804,9 @@ class OneShippingScraper:
         return results
     
 # ══════════════════════════════════════════════════════════════
-# Lloyd's List 搜尋頁爬蟲（Red Sea Risk 專題）
+# Lloyd's List 搜尋頁爬蟲
 # ══════════════════════════════════════════════════════════════
 class LloydsListScraper:
-    """
-    逆向工程 Lloyd's List 的搜尋 API。
-    搜尋頁背後呼叫的是 Solr/Elasticsearch 風格的 JSON API，
-    透過 requests 直接打 API 取得結構化資料。
-    """
-    # ── 搜尋 API（從瀏覽器 Network tab 逆向取得）──
     SEARCH_API = (
         "https://www.lloydslist.com/api/search"
         "?topic=Red+Sea+Risk"
@@ -1594,7 +816,6 @@ class LloydsListScraper:
         "&perPage=20"
         "&page=1"
     )
-    # ── 備用：直接爬搜尋頁 HTML，用 regex 解析 ng-scope ──
     SEARCH_URL = (
         "https://www.lloydslist.com/search"
         "#?page=1&topic=Red+Sea+Risk"
@@ -1627,17 +848,8 @@ class LloydsListScraper:
         self.hours_back = hours_back
         self.seen_urls: set = set()
 
-    # ──────────────────────────────────────────────────────────
-    # Step 1：嘗試打 JSON API（最乾淨的方式）
-    # ──────────────────────────────────────────────────────────
     def _fetch_via_api(self) -> list[dict]:
-        """
-        嘗試直接打 Lloyd's List 搜尋 API。
-        回傳格式通常是 {"results": [...], "total": N}
-        每筆包含 title, url, publishedDate, summary, byline 等欄位。
-        """
         candidates = []
-        # 嘗試多個可能的 API endpoint（從 Network tab 觀察）
         api_endpoints = [
             "https://www.lloydslist.com/api/v1/search?topic=Red+Sea+Risk&sortBy=date&sortOrder=desc&perPage=20",
             "https://www.lloydslist.com/api/search?topic=Red+Sea+Risk&sortBy=date&sortOrder=desc&perPage=20",
@@ -1651,7 +863,6 @@ class LloydsListScraper:
                 )
                 if resp.status_code == 200:
                     data = resp.json()
-                    # 嘗試不同的 JSON 結構
                     items = (
                         data.get("results") or
                         data.get("items") or
@@ -1670,23 +881,14 @@ class LloydsListScraper:
                             })
                         return candidates
             except (ValueError, KeyError):
-                # JSON 解析失敗，繼續嘗試下一個
                 continue
             except Exception as e:
                 logger.debug(f"    Lloyd's List API 嘗試失敗: {endpoint[:50]} → {e}")
                 continue
-        return []  # 所有 API 均失敗，回傳空清單
+        return []
 
-    # ──────────────────────────────────────────────────────────
-    # Step 2：備用 — 爬 HTML 頁面，用 regex 解析 ng-scope 屬性
-    # ──────────────────────────────────────────────────────────
     def _fetch_via_html(self) -> list[dict]:
-        """
-        直接爬搜尋結果頁 HTML，用 regex 解析 AngularJS 渲染的資料。
-        從 HTML 中的 data-bookmark-id、href、time[datetime] 等屬性取值。
-        """
         candidates = []
-        # Lloyd's List 的 # hash 路由需要 JS 渲染，改用靜態搜尋 URL
         static_urls = [
             "https://www.lloydslist.com/search?topic=Red+Sea+Risk&sortBy=date&sortOrder=desc&perPage=20",
             "https://www.lloydslist.com/search?q=Red+Sea+Risk&sortBy=date&perPage=20",
@@ -1709,29 +911,12 @@ class LloydsListScraper:
         if not html:
             return candidates
 
-        # ── 解析文章連結（從 ng-href 或 href 屬性）──
-        # 格式：href="https://www.lloydslist.com/LL{id}/{slug}"
-        link_pattern = re.compile(
-            r'href="(https://www\.lloydslist\.com/LL\d+/[^"]+)"[^>]*'
-            r'[^>]*ng-bind-html="doc\.title"[^>]*>([^<]+)</a>',
-            re.DOTALL
-        )
-        # 備用：從 data-bookmark 屬性的 bookmark_title 取標題
-        bookmark_pattern = re.compile(
-            r'data-analytics="[^"]*bookmark_title[^:]*:\s*&quot;([^&]+)&quot;[^"]*"'
-            r'.*?href="(https://www\.lloydslist\.com/LL\d+/[^"]+)"',
-            re.DOTALL
-        )
-        # 日期：<time datetime="YYYY-MM-DD">
         date_pattern = re.compile(
             r'<time\s+datetime="(\d{4}-\d{2}-\d{2})"[^>]*>([^<]+)</time>'
         )
-        # 摘要：ng-bind-html="doc.summary">...</p>
         summary_pattern = re.compile(
             r'ng-bind-html="doc\.summary">([^<]+)</p>'
         )
-
-        # 提取所有文章區塊（每個 search-result__body）
         block_pattern = re.compile(
             r'<div class="search-result__body[^"]*"[^>]*>(.*?)'
             r'(?=<div class="search-result__body|$)',
@@ -1741,7 +926,6 @@ class LloydsListScraper:
         for block_m in block_pattern.finditer(html):
             block = block_m.group(1)
 
-            # 提取連結與標題
             link_m = re.search(
                 r'href="(https://www\.lloydslist\.com/LL\d+/[^"]+)"[^>]*>([^<]+)</a>',
                 block
@@ -1751,11 +935,9 @@ class LloydsListScraper:
             url_found = link_m.group(1).strip()
             title     = _html_module.unescape(link_m.group(2).strip())
 
-            # 提取日期
             date_m   = date_pattern.search(block)
             date_str = date_m.group(1) if date_m else ""
 
-            # 提取摘要
             sum_m   = summary_pattern.search(block)
             summary = _html_module.unescape(sum_m.group(1).strip()) if sum_m else ""
 
@@ -1770,33 +952,22 @@ class LloydsListScraper:
         logger.info(f"    📊 HTML 解析到 {len(candidates)} 篇文章")
         return candidates
 
-    # ──────────────────────────────────────────────────────────
-    # Step 3：解析日期字串 → datetime
-    # ──────────────────────────────────────────────────────────
     def _parse_date(self, date_str: str) -> datetime | None:
         if not date_str:
             return None
         for fmt in (
-            '%Y-%m-%dT%H:%M:%S%z',
-            '%Y-%m-%dT%H:%M:%SZ',
-            '%Y-%m-%d %H:%M:%S',
-            '%Y-%m-%d',
-            '%d %b %Y',
-            '%B %d, %Y',
+            '%Y-%m-%dT%H:%M:%S%z', '%Y-%m-%dT%H:%M:%SZ', '%Y-%m-%d %H:%M:%S',
+            '%Y-%m-%d', '%d %b %Y', '%B %d, %Y',
         ):
             try:
                 dt = datetime.strptime(date_str.strip(), fmt)
                 if dt.tzinfo is None:
-                    # Lloyd's List 總部在英國，預設 UTC
                     dt = dt.replace(tzinfo=timezone.utc)
                 return dt.astimezone(timezone.utc)
             except ValueError:
                 continue
         return None
 
-    # ──────────────────────────────────────────────────────────
-    # Step 4：主入口 fetch()
-    # ──────────────────────────────────────────────────────────
     def fetch(self, scraper_ref) -> list[dict]:
         results       = []
         cutoff        = datetime.now(tz=timezone.utc) - timedelta(hours=self.hours_back)
@@ -1804,7 +975,6 @@ class LloydsListScraper:
 
         logger.info("\n  📡 [航運專業][en] Lloyd's List（Red Sea Risk 專題）")
 
-        # ── 優先嘗試 JSON API，失敗則 fallback 到 HTML 解析 ──
         candidates = self._fetch_via_api()
         if not candidates:
             logger.info("    ⚠️  API 無資料，改用 HTML 解析")
@@ -1826,22 +996,17 @@ class LloydsListScraper:
             if not title or not url:
                 continue
 
-            # 重複過濾
             if url in self.seen_urls:
                 skipped_dup += 1
                 continue
 
-            # 時間過濾
             pub_time = self._parse_date(date_str)
             if pub_time is not None and pub_time < cutoff:
                 skipped_time += 1
                 continue
 
-            # 關鍵字比對（標題 + 摘要）
             matched = scraper_ref._match_keywords(title, summary)
             if not matched:
-                # Lloyd's List 是航運專業媒體，放寬語境驗證
-                # 只要標題含航運相關詞就納入
                 title_lower = title.lower()
                 shipping_hit = any(
                     term.lower() in title_lower
@@ -1850,7 +1015,6 @@ class LloydsListScraper:
                 if not shipping_hit:
                     skipped_kw += 1
                     continue
-                # 強制給一個基礎匹配標籤
                 matched = [("Red Sea Risk", INCIDENT_CATEGORIES["CAT4"]["label"],
                             INCIDENT_CATEGORIES["CAT4"]["color"])]
 
@@ -1861,7 +1025,6 @@ class LloydsListScraper:
                 if pub_time else '時間未知'
             )
 
-            # 摘要補充 byline 資訊
             if byline and byline not in summary:
                 summary = f"By {byline} — {summary}" if summary else f"By {byline}"
 
@@ -1929,21 +1092,12 @@ class NewsRssScraper:
         self.hours_back    = hours_back
         self.seen_urls: set = set()
 
-    # ── 語境驗證 ──
     def _validate_shipping_context(self, title: str, summary: str) -> bool:
-        """
-        語境驗證：
-        Step 1：標題含財經噪音詞 → 直接排除
-        Step 2：摘要含 ≥2 個財經噪音詞 → 排除
-        Step 3：標題含航運詞 → 通過
-        Step 4：摘要含 ≥2 個航運詞 → 通過
-        """
         title_clean   = _html_module.unescape(title)
         summary_clean = _html_module.unescape(summary)
         title_lower   = title_clean.lower()
         full_lower    = (title_clean + " " + summary_clean).lower()
 
-        # ── 豁免：標題含高確信度航運詞，直接通過，不做財經過濾 ──
         HIGH_CONFIDENCE_TERMS = {
             "houthi", "irgc", "hormuz", "荷姆茲", "荷莫茲", "霍爾木茲",
             "red sea", "紅海", "persian gulf", "波斯灣",
@@ -1952,9 +1106,8 @@ class NewsRssScraper:
         }
         for term in HIGH_CONFIDENCE_TERMS:
             if term.lower() in title_lower:
-                return True  # 直接通過，不做任何財經過濾
+                return True
 
-        # ── Step 2：摘要財經噪音計數（≥2 個排除）──
         body_finance_hits = sum(
             1 for term in FINANCE_NOISE_BODY_TERMS
             if term.lower() in full_lower
@@ -1962,20 +1115,16 @@ class NewsRssScraper:
         if body_finance_hits >= 2:
             return False
 
-        # ── Step 3：標題含航運詞 → 通過 ──
         for term in TITLE_SHIPPING_TERMS:
             if term.lower() in title_lower:
                 return True
 
-        # ── Step 4：摘要含 ≥2 個航運詞 → 通過 ──
         body_shipping_hits = sum(
             1 for term in BODY_SHIPPING_TERMS
             if term.lower() in full_lower
         )
         return body_shipping_hits >= 2
 
-
-    # ── 情境分類 ──
     def _classify_incident(self, title: str, summary: str) -> str:
         title_clean   = _html_module.unescape(title)
         summary_clean = _html_module.unescape(summary)
@@ -1990,7 +1139,6 @@ class NewsRssScraper:
                     best_cat = cat
         return best_cat
 
-    # ── 關鍵字比對 ──
     def _match_keywords(self, title: str, summary: str) -> list[tuple]:
         title_clean   = _html_module.unescape(title)
         summary_clean = _html_module.unescape(summary)
@@ -2007,7 +1155,6 @@ class NewsRssScraper:
                 seen_kw.add(kw)
         return matched
 
-    # ── 時間解析 ──
     def _parse_published_time(self, entry) -> datetime | None:
         try:
             if hasattr(entry, 'published_parsed') and entry.published_parsed:
@@ -2021,13 +1168,9 @@ class NewsRssScraper:
         raw_time = getattr(entry, 'published', '') or getattr(entry, 'updated', '') or ''
         if raw_time:
             formats = [
-                '%a, %d %b %Y %H:%M:%S %z',
-                '%a, %d %b %Y %H:%M:%S GMT',
-                '%Y-%m-%dT%H:%M:%S%z',
-                '%Y-%m-%dT%H:%M:%SZ',
-                '%Y-%m-%d %H:%M:%S',
-                '%Y年%m月%d日 %H:%M',
-                '%Y/%m/%d %H:%M:%S',
+                '%a, %d %b %Y %H:%M:%S %z', '%a, %d %b %Y %H:%M:%S GMT',
+                '%Y-%m-%dT%H:%M:%S%z', '%Y-%m-%dT%H:%M:%SZ', '%Y-%m-%d %H:%M:%S',
+                '%Y年%m月%d日 %H:%M', '%Y/%m/%d %H:%M:%S',
             ]
             raw_clean = (raw_time
                          .replace(' CST', ' +0800')
@@ -2042,7 +1185,6 @@ class NewsRssScraper:
                     continue
         return None
 
-    # ── RSS 下載 ──
     def _download_rss(self, url: str, need_clean: bool = False, is_cn: bool = False):
         headers = self.HEADERS_CN if is_cn else self.HEADERS_DEFAULT
         headers = {**headers, "Accept-Encoding": "gzip, deflate, br"}
@@ -2079,7 +1221,6 @@ class NewsRssScraper:
             logger.warning(f"    ⚠️  錯誤: {url[:60]} → {e}")
         return None
 
-    # ── 建立新聞物件 ──
     def _build_item(self, source: dict, title: str, summary: str,
                     link: str, pub_time: datetime | None,
                     matched: list) -> dict:
@@ -2099,7 +1240,6 @@ class NewsRssScraper:
             'incident_cat':    incident_cat,
         }
 
-    # ── 單一 RSS 來源爬取 ──
     def fetch_from_source(self, source: dict) -> list:
         if source.get("_html_scraper"):
             return []
@@ -2139,20 +1279,15 @@ class NewsRssScraper:
                 if pub_time is not None and pub_time < cutoff:
                     skipped_time += 1
                     continue
-                # ✅ 先清洗 HTML tag + 解碼實體，再做關鍵字比對
+
                 summary_clean = _html_module.unescape(
                     re.sub(r'<[^>]+>', '', summary)
                 ).strip()
-                                # ── 鉅亨網特別過濾：排除純財經分析文章 ──
-                # 標題含「為何」「分析」「預測」「焦點股」等 → 跳過
+
                 CNYES_SKIP_PATTERNS = [
-                    r'為何', r'為什麼', r'焦點股', r'熱門股',
-                    r'漲停', r'跌停', r'外資', r'法人',
-                    r'ETF', r'基金', r'股息', r'財報',
-                    r'油價.*美元', r'美元.*油價',
-                    r'石油危機', r'能源危機',
-                    r'大洗牌', r'資金輪動',
-                    r'恐慌指數', r'VIX',
+                    r'為何', r'為什麼', r'焦點股', r'熱門股', r'漲停', r'跌停', r'外資', r'法人',
+                    r'ETF', r'基金', r'股息', r'財報', r'油價.*美元', r'美元.*油價',
+                    r'石油危機', r'能源危機', r'大洗牌', r'資金輪動', r'恐慌指數', r'VIX',
                     r'台股', r'股市',
                 ]
                 if any(re.search(p, title) for p in CNYES_SKIP_PATTERNS):
@@ -2185,7 +1320,6 @@ class NewsRssScraper:
         )
         return results
 
-    # ── 鉅亨網 JSON API 爬取 ──
     def fetch_from_cnyes(self, source: dict) -> list:
         results = []
         cutoff  = datetime.now(tz=timezone.utc) - timedelta(hours=self.hours_back)
@@ -2209,7 +1343,7 @@ class NewsRssScraper:
                 news_id     = item.get("newsId", "")
                 title       = item.get("title", "") or ""
                 content_raw = item.get("content", "") or item.get("summary", "") or ""
-                # ✅ Bug 2+3 修正：統一用 summary_clean 做比對與儲存
+
                 summary_clean = _html_module.unescape(
                     re.sub(r'<[^>]+>', '', content_raw)
                 ).strip()
@@ -2227,7 +1361,7 @@ class NewsRssScraper:
                         continue
                 else:
                     pub_time = None
-                # ✅ 傳 summary_clean（已清洗），不再傳原始 summary
+
                 matched = self._match_keywords(title, summary_clean)
                 if not matched:
                     if not self._validate_shipping_context(title, summary_clean):
@@ -2249,25 +1383,22 @@ class NewsRssScraper:
         )
         return results
 
-    # ── 全部來源彙整 ──
     def fetch_all(self) -> dict:
         all_news = []
         for source in self.sources:
             all_news.extend(self.fetch_from_source(source))
 
-        # ── 壹航運 HTML 爬蟲 ──
         oneshipping_scraper = OneShippingScraper(
             keywords   = self.keywords,
             hours_back = self.hours_back,
         )
         all_news.extend(oneshipping_scraper.fetch(self))
 
-        # ── ✅ 新增：Lloyd's List 爬蟲 ──
         lloyds_scraper = LloydsListScraper(
             keywords   = self.keywords,
             hours_back = self.hours_back,
         )
-        all_news.extend(lloyds_scraper.fetch(self))   # ← 這一行
+        all_news.extend(lloyds_scraper.fetch(self))
 
         for cnyes_source in self.cnyes_sources:
             all_news.extend(self.fetch_from_cnyes(cnyes_source))
@@ -2321,7 +1452,7 @@ class NewsRssScraper:
 
 
 # ══════════════════════════════════════════════════════════════
-# Email 發送器  v5.2
+# Email 發送器
 # ══════════════════════════════════════════════════════════════
 class NewsEmailSender:
 
@@ -2337,9 +1468,6 @@ class NewsEmailSender:
         else:
             logger.info(f"✅ Email → {self.target_email}")
 
-    # ──────────────────────────────────────────────────────────
-    # 發送
-    # ──────────────────────────────────────────────────────────
     def send(self, news_data: dict, run_time: datetime) -> bool:
         if not self.enabled:
             return False
@@ -2373,9 +1501,6 @@ class NewsEmailSender:
             traceback.print_exc()
         return False
 
-    # ──────────────────────────────────────────────────────────
-    # 單張新聞卡片
-    # ──────────────────────────────────────────────────────────
     @staticmethod
     def _render_card(item: dict) -> str:
         cat_cfg      = INCIDENT_CATEGORIES.get(
@@ -2428,8 +1553,6 @@ class NewsEmailSender:
 <tr>
   <td width="5" bgcolor="{border_color}" style="padding:0;">&nbsp;</td>
   <td style="padding:16px 18px;">
-
-    <!-- 頂列：來源 + 語言標籤 + 時間 -->
     <table width="100%" border="0" cellpadding="0" cellspacing="0"><tr>
       <td align="left" valign="middle">
         <font face="Microsoft JhengHei,Arial,sans-serif" size="2" color="#64748b">
@@ -2450,8 +1573,6 @@ class NewsEmailSender:
         </font>
       </td>
     </tr></table>
-
-    <!-- 標題 -->
     <table width="100%" border="0" cellpadding="0" cellspacing="0"
            style="margin-top:10px;"><tr><td>
       <a href="{item['link']}" target="_blank" style="text-decoration:none;">
@@ -2459,8 +1580,6 @@ class NewsEmailSender:
               size="4" color="#0f172a"><b>{safe_title}</b></font>
       </a>
     </td></tr></table>
-
-    <!-- 摘要 -->
     <table width="100%" border="0" cellpadding="10" cellspacing="0"
            bgcolor="#f8fafc"
            style="margin-top:10px;border-left:3px solid {border_color};"><tr><td>
@@ -2469,8 +1588,6 @@ class NewsEmailSender:
         {safe_summary or '（無摘要）'}
       </font>
     </td></tr></table>
-
-    <!-- 底列：關鍵字標籤 + 閱讀按鈕 -->
     <table width="100%" border="0" cellpadding="0" cellspacing="0"
            style="margin-top:12px;"><tr>
       <td align="left" valign="middle">
@@ -2490,14 +1607,10 @@ class NewsEmailSender:
         </td></tr></table>
       </td>
     </tr></table>
-
   </td>
 </tr>
 </table>"""
 
-    # ──────────────────────────────────────────────────────────
-    # 情境區塊
-    # ──────────────────────────────────────────────────────────
     @staticmethod
     def _render_incident_section(cat_key: str, news_list: list) -> str:
         cfg = INCIDENT_CATEGORIES[cat_key]
@@ -2565,9 +1678,6 @@ class NewsEmailSender:
   </tr>
 </table>"""
 
-    # ──────────────────────────────────────────────────────────
-    # 監控來源網格
-    # ──────────────────────────────────────────────────────────
     @staticmethod
     def _render_source_grid() -> str:
         SOURCE_GROUPS = [
@@ -2662,14 +1772,10 @@ class NewsEmailSender:
 
         return groups_html
 
-    # ──────────────────────────────────────────────────────────
-    # 主 HTML 生成
-    # ──────────────────────────────────────────────────────────
     def _generate_html(self, news_data: dict, run_time: datetime) -> str:
         tpe_str       = run_time.astimezone(timezone(timedelta(hours=8))).strftime('%Y-%m-%d %H:%M')
         total_sources = len(RSS_SOURCES) + len(CNYES_SOURCES)
         total_news    = len(news_data['all'])
-
 
         cat_order    = ['CAT1', 'CAT2', 'CAT3', 'CAT4', 'CAT5', 'OTHER']
         cat_sections = "".join(
@@ -2683,7 +1789,7 @@ class NewsEmailSender:
             short_labels = {
                 "CAT1": "船舶於波斯灣/荷姆茲海峽週遭被攻擊事件",
                 "CAT2": "海灣國家及美軍基地被攻擊事件",
-                "CAT3": "封鎖荷姆茲海峽相關事件",
+                "CAT3": "伊朗已採取水雷封鎖",
                 "CAT4": "紅海/曼德海峽胡塞含伊朗攻擊事件",
                 "CAT5": "航商宣佈採取繞航措施及波斯灣內避難點",
                 "OTHER":  "其他航運新聞(非上述五大情境)",
@@ -2737,34 +1843,6 @@ class NewsEmailSender:
             'size="3" color="#94a3b8">本次無相關新聞</font></td></tr>'
         )
 
-        legend_rows = ""
-        legend_data = [
-            ("CAT1", "#dc2626", "#fef2f2", "船舶於波斯灣/荷姆茲海峽週遭被攻擊事件"),
-            ("CAT2", "#b45309", "#fffbeb", "海灣國家及美軍基地被攻擊事件"),
-            ("CAT3", "#7c3aed", "#f5f3ff", "封鎖荷姆茲海峽相關事件"),
-            ("CAT4", "#0369a1", "#eff6ff", "紅海/曼德海峽胡塞含伊朗攻擊事件"),
-            ("CAT5", "#047857", "#ecfdf5", "航商宣佈採取繞航措施及波斯灣內避難點"),
-            ("OTHER",  "#475569", "#f8fafc", "其他航運新聞(非上述五大情境)"),
-        ]
-        for cat_key, bar_color, row_bg, label_text in legend_data:
-            cfg = INCIDENT_CATEGORIES[cat_key]
-            legend_rows += f"""
-<tr>
-  <td width="5" bgcolor="{bar_color}">&nbsp;</td>
-  <td bgcolor="{row_bg}" style="padding:10px 16px;">
-    <font face="Microsoft JhengHei,Arial,sans-serif"
-          size="2" color="{bar_color}">
-      <b>{cfg['icon']}&nbsp;{cat_key}</b>
-    </font>
-    &nbsp;&nbsp;
-    <font face="Microsoft JhengHei,Arial,sans-serif"
-          size="2" color="#334155">
-      {label_text}
-    </font>
-  </td>
-</tr>
-<tr><td colspan="2" bgcolor="#e2e8f0" height="1"></td></tr>"""
-
         return f"""<!DOCTYPE html>
 <html>
 <head><meta charset="utf-8">
@@ -2775,8 +1853,6 @@ class NewsEmailSender:
 <tr><td align="center" valign="top">
 <table width="720" border="0" cellpadding="0" cellspacing="0" bgcolor="#ffffff"
        style="border:1px solid #cbd5e1;">
-
-  <!-- ══ HEADER ══ -->
   <tr>
     <td bgcolor="#f8fafc" style="padding:24px;border-bottom:1px solid #e2e8f0;">
       <table width="100%" border="0" cellpadding="0" cellspacing="0"><tr>
@@ -2804,7 +1880,6 @@ class NewsEmailSender:
     </td>
   </tr>
 
-  <!-- ══ 快速統計列 ══ -->
   <tr><td style="padding:0;border-bottom:1px solid #cbd5e1;">
     <table width="100%" border="0" cellpadding="0" cellspacing="0"><tr>
       <td align="center" bgcolor="#2563eb"
@@ -2820,12 +1895,10 @@ class NewsEmailSender:
     </tr></table>
   </td></tr>
 
-  <!-- ══ 五大情境新聞主體 ══ -->
   <tr><td bgcolor="#ffffff" style="padding:24px 24px 8px 24px;">
     {cat_sections}
   </td></tr>
 
-  <!-- ══ 本次命中來源 ══ -->
   <tr><td bgcolor="#ffffff" style="padding:0 24px 24px 24px;">
     <table width="100%" border="0" cellpadding="0" cellspacing="0"
            style="border:1px solid #e2e8f0;">
@@ -2836,9 +1909,6 @@ class NewsEmailSender:
                 size="3" color="#0f172a">
             <b>📊&nbsp;本次新聞來源</b>
           </font>
-          &nbsp;&nbsp;
-          <font face="Microsoft JhengHei,Arial,sans-serif"
-                size="2" color="#64748b"></font>
         </td>
       </tr>
       <tr><td>
@@ -2849,7 +1919,6 @@ class NewsEmailSender:
     </table>
   </td></tr>
 
-  <!-- ══ 新聞來源清單 ══ -->
   <tr><td bgcolor="#ffffff" style="padding:0 24px 24px 24px;">
     <table width="100%" border="0" cellpadding="0" cellspacing="0"
            style="border:1px solid #e2e8f0;">
@@ -2871,14 +1940,7 @@ class NewsEmailSender:
       </td></tr>
     </table>
   </td></tr>
-      <tr><td>
-        <table width="100%" border="0" cellpadding="0" cellspacing="0">
-        </table>
-      </td></tr>
-    </table>
-  </td></tr>
 
-  <!-- ══ FOOTER ══ -->
   <tr>
     <td bgcolor="#f8fafc" align="center"
         style="padding:24px 16px;border-top:1px solid #cbd5e1;">
@@ -2893,13 +1955,10 @@ class NewsEmailSender:
       </font>
     </td>
   </tr>
-
 </table>
 </td></tr></table>
 </body>
 </html>"""
-
-
 
 # ══════════════════════════════════════════════════════════════
 # 主程式
@@ -2928,5 +1987,3 @@ if __name__ == "__main__":
         logger.error(f"❌ 執行失敗: {e}")
         traceback.print_exc()
         exit(1)
-
-
