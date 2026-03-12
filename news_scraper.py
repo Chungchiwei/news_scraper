@@ -1789,7 +1789,7 @@ class NewsEmailSender:
             short_labels = {
                 "CAT1": "船舶於波斯灣/荷姆茲海峽週遭被攻擊事件",
                 "CAT2": "海灣國家及美軍基地被攻擊事件",
-                "CAT3": "伊朗已採取水雷封鎖",
+                "CAT3": "封鎖荷姆茲海峽相關事件",
                 "CAT4": "紅海/曼德海峽胡塞含伊朗攻擊事件",
                 "CAT5": "航商宣佈採取繞航措施及波斯灣內避難點",
                 "OTHER":  "其他航運新聞(非上述五大情境)",
@@ -1986,4 +1986,5 @@ if __name__ == "__main__":
     except Exception as e:
         logger.error(f"❌ 執行失敗: {e}")
         traceback.print_exc()
+
         exit(1)
