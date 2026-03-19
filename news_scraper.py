@@ -232,34 +232,68 @@ CAT5_KEYWORDS = [
 ]
 
 OTHER_KEYWORDS = [
-    "oil tanker", "product tanker", "chemical tanker", "VLCC", "ULCC", "Aframax", "Suezmax",
-    "LNG carrier", "LNG tanker", "LPG carrier", "container ship", "containership",
-    "container vessel", "bulk carrier", "bulk vessel", "merchant vessel", "merchant ship",
-    "cargo vessel", "newbuilding", "shipbuilding order", "freight rate", "shipping rate",
-    "charter rate", "bunker fuel", "shipping cost", "port congestion", "port closure",
-    "port blockade", "channel closure", "waterway closure", "Suez Canal closure",
-    "Suez Canal transit", "Panama Canal closure", "Panama Canal transit", "Persian Gulf shipping",
-    "Persian Gulf tanker", "Gulf of Oman shipping", "tanker traffic Hormuz", "Hormuz oil flow",
-    "Hormuz oil supply", "oil flow disruption Hormuz", "UKMTO alert", "UKMTO incident",
-    "IMB piracy", "mar maritime piracy", "ship hijacking", "vessel hijacking",
-    "armed robbery at sea", "crew kidnapped", "seafarer kidnapped", "crew hostage",
-    "maritime security incident", "maritime security alert", "shadow fleet tanker",
-    "dark fleet vessel", "sanctioned vessel", "sanctioned tanker", "shipping sanctions",
-    "tanker sanctions", "Iran oil sanctions", "Iran shipping sanctions", "naval escort shipping",
-    "Operation Prosperity Guardian", "CTF-151", "Combined Maritime Forces", "Black Sea shipping",
-    "Black Sea tanker", "油輪", "成品油輪", "化學品船", "貨櫃船", "散裝船", "液化天然氣船",
-    "液化石油氣船", "商船", "貨輪", "超大型油輪", "新造船", "運費上漲", "運價", "航運市場",
-    "造船訂單", "港口封閉", "港口擁堵", "商船停航", "貨輪停航", "航運停航", "蘇伊士運河封鎖",
-    "蘇伊士運河通行", "巴拿馬運河封鎖", "巴拿馬運河關閉", "波斯灣航運", "波斯灣油輪",
-    "海盜攻擊", "海盜劫船", "武裝登船", "船員被劫", "船員被扣押", "影子船隊", "黑名單船舶",
-    "制裁油輪", "制裁船隊", "伊朗石油制裁", "伊朗航運制裁", "護航艦隊", "繁榮衛士行動",
-    "戰爭險", "航運保險", "油船", "成品油船", "化学品船", "集装箱船", "散装船",
-    "液化天然气船", "货轮", "超大型油轮", "运费上涨", "运价", "航运市场", "造船订单",
-    "港口封闭", "港口拥堵", "商船停航", "货轮停航", "航运停航", "苏伊士运河封锁",
-    "苏伊士运河通行", "巴拿马运河封锁", "巴拿马运河关闭", "波斯湾航运", "波斯湾油轮",
-    "海盗攻击", "海盗劫船", "武装登船", "船员被劫", "船员被扣押", "影子船队", "黑名单船舶",
-    "制裁油轮", "制裁船队", "伊朗石油制裁", "伊朗航运制裁", "护航舰队", "繁荣卫士行动",
-    "战争险", "航运保险",
+    # ── 英文：具體船型 + 事件組合 ──
+    "tanker incident", "tanker detained", "tanker boarded",
+    "vessel incident", "vessel detained", "vessel boarded",
+    "ship incident", "ship detained",
+    "VLCC incident", "VLCC detained",
+    # ── 英文：具體地理 + 航運組合 ──
+    "Persian Gulf shipping", "Persian Gulf tanker", "Persian Gulf vessel",
+    "Gulf of Oman shipping", "Gulf of Oman tanker",
+    "Strait of Hormuz tanker", "Strait of Hormuz shipping",
+    "Hormuz oil flow", "Hormuz oil supply", "Hormuz disruption",
+    "Red Sea shipping", "Red Sea tanker", "Red Sea vessel",
+    "Gulf of Aden shipping", "Gulf of Aden tanker",
+    "Bab el-Mandeb shipping", "Bab el-Mandeb tanker",
+    # ── 英文：安全事件 ──
+    "UKMTO alert", "UKMTO incident", "UKMTO warning",
+    "IMB piracy report", "maritime piracy attack",
+    "ship hijacking", "vessel hijacking",
+    "armed robbery at sea", "crew kidnapped", "seafarer kidnapped",
+    "crew hostage", "crew taken hostage",
+    "maritime security incident", "maritime security alert",
+    # ── 英文：制裁/影子船隊 ──
+    "shadow fleet tanker", "dark fleet vessel",
+    "sanctioned tanker", "sanctioned vessel",
+    "Iran oil sanctions", "Iran shipping sanctions",
+    "tanker sanctions evasion",
+    # ── 英文：護航/軍事 ──
+    "naval escort tanker", "navy escort shipping",
+    "Operation Prosperity Guardian",
+    "CTF-151", "Combined Maritime Forces",
+    "US Navy escort Gulf", "US escort tanker Hormuz",
+    # ── 英文：保險/戰爭險（需有地理語境）──
+    "war risk surcharge Gulf", "war risk premium Hormuz",
+    "tanker insurance Gulf", "war risk Red Sea",
+    "insurance suspended Gulf", "government backstop tanker",
+    # ── 英文：黑海（次要但相關）──
+    "Black Sea tanker attack", "Black Sea vessel seized",
+    # ── 繁體中文 ──
+    "油輪事件", "油輪被扣", "油輪遭扣押", "油輪遭攔截",
+    "商船事件", "商船被扣", "貨輪被扣",
+    "波斯灣航運", "波斯灣油輪", "波斯灣商船",
+    "荷姆茲油輪", "荷莫茲航運", "荷莫茲油輪",
+    "紅海航運", "紅海油輪", "紅海商船",
+    "亞丁灣航運", "亞丁灣油輪",
+    "海盜攻擊船隻", "海盜劫持油輪", "武裝人員登船",
+    "船員被劫持", "船員遭扣押", "船員成為人質",
+    "影子船隊", "黑名單船舶", "制裁油輪", "制裁船隻",
+    "伊朗石油制裁", "伊朗航運制裁",
+    "護航艦隊", "繁榮衛士行動",
+    "戰爭附加費波斯灣", "戰爭險紅海", "航運保險費率上漲",
+    # ── 簡體中文 ──
+    "油轮事件", "油轮被扣", "油轮遭扣押", "油轮遭拦截",
+    "商船事件", "商船被扣", "货轮被扣",
+    "波斯湾航运", "波斯湾油轮", "波斯湾商船",
+    "霍尔木兹油轮", "霍尔木兹航运",
+    "红海航运", "红海油轮", "红海商船",
+    "亚丁湾航运", "亚丁湾油轮",
+    "海盗攻击船只", "海盗劫持油轮", "武装人员登船",
+    "船员被劫持", "船员遭扣押", "船员成为人质",
+    "影子船队", "黑名单船舶", "制裁油轮", "制裁船只",
+    "伊朗石油制裁", "伊朗航运制裁",
+    "护航舰队", "繁荣卫士行动",
+    "战争附加费波斯湾", "战争险红海", "航运保险费率上涨",
 ]
 
 # ══════════════════════════════════════════════════════════════
@@ -295,43 +329,109 @@ for _kw in _ALL_RAW:
 # 語境驗證詞集
 # ══════════════════════════════════════════════════════════════
 TITLE_SHIPPING_TERMS = {
-    "tanker", "vessel", "ship", "shipping", "maritime", "fleet", "cargo", "freight", "port", "canal",
-    "strait", "suez", "hormuz", "panama", "vlcc", "lng", "lpg", "bunker", "charter", "seafarer", "crew", "piracy", "hijack",
-    "red sea", "gulf of aden", "persian gulf", "bab el-mandeb", "gulf of oman",
-    "container ship", "bulk carrier", "houthi", "irgc", "mine", "blockade", "attack",
-    "荷莫茲", "荷姆茲", "霍爾木茲", "油輪", "貨輪", "商船", "貨櫃船", "散裝船",
-    "航運", "海運", "港口", "運河", "海峽", "船舶", "護航", "運費",
-    "紅海", "波斯灣", "亞丁灣", "阿曼灣", "海盜", "劫船", "水雷", "布雷", "掃雷", "胡塞", "戰爭險", "航運保險",
-    "油船", "货轮", "集装箱船", "散装船", "航运", "海运", "港口", "运河", "海峡",
-    "船舶", "护航", "运费", "红海", "波斯湾", "亚丁湾", "阿曼湾", "海盗", "劫船", "水雷", "布雷", "扫雷", "胡塞", "战争险", "航运保险",
+    # ── 英文：船型（必須是複合詞，避免 ship/vessel 單獨誤觸）──
+    "oil tanker", "product tanker", "chemical tanker", "gas tanker",
+    "container ship", "containership", "bulk carrier", "cargo vessel",
+    "merchant vessel", "merchant ship", "lng carrier", "lpg carrier",
+    "vlcc", "ulcc", "aframax", "suezmax", "panamax",
+    # ── 英文：地理（具體航運水道）──
+    "strait of hormuz", "persian gulf", "gulf of oman", "red sea",
+    "gulf of aden", "bab el-mandeb", "suez canal", "panama canal",
+    # ── 英文：事件型（必須是複合詞）──
+    "tanker attack", "vessel attack", "ship attack", "vessel seized",
+    "tanker seized", "ship hijack", "vessel hijack", "piracy attack",
+    "armed boarding", "maritime attack", "naval mine",
+    "houthi", "irgc",
+    # ── 英文：航運術語（具體）──
+    "shipping lane", "sea lane", "maritime security",
+    "war risk", "bunker fuel", "charter rate", "freight rate",
+    "seafarer", "crew hostage", "crew kidnap",
+    "ukmto", "imb piracy", "ctf-151",
+    # ── 繁體中文 ──
+    "油輪", "貨櫃船", "散裝船", "液化天然氣船", "液化石油氣船",
+    "商船", "貨輪", "超大型油輪",
+    "荷莫茲", "荷姆茲", "霍爾木茲", "霍爾木茲海峽",
+    "波斯灣", "阿曼灣", "紅海", "亞丁灣", "曼德海峽",
+    "蘇伊士運河", "巴拿馬運河",
+    "胡塞", "革命衛隊", "伊斯蘭革命衛隊",
+    "海盜劫船", "武裝登船", "船員被劫", "船員被扣押",
+    "水雷封鎖", "布雷", "掃雷",
+    "戰爭附加費", "戰爭險", "航運保險費率",
+    "航運市場", "運費上漲", "運價指數",
+    # ── 簡體中文 ──
+    "油轮", "集装箱船", "散装船", "液化天然气船",
+    "货轮", "超大型油轮",
+    "霍尔木兹", "波斯湾", "阿曼湾", "红海", "亚丁湾", "曼德海峡",
+    "苏伊士运河", "巴拿马运河",
+    "胡塞", "革命卫队",
+    "海盗劫船", "武装登船", "船员被劫",
+    "水雷封锁", "布雷", "扫雷",
+    "战争附加费", "战争险", "航运保险费率",
+    "航运市场", "运费上涨",
 }
 
+# 正文至少含 2 個以下詞，才視為「航運語境成立」
 BODY_SHIPPING_TERMS = {
-    "tanker", "vessel", "ship", "shipping", "maritime", "fleet", "cargo", "freight", "port", "canal",
-    "strait", "hormuz", "suez", "panama", "vlcc", "lng", "lpg", "bunker", "charter", "seafarer", "crew", "piracy",
-    "red sea", "gulf of aden", "persian gulf", "gulf of oman", "houthi", "mine", "irgc",
-    "荷莫茲", "荷姆茲", "霍爾木茲", "油輪", "貨輪", "商船", "貨櫃船",
-    "航運", "海運", "港口", "運河", "海峽", "紅海", "波斯灣", "亞丁灣", "阿曼灣",
-    "海盜", "護航", "運費", "船舶", "水雷", "胡塞",
-    "油船", "货轮", "集装箱船", "航运", "海运", "港口", "运河", "海峡",
-    "红海", "波斯湾", "亚丁湾", "阿曼湾", "海盗", "护航", "运费", "船舶", "水雷", "胡塞",
+    # ── 英文 ──
+    "tanker", "containership", "container ship", "bulk carrier",
+    "merchant vessel", "merchant ship", "cargo vessel", "lng carrier",
+    "vlcc", "aframax", "suezmax",
+    "strait of hormuz", "persian gulf", "gulf of oman",
+    "red sea", "gulf of aden", "bab el-mandeb",
+    "suez canal", "panama canal",
+    "maritime security", "shipping lane", "sea lane",
+    "houthi", "irgc", "ansarallah",
+    "bunker", "charter rate", "freight rate", "war risk",
+    "seafarer", "ukmto", "ctf-151",
+    # ── 繁體中文 ──
+    "油輪", "貨櫃船", "散裝船", "液化天然氣船",
+    "商船", "貨輪",
+    "荷莫茲", "荷姆茲", "霍爾木茲",
+    "波斯灣", "阿曼灣", "紅海", "亞丁灣",
+    "蘇伊士運河", "巴拿馬運河",
+    "胡塞", "革命衛隊",
+    "海盜", "水雷", "戰爭險",
+    "航運市場", "運費",
+    # ── 簡體中文 ──
+    "油轮", "集装箱船", "散装船", "货轮",
+    "霍尔木兹", "波斯湾", "阿曼湾", "红海", "亚丁湾",
+    "苏伊士运河", "巴拿马运河",
+    "胡塞", "革命卫队",
+    "海盗", "水雷", "战争险",
+    "航运市场", "运费",
 }
 
 FINANCE_NOISE_TITLE_TERMS = {
-    "台股", "股市", "股價", "漲停", "跌停", "大盤", "指數", "外資", "法人", "投信", "自營商", "主力", "籌碼",
-    "加權指數", "櫃買指數", "ETF", "基金", "投資組合", "選股", "存股", "殖利率", "本益比", "市值",
+    # ── 台股財經 ──
+    "台股", "股市", "股價", "漲停", "跌停", "大盤", "指數", "外資", "法人",
+    "投信", "自營商", "主力", "籌碼", "加權指數", "櫃買指數", "ETF", "基金",
+    "投資組合", "選股", "存股", "殖利率", "本益比", "市值",
     "台積電", "聯發科", "鴻海", "台塑", "中鋼", "財報", "營收", "獲利", "EPS", "股息",
-    "漲幅", "跌幅", "漲價", "降價", "價格戰", "通膨", "升息", "降息", "央行", "聯準會", "Fed",
-    "GDP", "CPI", "PPI", "PMI", "大洗牌", "資金輪動", "板塊輪動", "恐慌指數", "VIX", "風險溢價",
-    "焦點股", "熱門股", "強勢股", "弱勢股", "亮燈", "攻上", "衝關", "守住", "失守",
-    "stock market", "equity", "share price", "hedge fund", "portfolio", "dividend", "earnings",
-    "inflation", "interest rate", "central bank", "Fed", "GDP", "CPI", "PMI", "VIX",
+    "漲幅", "跌幅", "價格戰", "通膨", "升息", "降息", "央行", "聯準會",
+    "GDP", "CPI", "PPI", "PMI", "VIX", "恐慌指數", "風險溢價",
+    "焦點股", "熱門股", "強勢股", "弱勢股",
+    # ── 油價財經（新增）──
+    "油價上漲", "油價下跌", "油價走勢", "原油價格", "布蘭特原油", "WTI原油",
+    "crude oil price", "oil price surge", "oil price drop", "brent crude",
+    "wti crude", "crude futures", "energy stocks", "oil stocks",
+    # ── 一般政治/外交（新增，避免誤抓）──
+    "ceasefire", "peace talks", "diplomatic", "sanctions lifted",
+    "trade deal", "trade war", "tariff", "關稅", "貿易戰", "外交談判",
+    "停火協議", "和平談判", "制裁解除",
+    # ── 英文財經 ──
+    "stock market", "equity market", "share price", "hedge fund",
+    "portfolio", "dividend", "earnings report", "interest rate cut",
+    "interest rate hike", "central bank", "federal reserve",
 }
 
+# 正文含 ≥2 個以下詞 → 排除（財經雜訊）
 FINANCE_NOISE_BODY_TERMS = {
-    "台股", "股市", "股價", "漲停", "跌停", "外資賣超", "ETF", "基金", "投資", "法人", "籌碼",
-    "油價", "能源股", "通膨", "升息", "財報", "營收", "獲利", "EPS",
-    "oil price", "crude price", "stock", "equity", "investor", "analyst", "forecast",
+    "台股", "股市", "股價", "漲停", "跌停", "外資賣超", "ETF", "基金",
+    "法人", "籌碼", "財報", "營收", "獲利", "EPS",
+    "油價", "原油價格", "能源股", "通膨", "升息",
+    "oil price", "crude price", "crude oil", "energy stock",
+    "stock", "equity", "investor sentiment", "analyst forecast",
+    "earnings", "revenue", "profit margin",
 }
 
 # ══════════════════════════════════════════════════════════════
@@ -340,47 +440,55 @@ FINANCE_NOISE_BODY_TERMS = {
 RSS_SOURCES = [
     # ── 中文媒體（台灣）──
     {
-        "name": "自由時報", "url": "https://news.ltn.com.tw/rss/world.xml",
-        "backup_url": "https://news.ltn.com.tw/rss/all.xml", "extra_urls": [],
+        "name": "自由時報",
+        "url": "https://news.ltn.com.tw/rss/world.xml",
+        "backup_url": "https://news.ltn.com.tw/rss/all.xml",
+        "extra_urls": [],
         "lang": "zh-TW", "icon": "🇹🇼", "category": "中文媒體",
     },
     {
-        "name": "聯合新聞網", "url": "https://udn.com/rssfeed/news/2/6638?ch=news",
-        "backup_url": "https://udn.com/rssfeed/news/2/6638", "extra_urls": [],
+        "name": "聯合新聞網",
+        "url": "https://udn.com/rssfeed/news/2/6638?ch=news",
+        "backup_url": "https://udn.com/rssfeed/news/2/6638",
+        "extra_urls": [],
         "lang": "zh-TW", "icon": "📰", "category": "中文媒體",
     },
     {
         "name": "中央社",
-        "url":        "https://rsshub.app/cna/aall",
-        "backup_url": "https://rsshub.rssforever.com/cna/aall",
+        "url":        "https://www.cna.com.tw/rss/aall.aspx",   # ★ 改用官方 RSS
+        "backup_url": "https://www.cna.com.tw/rss/aopl.aspx",
         "extra_urls": [
-            "https://rsshub.app/cna/aopl",
-            "https://rsshub.rssforever.com/cna/aopl",
+            "https://rsshub.app/cna/aall",
+            "https://rsshub.rssforever.com/cna/aall",
         ],
-        "lang": "zh-TW", "icon": "🏛️", "category": "中文媒體", "need_clean": True,
+        "lang": "zh-TW", "icon": "🏛️", "category": "中文媒體",
+        # 官方 RSS 不需要 need_clean，rsshub 備用才需要
     },
     {
-        "name": "Yahoo新聞", "url": "https://tw.news.yahoo.com/rss/world",
-        "backup_url": None, "extra_urls": [], # 已修復：將無效的根目錄拿掉
+        "name": "Yahoo新聞",
+        "url": "https://tw.news.yahoo.com/rss/world",
+        "backup_url": "https://tw.news.yahoo.com/rss/",
+        "extra_urls": [],
         "lang": "zh-TW", "icon": "🟣", "category": "中文媒體",
     },
     {
         "name": "風傳媒",
-        "url":        "https://rsshub.app/storm/latest",
-        "backup_url": "https://rsshub.rssforever.com/storm/latest",
-        "extra_urls": [],
-        "lang": "zh-TW", "icon": "🌪️", "category": "中文媒體", "need_clean": True,
+        "url":        "https://www.storm.mg/feeds",             # ★ 改用官方 feed
+        "backup_url": "https://rsshub.app/storm/latest",
+        "extra_urls": ["https://rsshub.rssforever.com/storm/latest"],
+        "lang": "zh-TW", "icon": "🌪️", "category": "中文媒體",
     },
     # ── 中文媒體（大陸）──
     {
         "name": "海事服務網 CNSS",
-        "url":        "https://rsshub.app/cnss/news",
-        "backup_url": "https://rsshub.rssforever.com/cnss/news",
+        "url":        "https://www.cnss.com.cn/rss.xml",        # ★ 改用官方 RSS
+        "backup_url": "https://rsshub.app/cnss/news",
         "extra_urls": [
+            "https://rsshub.rssforever.com/cnss/news",
             "https://rsshub2.rssforever.com/cnss/news",
-            "https://rss.fatpandadev.com/cnss/news",
         ],
-        "lang": "zh-CN", "icon": "⚓", "category": "中文媒體", "need_clean": True,
+        "lang": "zh-CN", "icon": "⚓", "category": "中文媒體",
+        "need_clean": True,
     },
     {
         "name": "壹航運",
@@ -391,33 +499,35 @@ RSS_SOURCES = [
     },
     {
         "name": "人民網 國際",
-        "url":        "https://rsshub.app/people/world",
-        "backup_url": "https://rsshub.rssforever.com/people/world",
+        "url":        "http://www.people.com.cn/rss/world.xml", # ★ 官方直連優先
+        "backup_url": "https://rsshub.app/people/world",
         "extra_urls": [
-            "https://rsshub2.rssforever.com/people/world",
-            "http://www.people.com.cn/rss/world.xml",
+            "https://rsshub.rssforever.com/people/world",
         ],
-        "lang": "zh-CN", "icon": "🏮", "category": "中文媒體", "need_clean": True,
+        "lang": "zh-CN", "icon": "🏮", "category": "中文媒體",
+        "need_clean": True,
     },
     {
         "name": "環球時報",
-        "url":        "https://rsshub.app/huanqiu/world",
-        "backup_url": "https://rsshub.rssforever.com/huanqiu/world",
+        "url":        "https://www.globaltimes.cn/rss/outbrain.xml", # ★ 英文版官方 RSS
+        "backup_url": "https://rsshub.app/huanqiu/world",
         "extra_urls": [
+            "https://rsshub.rssforever.com/huanqiu/world",
             "https://rsshub.app/huanqiu/mil",
-            "https://rsshub2.rssforever.com/huanqiu/world",
         ],
-        "lang": "zh-CN", "icon": "🌏", "category": "中文媒體", "need_clean": True,
+        "lang": "zh-CN", "icon": "🌏", "category": "中文媒體",
+        "need_clean": True,
     },
     {
         "name": "新華社 國際",
-        "url":        "https://rsshub.app/xinhua/world",
-        "backup_url": "https://rsshub.rssforever.com/xinhua/world",
+        "url":        "http://www.xinhuanet.com/world/news_world.xml", # ★ 官方直連
+        "backup_url": "https://rsshub.app/xinhua/world",
         "extra_urls": [
-            "https://rsshub2.rssforever.com/xinhua/world",
+            "https://rsshub.rssforever.com/xinhua/world",
             "https://rss.fatpandadev.com/xinhua/world",
         ],
-        "lang": "zh-CN", "icon": "📻", "category": "中文媒體", "need_clean": True,
+        "lang": "zh-CN", "icon": "📻", "category": "中文媒體",
+        "need_clean": True,
     },
     {
         "name": "澎湃新聞 國際",
@@ -427,7 +537,8 @@ RSS_SOURCES = [
             "https://rsshub.app/thepaper/channel/121811",
             "https://rsshub2.rssforever.com/thepaper/channel/25950",
         ],
-        "lang": "zh-CN", "icon": "🗞️", "category": "中文媒體", "need_clean": True,
+        "lang": "zh-CN", "icon": "🗞️", "category": "中文媒體",
+        "need_clean": True,
     },
     {
         "name": "財新網 國際",
@@ -437,59 +548,72 @@ RSS_SOURCES = [
             "https://rsshub.app/caixin/economy",
             "https://rsshub2.rssforever.com/caixin/international",
         ],
-        "lang": "zh-CN", "icon": "💹", "category": "中文媒體", "need_clean": True,
+        "lang": "zh-CN", "icon": "💹", "category": "中文媒體",
+        "need_clean": True,
     },
     # ── 航運專業媒體 ──
     {
         "name": "TradeWinds",
-        "url":        "https://rss.app/feeds/tvCHOGHBWmcHkBKM.xml",
+        "url":        "https://www.tradewindsnews.com/rss",     # ★ 換新官方 RSS
         "backup_url": "https://rsshub.app/tradewindsnews/latest",
         "extra_urls": ["https://rsshub.rssforever.com/tradewindsnews/latest"],
-        "lang": "en", "icon": "🚢", "category": "航運專業", "need_clean": True,
+        "lang": "en", "icon": "🚢", "category": "航運專業",
     },
     {
-        "name": "Splash247", "url": "https://splash247.com/feed/",
+        "name": "Splash247",
+        "url": "https://splash247.com/feed/",
         "backup_url": None, "extra_urls": [],
         "lang": "en", "icon": "⚓", "category": "航運專業",
     },
     {
-        "name": "gCaptain", "url": "https://gcaptain.com/feed/",
-        "backup_url": "https://gcaptain.com/feed/rss/", "extra_urls": [],
+        "name": "gCaptain",
+        "url": "https://gcaptain.com/feed/",
+        "backup_url": "https://gcaptain.com/feed/rss/",
+        "extra_urls": [],
         "lang": "en", "icon": "🧭", "category": "航運專業",
     },
     {
         "name": "Maritime Exec",
-        "url":        "https://maritime-executive.com/feed",
-        "backup_url": "https://rsshub.app/maritime-executive/article",
-        "extra_urls": ["https://rsshub.rssforever.com/maritime-executive/article"],
-        "lang": "en", "icon": "⛴️", "category": "航運專業", "need_clean": True,
+        "url":        "https://www.maritime-executive.com/rss/articles", # ★ 修正路徑
+        "backup_url": "https://maritime-executive.com/feed",
+        "extra_urls": [
+            "https://rsshub.app/maritime-executive/article",
+            "https://rsshub.rssforever.com/maritime-executive/article",
+        ],
+        "lang": "en", "icon": "⛴️", "category": "航運專業",
     },
     {
         "name": "Hellenic Ship",
         "url":        "https://www.hellenicshippingnews.com/feed/",
         "backup_url": "https://www.hellenicshippingnews.com/feed/rss/",
         "extra_urls": [],
-        "lang": "en", "icon": "🏛️", "category": "航運專業", "need_clean": True,
+        "lang": "en", "icon": "🏛️", "category": "航運專業",
+        "need_clean": True,   # ★ 加上 need_clean 解決 bytes pattern 錯誤
     },
     {
         "name": "Safety4Sea",
         "url":        "https://safety4sea.com/feed/",
         "backup_url": "https://safety4sea.com/feed/rss/",
         "extra_urls": [],
-        "lang": "en", "icon": "🛡️", "category": "航運專業", "need_clean": True,
+        "lang": "en", "icon": "🛡️", "category": "航運專業",
+        "need_clean": True,   # ★ 加上 need_clean
     },
     {
-        "name": "Container News", "url": "https://container-news.com/feed/",
+        "name": "Container News",
+        "url": "https://container-news.com/feed/",
         "backup_url": None, "extra_urls": [],
         "lang": "en", "icon": "📦", "category": "航運專業",
     },
     {
-        "name": "Freightwaves", "url": "https://www.freightwaves.com/news/feed",
-        "backup_url": "https://www.freightwaves.com/feed", "extra_urls": [],
+        "name": "Freightwaves",
+        "url": "https://www.freightwaves.com/news/feed",
+        "backup_url": "https://www.freightwaves.com/feed",
+        "extra_urls": [],
         "lang": "en", "icon": "📊", "category": "航運專業",
     },
     {
-        "name": "Offshore Energy", "url": "https://www.offshore-energy.biz/feed/",
+        "name": "Offshore Energy",
+        "url": "https://www.offshore-energy.biz/feed/",
         "backup_url": None, "extra_urls": [],
         "lang": "en", "icon": "⚡", "category": "航運專業",
     },
@@ -498,14 +622,18 @@ RSS_SOURCES = [
         "url":        "https://newsbase.com/rss",
         "backup_url": "https://newsbase.com/feed",
         "extra_urls": [],
-        "lang": "en", "icon": "🛢️", "category": "航運專業", "need_clean": True,
+        "lang": "en", "icon": "🛢️", "category": "航運專業",
+        "need_clean": True,   # ★ 加上 need_clean
     },
     {
         "name":     "Marine Insight",
         "icon":     "⚓",
         "url":      "https://www.marineinsight.com/feed/",
+        "backup_url": "https://www.marineinsight.com/feed/rss/",
+        "extra_urls": [],
         "lang":     "en",
         "category": "航運專業",
+        "need_clean": True,   # ★ 加上 need_clean 解決 SAXParseException
     },
     {
         "name":     "Lloyd's List",
@@ -518,24 +646,30 @@ RSS_SOURCES = [
     # ── 國際媒體 ──
     {
         "name": "Reuters",
-        "url":        "https://news.yahoo.com/rss/world", # 已修復：官方關閉，改用 Yahoo 版
-        "backup_url": "https://rsshub.app/reuters/world", # 備用改為 RSSHub
-        "extra_urls": ["https://rsshub.rssforever.com/reuters/world"],
+        "url":        "https://feeds.reuters.com/reuters/worldNews", # ★ 改回 Reuters 官方
+        "backup_url": "https://news.yahoo.com/rss/world",
+        "extra_urls": [
+            "https://rsshub.app/reuters/world",
+            "https://rsshub.rssforever.com/reuters/world",
+        ],
         "lang": "en", "icon": "🌐", "category": "國際媒體",
     },
     {
-        "name": "BBC News", "url": "https://feeds.bbci.co.uk/news/world/rss.xml",
+        "name": "BBC News",
+        "url": "https://feeds.bbci.co.uk/news/world/rss.xml",
         "backup_url": "https://feeds.bbci.co.uk/news/rss.xml",
         "extra_urls": [],
         "lang": "en", "icon": "🇬🇧", "category": "國際媒體",
     },
     {
-        "name": "Al Jazeera", "url": "https://www.aljazeera.com/xml/rss/all.xml",
+        "name": "Al Jazeera",
+        "url": "https://www.aljazeera.com/xml/rss/all.xml",
         "backup_url": None, "extra_urls": [],
         "lang": "en", "icon": "🌍", "category": "國際媒體",
     },
     {
-        "name": "The Guardian", "url": "https://www.theguardian.com/world/rss",
+        "name": "The Guardian",
+        "url": "https://www.theguardian.com/world/rss",
         "backup_url": None, "extra_urls": [],
         "lang": "en", "icon": "🗞️", "category": "國際媒體",
     },
@@ -543,23 +677,18 @@ RSS_SOURCES = [
         "name": "AP News",
         "url":        "https://rsshub.app/apnews/topics/world-news",
         "backup_url": "https://rsshub.rssforever.com/apnews/topics/world-news",
-        "extra_urls": [], # 已修復：移除失效官方網址
-        "lang": "en", 
-        "icon": "📡", 
-        "category": "國際媒體", 
+        "extra_urls": [],
+        "lang": "en", "icon": "📡", "category": "國際媒體",
         "need_clean": True,
     },
-    {
-    "name": "HOCC",
-    "url":  "https://hocc.example.com/feed/",          # ← 換成真實 RSS URL
-    "backup_url": "https://hocc.example.com/rss/",
-    "extra_urls": [],
-    "lang": "en",          # 或 zh-CN / en
-    "icon": "🚢",
-    "category": "國際媒體",   # 或 "中文媒體"
-    "need_clean": True,        # 若 XML 有亂碼問題就開啟
-},
+    # HOCC 請替換為真實 URL，目前 example.com 無法連線
+    # {
+    #     "name": "HOCC",
+    #     "url":  "https://hocc.example.com/feed/",
+    #     ...
+    # },
 ]
+
 
 # ══════════════════════════════════════════════════════════════
 # 鉅亨網 JSON API 來源
@@ -590,22 +719,37 @@ def clean_xml_content(raw) -> str:
     """接受 bytes 或 str，統一清洗為合法 XML 字串。"""
     import gzip as _gzip
 
-    if isinstance(raw, str):
-        text = raw
-    else:
-        if isinstance(raw, bytes) and raw[:2] == b'\x1f\x8b':
+    if isinstance(raw, bytes):
+        # 解壓縮
+        if raw[:2] == b'\x1f\x8b':
             try:
                 raw = _gzip.decompress(raw)
             except Exception:
                 pass
+        # 移除 BOM
+        if raw[:3] == b'\xef\xbb\xbf':
+            raw = raw[3:]
+        # 嘗試從 XML 宣告偵測 encoding
+        encoding = 'utf-8'
+        enc_match = re.search(rb'encoding=["\']([^"\']+)["\']', raw[:200])
+        if enc_match:
+            try:
+                encoding = enc_match.group(1).decode('ascii')
+            except Exception:
+                pass
         try:
+            text = raw.decode(encoding, errors='replace')
+        except (LookupError, Exception):
             text = raw.decode('utf-8', errors='replace')
-        except Exception:
-            text = raw.decode('latin-1', errors='replace')
+    else:
+        text = raw
 
+    # 移除非法 XML 控制字元（保留 \t \n \r）
     text = re.sub(r'[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]', '', text)
+    # 修復裸露的 & 符號
     text = re.sub(r'&(?!(amp|lt|gt|quot|apos|#\d+|#x[0-9a-fA-F]+);)', '&amp;', text)
     return text
+
 
 
 # ══════════════════════════════════════════════════════════════
@@ -1098,16 +1242,12 @@ class NewsRssScraper:
         title_lower   = title_clean.lower()
         full_lower    = (title_clean + " " + summary_clean).lower()
 
-        HIGH_CONFIDENCE_TERMS = {
-            "houthi", "irgc", "hormuz", "荷姆茲", "荷莫茲", "霍爾木茲",
-            "red sea", "紅海", "persian gulf", "波斯灣",
-            "tanker attack", "vessel attack", "ship attack",
-            "胡塞", "水雷", "油輪遭攻擊", "商船遇襲",
-        }
-        for term in HIGH_CONFIDENCE_TERMS:
+        # ── 第一關：標題含財經雜訊詞 → 直接排除 ──
+        for term in FINANCE_NOISE_TITLE_TERMS:
             if term.lower() in title_lower:
-                return True
+                return False
 
+        # ── 第二關：正文財經雜訊詞 ≥ 2 個 → 排除 ──
         body_finance_hits = sum(
             1 for term in FINANCE_NOISE_BODY_TERMS
             if term.lower() in full_lower
@@ -1115,15 +1255,36 @@ class NewsRssScraper:
         if body_finance_hits >= 2:
             return False
 
+        # ── 第三關：高信心詞（標題含任一個 → 直接通過）──
+        HIGH_CONFIDENCE_TERMS = {
+            "houthi", "irgc", "ansarallah",
+            "strait of hormuz", "persian gulf", "gulf of oman",
+            "red sea attack", "red sea incident",
+            "bab el-mandeb", "gulf of aden attack",
+            "ukmto", "ctf-151",
+            "荷姆茲", "荷莫茲", "霍爾木茲", "霍尔木兹",
+            "波斯灣", "波斯湾", "阿曼灣", "阿曼湾",
+            "胡塞", "革命衛隊", "革命卫队",
+            "油輪遭攻擊", "商船遇襲", "油轮遭攻击", "商船遇袭",
+            "水雷封鎖", "水雷封锁",
+        }
+        for term in HIGH_CONFIDENCE_TERMS:
+            if term.lower() in title_lower:
+                return True
+
+        # ── 第四關：標題含 TITLE_SHIPPING_TERMS 中的複合詞 → 通過 ──
+        # （已移除 ship/vessel/port/canal 等單詞，只剩複合詞）
         for term in TITLE_SHIPPING_TERMS:
             if term.lower() in title_lower:
                 return True
 
+        # ── 第五關：標題無明確航運詞，但正文航運詞 ≥ 3 個 → 通過 ──
+        # （比原本的 ≥2 更嚴格）
         body_shipping_hits = sum(
             1 for term in BODY_SHIPPING_TERMS
             if term.lower() in full_lower
         )
-        return body_shipping_hits >= 2
+        return body_shipping_hits >= 3
 
     def _classify_incident(self, title: str, summary: str) -> str:
         title_clean   = _html_module.unescape(title)
@@ -1187,22 +1348,47 @@ class NewsRssScraper:
 
     def _download_rss(self, url: str, need_clean: bool = False, is_cn: bool = False):
         headers = self.HEADERS_CN if is_cn else self.HEADERS_DEFAULT
-        headers = {**headers, "Accept-Encoding": "gzip, deflate, br"}
+        # 加入更完整的 headers，降低 403 機率
+        headers = {
+            **headers,
+            "Accept-Encoding": "gzip, deflate, br",
+            "Cache-Control": "no-cache",
+            "Pragma": "no-cache",
+        }
         try:
-            resp = requests.get(url, headers=headers,
-                                timeout=20, verify=False, allow_redirects=True)
+            resp = requests.get(
+                url, headers=headers,
+                timeout=20, verify=False, allow_redirects=True
+            )
             resp.raise_for_status()
+
             if len(resp.content) < 100:
                 logger.warning(f"    ⚠️  回應過短 ({len(resp.content)} bytes)")
                 return None
+
             if need_clean:
-                cleaned = clean_xml_content(resp.text)
+                # 先清洗再解析（處理非法字元、亂碼實體）
+                cleaned = clean_xml_content(resp.content)   # ← 傳 bytes，讓函式自動解碼
                 parsed  = feedparser.parse(io.StringIO(cleaned))
             else:
+                # ★ 核心修復：統一用 BytesIO，避免 bytes pattern on str-like object
                 try:
-                    parsed = feedparser.parse(io.StringIO(resp.text))
-                except Exception:
                     parsed = feedparser.parse(io.BytesIO(resp.content))
+                except Exception:
+                    # fallback：清洗後再試
+                    cleaned = clean_xml_content(resp.content)
+                    parsed  = feedparser.parse(io.StringIO(cleaned))
+
+            # bozo=True 但有內容時，嘗試清洗後重新解析
+            if getattr(parsed, 'bozo', False) and not parsed.entries:
+                try:
+                    cleaned = clean_xml_content(resp.content)
+                    parsed2 = feedparser.parse(io.StringIO(cleaned))
+                    if parsed2.entries:
+                        parsed = parsed2
+                except Exception:
+                    pass
+
             entry_count = len(parsed.entries) if parsed else 0
             bozo        = getattr(parsed, 'bozo', False)
             bozo_exc    = getattr(parsed, 'bozo_exception', None)
@@ -1210,7 +1396,14 @@ class NewsRssScraper:
                 f"    📊 {entry_count} 則 | bozo={bozo}"
                 + (f" ({type(bozo_exc).__name__})" if bozo_exc else "")
             )
+
+            # bozo=True 且無內容 → 視為失敗
+            if bozo and not parsed.entries:
+                logger.warning(f"    ⚠️  bozo 且無資料，跳過")
+                return None
+
             return parsed
+
         except requests.exceptions.ConnectionError:
             logger.warning(f"    ⚠️  連線失敗: {url[:60]}")
         except requests.exceptions.Timeout:
@@ -1220,6 +1413,7 @@ class NewsRssScraper:
         except Exception as e:
             logger.warning(f"    ⚠️  錯誤: {url[:60]} → {e}")
         return None
+
 
     def _build_item(self, source: dict, title: str, summary: str,
                     link: str, pub_time: datetime | None,
@@ -1789,7 +1983,7 @@ class NewsEmailSender:
             short_labels = {
                 "CAT1": "船舶於波斯灣/荷姆茲海峽週遭被攻擊事件",
                 "CAT2": "海灣國家及美軍基地被攻擊事件",
-                "CAT3": "封鎖荷姆茲海峽相關事件",
+                "CAT3": "伊朗已採取水雷封鎖",
                 "CAT4": "紅海/曼德海峽胡塞含伊朗攻擊事件",
                 "CAT5": "航商宣佈採取繞航措施及波斯灣內避難點",
                 "OTHER":  "其他航運新聞(非上述五大情境)",
@@ -1986,5 +2180,4 @@ if __name__ == "__main__":
     except Exception as e:
         logger.error(f"❌ 執行失敗: {e}")
         traceback.print_exc()
-
         exit(1)
