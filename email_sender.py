@@ -59,7 +59,17 @@ class EmailConfig:
         "Maritime News Monitoring System · "
         "Powered by WHL Fleet Risk Management"
     )
-
+    # ── 分類副標題（顯示於每個分類區塊標題列下方）────────────
+    # ★ v2.2 新增：與 keywords_config.json 的新增風險類型對應
+    CAT_SUBTITLES: dict = {
+        "CAT1": "🔋 含鋰電池火災 · EV 載車船 · RoRo 火災",
+        "CAT2": "🌉 含橋梁撞擊 · 礁石觸礁 · 海峽擱淺",
+        "CAT3": "📦 含貨櫃落海 · 船舶全損 · 沉船事故",
+        "CAT4": "🚶 含偷渡事件 · 毒品走私 · 索馬利亞／幾內亞灣海盜",
+        "CAT5": "",   # 無需副標題
+        "CAT6": "",
+        "OTHER": "",
+    }
     # ── 版面寬度 ──────────────────────────────────────────────
     EMAIL_WIDTH: int = 720
 
@@ -160,75 +170,75 @@ class EmailRenderer:
 
         link = item.get('link', '#')
         return f"""
-<table width="100%" border="0" cellpadding="0" cellspacing="0"
-       bgcolor="#ffffff" style="margin-bottom:14px;border:1px solid #cbd5e1;">
-<tr>
-  <td width="5" bgcolor="{border_color}" style="padding:0;">&nbsp;</td>
-  <td style="padding:16px 18px;">
+        <table width="100%" border="0" cellpadding="0" cellspacing="0"
+              bgcolor="#ffffff" style="margin-bottom:14px;border:1px solid #cbd5e1;">
+        <tr>
+          <td width="5" bgcolor="{border_color}" style="padding:0;">&nbsp;</td>
+          <td style="padding:16px 18px;">
 
-    <!-- 來源列 -->
-    <table width="100%" border="0" cellpadding="0" cellspacing="0"><tr>
-      <td align="left" valign="middle">
-        <font face="Microsoft JhengHei,Arial,sans-serif" size="2" color="#64748b">
-          {item.get('source_icon','')}&nbsp;{self._esc(item.get('source_name',''))}
-        </font>&nbsp;
-        <table border="0" cellpadding="0" cellspacing="0"
-               style="display:inline-table;"><tr>
-          <td bgcolor="{lang_bg}" style="padding:3px 8px;">
-            <font face="Arial,sans-serif" size="1"
-                  color="{lang_fg}"><b>{lang_text}</b></font>
+            <!-- 來源列 -->
+            <table width="100%" border="0" cellpadding="0" cellspacing="0"><tr>
+              <td align="left" valign="middle">
+                <font face="Microsoft JhengHei,Arial,sans-serif" size="2" color="#64748b">
+                  {item.get('source_icon','')}&nbsp;{self._esc(item.get('source_name',''))}
+                </font>&nbsp;
+                <table border="0" cellpadding="0" cellspacing="0"
+                      style="display:inline-table;"><tr>
+                  <td bgcolor="{lang_bg}" style="padding:3px 8px;">
+                    <font face="Arial,sans-serif" size="1"
+                          color="{lang_fg}"><b>{lang_text}</b></font>
+                  </td>
+                </tr></table>
+              </td>
+              <td align="right" valign="middle">
+                <font face="Arial,sans-serif" size="2" color="#94a3b8">
+                  🕐&nbsp;{pub}
+                </font>
+              </td>
+            </tr></table>
+
+            <!-- 標題 -->
+            <table width="100%" border="0" cellpadding="0" cellspacing="0"
+                  style="margin-top:10px;"><tr><td>
+              <a href="{link}" target="_blank" style="text-decoration:none;">
+                <font face="Microsoft JhengHei,Arial,sans-serif"
+                      size="4" color="#0f172a"><b>{safe_title}</b></font>
+              </a>
+            </td></tr></table>
+
+            <!-- 摘要 -->
+            <table width="100%" border="0" cellpadding="10" cellspacing="0"
+                  bgcolor="#f8fafc"
+                  style="margin-top:10px;border-left:3px solid {border_color};"><tr><td>
+              <font face="Microsoft JhengHei,Arial,sans-serif"
+                    size="2" color="#475569">
+                {safe_summary or '（無摘要）'}
+              </font>
+            </td></tr></table>
+
+            <!-- 關鍵字 + 閱讀按鈕 -->
+            <table width="100%" border="0" cellpadding="0" cellspacing="0"
+                  style="margin-top:12px;"><tr>
+              <td align="left" valign="middle">
+                <table border="0" cellpadding="0" cellspacing="0"><tr>
+                  {kw_cells}
+                </tr></table>
+              </td>
+              <td align="right" valign="middle">
+                <table border="0" cellpadding="8" cellspacing="0"
+                      bgcolor="{border_color}"><tr><td>
+                  <a href="{link}" target="_blank" style="text-decoration:none;">
+                    <font face="Arial,sans-serif" size="2" color="#ffffff">
+                      <b>閱讀原文 &rarr;</b>
+                    </font>
+                  </a>
+                </td></tr></table>
+              </td>
+            </tr></table>
+
           </td>
-        </tr></table>
-      </td>
-      <td align="right" valign="middle">
-        <font face="Arial,sans-serif" size="2" color="#94a3b8">
-          🕐&nbsp;{pub}
-        </font>
-      </td>
-    </tr></table>
-
-    <!-- 標題 -->
-    <table width="100%" border="0" cellpadding="0" cellspacing="0"
-           style="margin-top:10px;"><tr><td>
-      <a href="{link}" target="_blank" style="text-decoration:none;">
-        <font face="Microsoft JhengHei,Arial,sans-serif"
-              size="4" color="#0f172a"><b>{safe_title}</b></font>
-      </a>
-    </td></tr></table>
-
-    <!-- 摘要 -->
-    <table width="100%" border="0" cellpadding="10" cellspacing="0"
-           bgcolor="#f8fafc"
-           style="margin-top:10px;border-left:3px solid {border_color};"><tr><td>
-      <font face="Microsoft JhengHei,Arial,sans-serif"
-            size="2" color="#475569">
-        {safe_summary or '（無摘要）'}
-      </font>
-    </td></tr></table>
-
-    <!-- 關鍵字 + 閱讀按鈕 -->
-    <table width="100%" border="0" cellpadding="0" cellspacing="0"
-           style="margin-top:12px;"><tr>
-      <td align="left" valign="middle">
-        <table border="0" cellpadding="0" cellspacing="0"><tr>
-          {kw_cells}
-        </tr></table>
-      </td>
-      <td align="right" valign="middle">
-        <table border="0" cellpadding="8" cellspacing="0"
-               bgcolor="{border_color}"><tr><td>
-          <a href="{link}" target="_blank" style="text-decoration:none;">
-            <font face="Arial,sans-serif" size="2" color="#ffffff">
-              <b>閱讀原文 &rarr;</b>
-            </font>
-          </a>
-        </td></tr></table>
-      </td>
-    </tr></table>
-
-  </td>
-</tr>
-</table>"""
+        </tr>
+        </table>"""
 
     # ─────────────────────────────────────────────────────────
     # 元件 2：單一情境分類區塊
@@ -236,6 +246,7 @@ class EmailRenderer:
     def render_incident_section(self, cat_key: str, news_list: list) -> str:
         cfg = self.cats[cat_key]
 
+        # ── 無新聞時：簡易標題列 ─────────────────────────────
         if not news_list:
             return f"""
 <table width="100%" border="0" cellpadding="0" cellspacing="0"
@@ -259,8 +270,21 @@ class EmailRenderer:
   </tr>
 </table>"""
 
+        # ── 有新聞時：完整區塊 ───────────────────────────────
         cards    = "".join(self.render_card(item) for item in news_list)
         count_bg = self.DARKER_COLOR_MAP.get(cfg['color'], "#334155")
+
+        # ★ v2.2：副標題（空字串則不渲染）
+        subtitle = EmailConfig.CAT_SUBTITLES.get(cat_key, "")
+        subtitle_row = ""
+        if subtitle:
+            subtitle_row = (
+                f'<br>'
+                f'<font face="Microsoft JhengHei,Arial,sans-serif" '
+                f'size="1" color="rgba(255,255,255,0.75)">'
+                f'{subtitle}'
+                f'</font>'
+            )
 
         return f"""
 <table width="100%" border="0" cellpadding="0" cellspacing="0"
@@ -273,6 +297,7 @@ class EmailRenderer:
                 size="4" color="#ffffff">
             <b>{cfg['icon']}&nbsp;{cfg['label']}</b>
           </font>
+          {subtitle_row}
         </td>
         <td align="right" valign="middle" width="60">
           <table border="0" cellpadding="6" cellspacing="0"
@@ -291,6 +316,7 @@ class EmailRenderer:
     </td>
   </tr>
 </table>"""
+
 
     # ─────────────────────────────────────────────────────────
     # 元件 3：統計格（頂部數字列）

@@ -1,0 +1,202 @@
+2026-03-02 12:52:30,847 [INFO] ✅ NewsRssScraper 初始化完成 | 關鍵字: 25 個 | 來源: 8 個 | 時間範圍: 最近 1 小時
+2026-03-02 12:52:30,847 [INFO] ✅ Email 發送器初始化完成 → harry_chung@wanhai.com
+2026-03-02 12:52:30,847 [INFO] 
+⏰ 排程啟動：每 60 分鐘執行一次
+2026-03-02 12:52:30,848 [INFO]   立即執行第一次...
+2026-03-02 12:52:30,848 [INFO] 
+============================================================
+2026-03-02 12:52:30,848 [INFO] 🚀 開始執行新聞抓取 | 2026-03-02 04:52:30 UTC
+2026-03-02 12:52:30,848 [INFO] ============================================================
+2026-03-02 12:52:30,848 [INFO]   📡 抓取: Reuters - World (https://feeds.reuters.com/reuters/worldNews)
+2026-03-02 12:52:30,873 [WARNING]   ⚠️  Reuters - World RSS 解析異常: <urlopen error [Errno 11001] getaddrinfo failed>
+2026-03-02 12:52:30,874 [INFO]   📡 抓取: BBC News - World (https://feeds.bbci.co.uk/news/world/rss.xml)
+2026-03-02 12:52:31,425 [INFO]   ✅ BBC News - World 找到 0 筆相關新聞
+2026-03-02 12:52:31,425 [INFO]   📡 抓取: CNN - World (http://rss.cnn.com/rss/edition_world.rss)
+2026-03-02 12:52:32,597 [INFO]   ✅ CNN - World 找到 0 筆相關新聞
+2026-03-02 12:52:32,598 [INFO]   📡 抓取: Al Jazeera - Middle East (https://www.aljazeera.com/xml/rss/all.xml)
+2026-03-02 12:52:33,183 [INFO]   ✅ Al Jazeera - Middle East 找到 0 筆相關新聞
+2026-03-02 12:52:33,183 [INFO]   📡 抓取: 自由時報 - 國際 (https://news.ltn.com.tw/rss/world.xml)
+2026-03-02 12:52:33,624 [INFO]   ✅ 自由時報 - 國際 找到 3 筆相關新聞
+2026-03-02 12:52:33,624 [INFO]   📡 抓取: 聯合新聞網 - 國際 (https://udn.com/rssfeed/news/2/6638?ch=news)
+2026-03-02 12:52:34,229 [INFO]   ✅ 聯合新聞網 - 國際 找到 0 筆相關新聞
+2026-03-02 12:52:34,229 [INFO]   📡 抓取: 中央社 - 國際 (https://www.cna.com.tw/rss/aall.aspx)
+2026-03-02 12:52:34,997 [WARNING]   ⚠️  中央社 - 國際 RSS 解析異常: <unknown>:25:356: not well-formed (invalid token)
+2026-03-02 12:52:34,997 [INFO]   📡 抓取: Yahoo 新聞 - 國際 (https://tw.news.yahoo.com/rss/world)
+2026-03-02 12:52:35,952 [INFO]   ✅ Yahoo 新聞 - 國際 找到 0 筆相關新聞
+2026-03-02 12:52:35,952 [INFO] 
+📊 抓取結果: 英文 0 筆 | 中文 3 筆 | 總計 3 筆
+2026-03-02 12:52:35,953 [INFO] 📧 正在發送 Email 至 harry_chung@wanhai.com...
+2026-03-02 12:53:05,983 [ERROR] ❌ SMTP 錯誤: Connection unexpectedly closed: timed out
+2026-03-02 12:53:05,983 [INFO] ✅ 本次執行完畢
+
+2026-03-02 12:53:05,983 [INFO]   下次執行時間：13:53:05
+2026-03-02 12:53:05,984 [INFO]   按 Ctrl+C 停止
+
+2026-03-02 12:55:33,185 [INFO] ✅ NewsRssScraper 初始化完成 | 關鍵字: 61 個 | 來源: 11 個 | 時間範圍: 最近 2 小時
+2026-03-02 12:55:33,185 [INFO] ✅ Email 發送器初始化完成 → harry_chung@wanhai.com
+2026-03-02 12:55:33,185 [INFO] 
+⏰ 排程啟動：每 60 分鐘執行一次
+2026-03-02 12:55:33,186 [INFO]   立即執行第一次...
+2026-03-02 12:55:33,186 [INFO] 
+============================================================
+2026-03-02 12:55:33,186 [INFO] 🚀 開始執行新聞抓取 | 2026-03-02 04:55:33 UTC
+2026-03-02 12:55:33,186 [INFO] ============================================================
+2026-03-02 12:55:33,186 [INFO]   📡 抓取: Reuters - World
+2026-03-02 12:55:33,196 [WARNING]     ⚠️  連線失敗 (DNS/網路): https://feeds.reuters.com/reuters/topNews → HTTPSConnectionPool(host='feeds.reuters.com', port=443): Max retries exceeded with url: /reuters/topNews (Caused by NameResolutionError("HTTPSConnection(host='feeds.reuters.com', port=443): Failed to resolve 'feeds.reuters.com' ([Errno 11001] getaddrinfo failed)"))
+2026-03-02 12:55:33,196 [INFO]     🔄 切換備用 URL: https://www.reutersagency.com/feed/?best-topics=political-general&post_type=best
+2026-03-02 12:55:35,601 [WARNING]     ⚠️  HTTP 錯誤: https://www.reutersagency.com/feed/?best-topics=political-general&post_type=best → 404 Client Error: Not Found for url: https://reutersagency.com/feed/?best-topics=political-general&post_type=best
+2026-03-02 12:55:35,603 [ERROR]   ❌ Reuters - World 主要與備用 URL 均失敗，跳過
+2026-03-02 12:55:35,603 [INFO]   📡 抓取: BBC News - World
+2026-03-02 12:55:36,155 [INFO]   ✅ BBC News - World 共 27 則，命中 0 筆
+2026-03-02 12:55:36,156 [INFO]   📡 抓取: CNN - World
+2026-03-02 12:55:36,425 [INFO]   ✅ CNN - World 共 29 則，命中 0 筆
+2026-03-02 12:55:36,425 [INFO]   📡 抓取: Al Jazeera - All
+2026-03-02 12:55:36,906 [INFO]   ✅ Al Jazeera - All 共 25 則，命中 1 筆
+2026-03-02 12:55:36,907 [INFO]   📡 抓取: AP News - World
+2026-03-02 12:55:37,789 [WARNING]     ⚠️  HTTP 錯誤: https://rsshub.app/apnews/topics/world-news → 403 Client Error: Forbidden for url: https://rsshub.app/apnews/topics/world-news
+2026-03-02 12:55:37,790 [ERROR]   ❌ AP News - World 主要與備用 URL 均失敗，跳過
+2026-03-02 12:55:37,790 [INFO]   📡 抓取: The Guardian - World
+2026-03-02 12:55:38,509 [INFO]   ✅ The Guardian - World 共 45 則，命中 7 筆
+2026-03-02 12:55:38,510 [INFO]   📡 抓取: 自由時報 - 國際
+2026-03-02 12:55:38,945 [INFO]   ✅ 自由時報 - 國際 共 40 則，命中 10 筆
+2026-03-02 12:55:38,946 [INFO]   📡 抓取: 聯合新聞網 - 國際
+2026-03-02 12:55:39,709 [INFO]   ✅ 聯合新聞網 - 國際 共 20 則，命中 0 筆
+2026-03-02 12:55:39,709 [INFO]   📡 抓取: 中央社 - 國際
+2026-03-02 12:55:40,193 [WARNING]     ⚠️  HTTP 錯誤: https://www.cna.com.tw/rss/aall.aspx → 404 Client Error: Not Found for url: https://www.cna.com.tw/rss/aall.aspx
+2026-03-02 12:55:40,194 [INFO]     🔄 切換備用 URL: https://www.cna.com.tw/rss/aopl.aspx
+2026-03-02 12:55:40,609 [WARNING]     ⚠️  HTTP 錯誤: https://www.cna.com.tw/rss/aopl.aspx → 404 Client Error: Not Found for url: https://www.cna.com.tw/rss/aopl.aspx
+2026-03-02 12:55:40,610 [ERROR]   ❌ 中央社 - 國際 主要與備用 URL 均失敗，跳過
+2026-03-02 12:55:40,610 [INFO]   📡 抓取: Yahoo 新聞 - 國際
+2026-03-02 12:55:41,263 [INFO]   ✅ Yahoo 新聞 - 國際 共 0 則，命中 0 筆
+2026-03-02 12:55:41,263 [INFO]   📡 抓取: ETtoday - 國際
+2026-03-02 12:55:41,968 [WARNING]     ⚠️  HTTP 錯誤: https://www.ettoday.net/news/rss/news.xml → 404 Client Error: Not Found for url: https://www.ettoday.net/news/rss/news.xml
+2026-03-02 12:55:41,969 [ERROR]   ❌ ETtoday - 國際 主要與備用 URL 均失敗，跳過
+2026-03-02 12:55:41,969 [INFO] 
+📊 抓取結果: 英文 8 筆 | 中文 10 筆 | 總計 18 筆
+2026-03-02 12:55:41,970 [INFO] 📧 正在發送 Email 至 harry_chung@wanhai.com...
+2026-03-02 12:56:12,081 [ERROR] ❌ SMTP 錯誤: Connection unexpectedly closed: timed out
+2026-03-02 12:56:12,081 [INFO] ✅ 本次執行完畢
+
+2026-03-02 12:56:12,082 [INFO]   下次執行時間：13:56:12
+2026-03-02 12:56:12,082 [INFO]   按 Ctrl+C 可隨時停止
+
+2026-03-02 13:56:12,138 [INFO] 
+============================================================
+2026-03-02 13:56:12,139 [INFO] 🚀 開始執行新聞抓取 | 2026-03-02 05:56:12 UTC
+2026-03-02 13:56:12,140 [INFO] ============================================================
+2026-03-02 13:56:12,140 [INFO]   📡 抓取: Reuters - World
+2026-03-02 13:56:12,211 [WARNING]     ⚠️  連線失敗 (DNS/網路): https://feeds.reuters.com/reuters/topNews → HTTPSConnectionPool(host='feeds.reuters.com', port=443): Max retries exceeded with url: /reuters/topNews (Caused by NameResolutionError("HTTPSConnection(host='feeds.reuters.com', port=443): Failed to resolve 'feeds.reuters.com' ([Errno 11001] getaddrinfo failed)"))
+2026-03-02 13:56:12,212 [INFO]     🔄 切換備用 URL: https://www.reutersagency.com/feed/?best-topics=political-general&post_type=best
+2026-03-02 13:56:28,848 [WARNING]     ⚠️  連線失敗 (DNS/網路): https://www.reutersagency.com/feed/?best-topics=political-general&post_type=best → ('Connection aborted.', RemoteDisconnected('Remote end closed connection without response'))
+2026-03-02 13:56:28,849 [ERROR]   ❌ Reuters - World 主要與備用 URL 均失敗，跳過
+2026-03-02 13:56:28,849 [INFO]   📡 抓取: BBC News - World
+2026-03-02 13:56:32,564 [INFO]   ✅ BBC News - World 共 28 則，命中 0 筆
+2026-03-02 13:56:32,565 [INFO]   📡 抓取: CNN - World
+2026-03-02 13:56:35,673 [INFO]   ✅ CNN - World 共 29 則，命中 0 筆
+2026-03-02 13:56:35,674 [INFO]   📡 抓取: Al Jazeera - All
+2026-03-02 13:56:42,489 [INFO]   ✅ Al Jazeera - All 共 25 則，命中 0 筆
+2026-03-02 13:56:42,489 [INFO]   📡 抓取: AP News - World
+2026-03-02 13:56:51,426 [WARNING]     ⚠️  HTTP 錯誤: https://rsshub.app/apnews/topics/world-news → 403 Client Error: Forbidden for url: https://rsshub.app/apnews/topics/world-news
+2026-03-02 13:56:51,427 [ERROR]   ❌ AP News - World 主要與備用 URL 均失敗，跳過
+2026-03-02 13:56:51,428 [INFO]   📡 抓取: The Guardian - World
+2026-03-02 13:56:56,056 [INFO]   ✅ The Guardian - World 共 45 則，命中 3 筆
+2026-03-02 13:56:56,057 [INFO]   📡 抓取: 自由時報 - 國際
+2026-03-02 13:56:58,427 [INFO]   ✅ 自由時報 - 國際 共 40 則，命中 5 筆
+2026-03-02 13:56:58,427 [INFO]   📡 抓取: 聯合新聞網 - 國際
+2026-03-02 13:57:03,489 [INFO]   ✅ 聯合新聞網 - 國際 共 20 則，命中 0 筆
+2026-03-02 13:57:03,489 [INFO]   📡 抓取: 中央社 - 國際
+2026-03-02 13:57:05,784 [WARNING]     ⚠️  HTTP 錯誤: https://www.cna.com.tw/rss/aall.aspx → 404 Client Error: Not Found for url: https://www.cna.com.tw/rss/aall.aspx
+2026-03-02 13:57:05,785 [INFO]     🔄 切換備用 URL: https://www.cna.com.tw/rss/aopl.aspx
+2026-03-02 13:57:07,810 [WARNING]     ⚠️  HTTP 錯誤: https://www.cna.com.tw/rss/aopl.aspx → 404 Client Error: Not Found for url: https://www.cna.com.tw/rss/aopl.aspx
+2026-03-02 13:57:07,810 [ERROR]   ❌ 中央社 - 國際 主要與備用 URL 均失敗，跳過
+2026-03-02 13:57:07,811 [INFO]   📡 抓取: Yahoo 新聞 - 國際
+2026-03-02 13:57:09,258 [INFO]   ✅ Yahoo 新聞 - 國際 共 0 則，命中 0 筆
+2026-03-02 13:57:09,259 [INFO]   📡 抓取: ETtoday - 國際
+2026-03-02 13:57:16,705 [WARNING]     ⚠️  HTTP 錯誤: https://www.ettoday.net/news/rss/news.xml → 404 Client Error: Not Found for url: https://www.ettoday.net/news/rss/news.xml
+2026-03-02 13:57:16,706 [ERROR]   ❌ ETtoday - 國際 主要與備用 URL 均失敗，跳過
+2026-03-02 13:57:16,706 [INFO] 
+📊 抓取結果: 英文 3 筆 | 中文 5 筆 | 總計 8 筆
+2026-03-02 13:57:16,708 [INFO] 📧 正在發送 Email 至 harry_chung@wanhai.com...
+2026-03-02 13:57:47,068 [ERROR] ❌ SMTP 錯誤: Connection unexpectedly closed: timed out
+2026-03-02 13:57:47,068 [INFO] ✅ 本次執行完畢
+
+2026-03-02 14:57:47,125 [INFO] 
+============================================================
+2026-03-02 14:57:47,127 [INFO] 🚀 開始執行新聞抓取 | 2026-03-02 06:57:47 UTC
+2026-03-02 14:57:47,128 [INFO] ============================================================
+2026-03-02 14:57:47,128 [INFO]   📡 抓取: Reuters - World
+2026-03-02 14:57:47,225 [WARNING]     ⚠️  連線失敗 (DNS/網路): https://feeds.reuters.com/reuters/topNews → HTTPSConnectionPool(host='feeds.reuters.com', port=443): Max retries exceeded with url: /reuters/topNews (Caused by NameResolutionError("HTTPSConnection(host='feeds.reuters.com', port=443): Failed to resolve 'feeds.reuters.com' ([Errno 11001] getaddrinfo failed)"))
+2026-03-02 14:57:47,225 [INFO]     🔄 切換備用 URL: https://www.reutersagency.com/feed/?best-topics=political-general&post_type=best
+2026-03-02 14:57:50,153 [WARNING]     ⚠️  HTTP 錯誤: https://www.reutersagency.com/feed/?best-topics=political-general&post_type=best → 404 Client Error: Not Found for url: https://reutersagency.com/feed/?best-topics=political-general&post_type=best
+2026-03-02 14:57:50,155 [ERROR]   ❌ Reuters - World 主要與備用 URL 均失敗，跳過
+2026-03-02 14:57:50,155 [INFO]   📡 抓取: BBC News - World
+2026-03-02 14:57:52,494 [INFO]   ✅ BBC News - World 共 28 則，命中 1 筆
+2026-03-02 14:57:52,495 [INFO]   📡 抓取: CNN - World
+2026-03-02 14:57:53,975 [INFO]   ✅ CNN - World 共 29 則，命中 0 筆
+2026-03-02 14:57:53,975 [INFO]   📡 抓取: Al Jazeera - All
+2026-03-02 14:57:54,894 [INFO]   ✅ Al Jazeera - All 共 25 則，命中 2 筆
+2026-03-02 14:57:54,895 [INFO]   📡 抓取: AP News - World
+2026-03-02 14:57:55,822 [WARNING]     ⚠️  HTTP 錯誤: https://rsshub.app/apnews/topics/world-news → 403 Client Error: Forbidden for url: https://rsshub.app/apnews/topics/world-news
+2026-03-02 14:57:55,823 [ERROR]   ❌ AP News - World 主要與備用 URL 均失敗，跳過
+2026-03-02 14:57:55,823 [INFO]   📡 抓取: The Guardian - World
+2026-03-02 14:57:56,641 [INFO]   ✅ The Guardian - World 共 45 則，命中 3 筆
+2026-03-02 14:57:56,642 [INFO]   📡 抓取: 自由時報 - 國際
+2026-03-02 14:57:58,760 [INFO]   ✅ 自由時報 - 國際 共 40 則，命中 5 筆
+2026-03-02 14:57:58,761 [INFO]   📡 抓取: 聯合新聞網 - 國際
+2026-03-02 14:58:00,054 [INFO]   ✅ 聯合新聞網 - 國際 共 20 則，命中 0 筆
+2026-03-02 14:58:00,054 [INFO]   📡 抓取: 中央社 - 國際
+2026-03-02 14:58:01,084 [WARNING]     ⚠️  HTTP 錯誤: https://www.cna.com.tw/rss/aall.aspx → 404 Client Error: Not Found for url: https://www.cna.com.tw/rss/aall.aspx
+2026-03-02 14:58:01,085 [INFO]     🔄 切換備用 URL: https://www.cna.com.tw/rss/aopl.aspx
+2026-03-02 14:58:02,254 [WARNING]     ⚠️  HTTP 錯誤: https://www.cna.com.tw/rss/aopl.aspx → 404 Client Error: Not Found for url: https://www.cna.com.tw/rss/aopl.aspx
+2026-03-02 14:58:02,256 [ERROR]   ❌ 中央社 - 國際 主要與備用 URL 均失敗，跳過
+2026-03-02 14:58:02,256 [INFO]   📡 抓取: Yahoo 新聞 - 國際
+2026-03-02 14:58:04,660 [INFO]   ✅ Yahoo 新聞 - 國際 共 0 則，命中 0 筆
+2026-03-02 14:58:04,660 [INFO]   📡 抓取: ETtoday - 國際
+2026-03-02 14:58:05,313 [WARNING]     ⚠️  HTTP 錯誤: https://www.ettoday.net/news/rss/news.xml → 404 Client Error: Not Found for url: https://www.ettoday.net/news/rss/news.xml
+2026-03-02 14:58:05,313 [ERROR]   ❌ ETtoday - 國際 主要與備用 URL 均失敗，跳過
+2026-03-02 14:58:05,314 [INFO] 
+📊 抓取結果: 英文 6 筆 | 中文 5 筆 | 總計 11 筆
+2026-03-02 14:58:05,315 [INFO] 📧 正在發送 Email 至 harry_chung@wanhai.com...
+2026-03-02 14:58:35,638 [ERROR] ❌ SMTP 錯誤: Connection unexpectedly closed: timed out
+2026-03-02 14:58:35,638 [INFO] ✅ 本次執行完畢
+
+2026-03-02 15:58:35,686 [INFO] 
+============================================================
+2026-03-02 15:58:35,688 [INFO] 🚀 開始執行新聞抓取 | 2026-03-02 07:58:35 UTC
+2026-03-02 15:58:35,688 [INFO] ============================================================
+2026-03-02 15:58:35,689 [INFO]   📡 抓取: Reuters - World
+2026-03-02 15:58:35,771 [WARNING]     ⚠️  連線失敗 (DNS/網路): https://feeds.reuters.com/reuters/topNews → HTTPSConnectionPool(host='feeds.reuters.com', port=443): Max retries exceeded with url: /reuters/topNews (Caused by NameResolutionError("HTTPSConnection(host='feeds.reuters.com', port=443): Failed to resolve 'feeds.reuters.com' ([Errno 11001] getaddrinfo failed)"))
+2026-03-02 15:58:35,772 [INFO]     🔄 切換備用 URL: https://www.reutersagency.com/feed/?best-topics=political-general&post_type=best
+2026-03-02 15:58:40,610 [WARNING]     ⚠️  HTTP 錯誤: https://www.reutersagency.com/feed/?best-topics=political-general&post_type=best → 404 Client Error: Not Found for url: https://reutersagency.com/feed/?best-topics=political-general&post_type=best
+2026-03-02 15:58:40,612 [ERROR]   ❌ Reuters - World 主要與備用 URL 均失敗，跳過
+2026-03-02 15:58:40,612 [INFO]   📡 抓取: BBC News - World
+2026-03-02 15:58:48,379 [INFO]   ✅ BBC News - World 共 28 則，命中 0 筆
+2026-03-02 15:58:48,379 [INFO]   📡 抓取: CNN - World
+2026-03-02 15:58:49,942 [INFO]   ✅ CNN - World 共 29 則，命中 0 筆
+2026-03-02 15:58:49,943 [INFO]   📡 抓取: Al Jazeera - All
+2026-03-02 15:59:05,559 [INFO]   ✅ Al Jazeera - All 共 25 則，命中 2 筆
+2026-03-02 15:59:05,559 [INFO]   📡 抓取: AP News - World
+2026-03-02 15:59:10,302 [WARNING]     ⚠️  HTTP 錯誤: https://rsshub.app/apnews/topics/world-news → 403 Client Error: Forbidden for url: https://rsshub.app/apnews/topics/world-news
+2026-03-02 15:59:10,302 [ERROR]   ❌ AP News - World 主要與備用 URL 均失敗，跳過
+2026-03-02 15:59:10,302 [INFO]   📡 抓取: The Guardian - World
+2026-03-02 15:59:11,180 [INFO]   ✅ The Guardian - World 共 45 則，命中 0 筆
+2026-03-02 15:59:11,181 [INFO]   📡 抓取: 自由時報 - 國際
+2026-03-02 15:59:11,849 [INFO]   ✅ 自由時報 - 國際 共 40 則，命中 8 筆
+2026-03-02 15:59:11,849 [INFO]   📡 抓取: 聯合新聞網 - 國際
+2026-03-02 15:59:12,810 [INFO]   ✅ 聯合新聞網 - 國際 共 20 則，命中 0 筆
+2026-03-02 15:59:12,811 [INFO]   📡 抓取: 中央社 - 國際
+2026-03-02 15:59:13,393 [WARNING]     ⚠️  HTTP 錯誤: https://www.cna.com.tw/rss/aall.aspx → 404 Client Error: Not Found for url: https://www.cna.com.tw/rss/aall.aspx
+2026-03-02 15:59:13,394 [INFO]     🔄 切換備用 URL: https://www.cna.com.tw/rss/aopl.aspx
+2026-03-02 15:59:14,511 [WARNING]     ⚠️  HTTP 錯誤: https://www.cna.com.tw/rss/aopl.aspx → 404 Client Error: Not Found for url: https://www.cna.com.tw/rss/aopl.aspx
+2026-03-02 15:59:14,512 [ERROR]   ❌ 中央社 - 國際 主要與備用 URL 均失敗，跳過
+2026-03-02 15:59:14,512 [INFO]   📡 抓取: Yahoo 新聞 - 國際
+2026-03-02 15:59:16,708 [INFO]   ✅ Yahoo 新聞 - 國際 共 0 則，命中 0 筆
+2026-03-02 15:59:16,709 [INFO]   📡 抓取: ETtoday - 國際
+2026-03-02 15:59:17,743 [WARNING]     ⚠️  HTTP 錯誤: https://www.ettoday.net/news/rss/news.xml → 404 Client Error: Not Found for url: https://www.ettoday.net/news/rss/news.xml
+2026-03-02 15:59:17,743 [ERROR]   ❌ ETtoday - 國際 主要與備用 URL 均失敗，跳過
+2026-03-02 15:59:17,743 [INFO] 
+📊 抓取結果: 英文 2 筆 | 中文 8 筆 | 總計 10 筆
+2026-03-02 15:59:17,744 [INFO] 📧 正在發送 Email 至 harry_chung@wanhai.com...
+2026-03-02 15:59:48,299 [ERROR] ❌ SMTP 錯誤: Connection unexpectedly closed: timed out
+2026-03-02 15:59:48,299 [INFO] ✅ 本次執行完畢
+
