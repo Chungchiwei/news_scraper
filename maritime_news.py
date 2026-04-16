@@ -198,6 +198,25 @@ RSS_SOURCES = [
      "backup_url": "https://www.hellenicshippingnews.com/feed/rss/",
      "extra_urls": [], "lang": "en", "icon": "🏛️",
      "category": "航運專業", "need_clean": True},
+     # ★ v6.3 新增：Hellenic 分類子 feed（高命中率）
+    {
+        "name": "Hellenic — Piracy & Security", "icon": "🏴‍☠️",
+        "url":        "https://www.hellenicshippingnews.com/category/shipping-news/piracy-and-security-news/feed/",
+        "backup_url": None, "extra_urls": [],
+        "lang": "en", "category": "航運專業", "need_clean": True,
+    },
+    {
+        "name": "Hellenic — International", "icon": "🌐",
+        "url":        "https://www.hellenicshippingnews.com/category/shipping-news/international-shipping-news/feed/",
+        "backup_url": None, "extra_urls": [],
+        "lang": "en", "category": "航運專業", "need_clean": True,
+    },
+    {
+        "name": "Hellenic — Port News", "icon": "⚓",
+        "url":        "https://www.hellenicshippingnews.com/category/shipping-news/port-news/feed/",
+        "backup_url": None, "extra_urls": [],
+        "lang": "en", "category": "航運專業", "need_clean": True,
+    },    
     {"name": "Safety4Sea", "url": "https://safety4sea.com/feed/",
      "backup_url": "https://safety4sea.com/feed/rss/",
      "extra_urls": [], "lang": "en", "icon": "🛡️",
@@ -220,6 +239,12 @@ RSS_SOURCES = [
      "category": "航運專業", "need_clean": True},
     {"name": "Lloyd's List","url": "https://www.lloydslist.com/search#?topic=maritime+casualty",
      "lang": "en", "icon": "⚓", "category": "航運專業", "_html_scraper": True},
+    {
+    "name": "MarineLink", "icon": "⚓",
+    "url":        "https://www.marinelink.com/news/rss",
+    "backup_url": "https://www.marinelink.com/news/rss?take=20",
+    "extra_urls": [],
+    "lang": "en", "category": "航運專業", "need_clean": True},
 
     # ── ★ 新增：11 大航商官方新聞 RSS ────────────────────────
     # Maersk

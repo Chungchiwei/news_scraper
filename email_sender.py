@@ -1,10 +1,15 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-email_sender.py  v2.0
+email_sender.py  v2.1
 海事航運新聞監控系統 — Email 發送模組
 職責：HTML 渲染 + SMTP 發送
-v2.0 更新：新增 CAT6 航商動態顏色 / 來源格線新增「11大航商」群組
+v2.1 更新：
+  - 移除「11大航商」來源群組（航商 RSS 已於 v6.3 移除）
+  - 移除 carrier_summary_row / carrier_note（無航商 RSS 來源）
+  - 簡化 render_hit_rows（移除航商特殊標記）
+  - EMAIL_SUBTITLE 補上鋰電池/貨櫃落海/偷渡/毒品走私
+  - 版本號 v2.0 → v2.1
 修改此檔案不影響爬蟲邏輯
 """
 
@@ -21,7 +26,7 @@ logger = logging.getLogger(__name__)
 
 
 # ══════════════════════════════════════════════════════════════
-# Email 設定（可直接在此修改預設值）
+# Email 設定
 # ══════════════════════════════════════════════════════════════
 class EmailConfig:
     """
@@ -41,11 +46,12 @@ class EmailConfig:
     SENDER_NAME:    str = "海事航運監控系統"
     SUBJECT_PREFIX: str = "Maritime News Alert"
 
-    # ── 版面文字設定（改這裡即可更換標題/副標/頁尾）──────────
+    # ── 版面文字設定 ──────────────────────────────────────────
     EMAIL_TITLE:    str = "🚢 海事航運新聞監控快報"
+    # ★ v2.1 更新：補上 v6.3 新增風險類型，移除航商動態
     EMAIL_SUBTITLE: str = (
-        "火災 · 碰撞 · 擱淺 · 沉沒 · 海盜攻擊 · 船員傷亡 · "
-        "11大航商動態 · 其他海事動態"          # ★ 新增航商動態
+        "火災(含鋰電池) · 碰撞(含撞橋) · 擱淺沉沒(含貨櫃落海) · "
+        "海盜攻擊(含偷渡/毒品走私) · 船員傷亡 · 其他海事動態"
     )
     EMAIL_BRANDING: str = "Present by Marine Technology Division_FRM"
     FOOTER_LINE1:   str = "此內容為系統自動發送，請勿直接回覆。"
@@ -71,29 +77,27 @@ class EmailRenderer:
     所有視覺樣式集中在此，修改版面只需動這個類別。
     """
 
-    # ── ★ 顏色對照（新增 CAT6 #0891b2）──────────────────────
+    # ── 顏色對照（CAT6 保留，關鍵字仍存在）──────────────────
     KW_COLOR_MAP: dict = {
         "#dc2626": ("#fef2f2", "#dc2626"),   # CAT1 火災
         "#b45309": ("#fffbeb", "#b45309"),   # CAT2 碰撞
         "#7c3aed": ("#f5f3ff", "#7c3aed"),   # CAT3 沉沒
         "#0369a1": ("#eff6ff", "#0369a1"),   # CAT4 海盜
         "#047857": ("#ecfdf5", "#047857"),   # CAT5 船員
-        "#0891b2": ("#ecfeff", "#0891b2"),   # CAT6 航商動態 ★
+        "#0891b2": ("#ecfeff", "#0891b2"),   # CAT6 航商動態
         "#475569": ("#f1f5f9", "#475569"),   # OTHER
     }
 
-    # ── ★ 深色對照（新增 CAT6）────────────────────────────────
     DARKER_COLOR_MAP: dict = {
         "#dc2626": "#b91c1c",
         "#b45309": "#92400e",
         "#7c3aed": "#6d28d9",
         "#0369a1": "#075985",
         "#047857": "#065f46",
-        "#0891b2": "#0e7490",   # CAT6 ★
+        "#0891b2": "#0e7490",   # CAT6
         "#475569": "#334155",
     }
 
-    # ── ★ 來源語言標籤（新增航商動態專屬樣式）────────────────
     LANG_BADGE: dict = {
         "en":    ("#dbeafe", "#1d4ed8", "EN"),
         "zh-TW": ("#dcfce7", "#15803d", "中文"),
@@ -135,24 +139,9 @@ class EmailRenderer:
         border_color = cat_cfg.get('color', '#475569')
         pub          = self._fmt_pub_time(item['published'])
 
-        # ★ 使用 LANG_BADGE 對照表，支援 zh-CN 黃色標籤
         lang     = item.get('source_lang', 'en')
         badge    = self.LANG_BADGE.get(lang, self.LANG_BADGE['en'])
         lang_bg, lang_fg, lang_text = badge
-
-        # ★ 航商來源加上「航商」標籤
-        source_category = item.get('source_category', '')
-        carrier_badge = ""
-        if source_category == "航商動態":
-            carrier_badge = (
-                '&nbsp;<table border="0" cellpadding="0" cellspacing="0" '
-                'style="display:inline-table;"><tr>'
-                '<td bgcolor="#ecfeff" style="padding:3px 8px;'
-                'border:1px solid #0891b2;">'
-                '<font face="Arial,sans-serif" size="1" color="#0891b2">'
-                '<b>🏢 航商</b></font>'
-                '</td></tr></table>'
-            )
 
         safe_title   = self._esc(item.get('title',   ''))
         safe_summary = self._esc(item.get('summary', ''))
@@ -190,7 +179,6 @@ class EmailRenderer:
                   color="{lang_fg}"><b>{lang_text}</b></font>
           </td>
         </tr></table>
-        {carrier_badge}
       </td>
       <td align="right" valign="middle">
         <font face="Arial,sans-serif" size="2" color="#94a3b8">
@@ -328,7 +316,8 @@ class EmailRenderer:
 </td>"""
 
     # ─────────────────────────────────────────────────────────
-    # 元件 4：來源格線（★ 新增「11大航商」群組）
+    # 元件 4：來源格線
+    # ★ v2.1：移除「11大航商官方新聞」群組（來源已移除）
     # ─────────────────────────────────────────────────────────
     def render_source_grid(self) -> str:
         SOURCE_GROUPS = [
@@ -339,9 +328,11 @@ class EmailRenderer:
                 "bg":      "#f0fdf4",
                 "border":  "#bbf7d0",
                 "sources": (
-                    [s for s in self.rss_sources if s.get("lang") == "zh-TW"
+                    [s for s in self.rss_sources
+                     if s.get("lang") == "zh-TW"
                      and s.get("category") == "中文媒體"] +
-                    [s for s in self.cnyes_sources if s.get("lang") == "zh-TW"]
+                    [s for s in self.cnyes_sources
+                     if s.get("lang") == "zh-TW"]
                 ),
             },
             {
@@ -364,15 +355,6 @@ class EmailRenderer:
                             if s.get("category") == "航運專業"],
             },
             {
-                "title":   "11大航商官方新聞",   # ★ 新增群組
-                "icon":    "🏢",
-                "color":   "#0891b2",
-                "bg":      "#ecfeff",
-                "border":  "#a5f3fc",
-                "sources": [s for s in self.rss_sources
-                            if s.get("category") == "航商動態"],
-            },
-            {
                 "title":   "國際媒體",
                 "icon":    "🌐",
                 "color":   "#ea580c",
@@ -387,7 +369,7 @@ class EmailRenderer:
         for grp in SOURCE_GROUPS:
             sources = grp["sources"]
             if not sources:
-                continue   # 空群組不渲染
+                continue
 
             rows_html = ""
             for i in range(0, len(sources), 3):
@@ -408,12 +390,12 @@ class EmailRenderer:
                         url  = src.get("url") or src.get("api_url", "")
                         if url == "__oneshipping_html__":
                             url = "https://www.oneshipping.info"
-                        # RSSHub / 備用 URL → 取真實 domain
                         display_url = url
                         for rsshub in ("rsshub.app/", "rsshub.rssforever.com/"):
                             if rsshub in url:
                                 bk = src.get("backup_url", "")
-                                if bk and "rsshub" not in bk and bk != "__oneshipping_html__":
+                                if (bk and "rsshub" not in bk
+                                        and bk != "__oneshipping_html__"):
                                     display_url = bk
                                 break
                         domain = re.sub(
@@ -453,16 +435,14 @@ class EmailRenderer:
         return groups_html
 
     # ─────────────────────────────────────────────────────────
-    # 元件 5：命中來源統計列（★ 航商來源加色塊區分）
+    # 元件 5：命中來源統計列
+    # ★ v2.1：移除航商特殊標記（無航商 RSS 來源）
     # ─────────────────────────────────────────────────────────
     def render_hit_rows(self, all_news: list) -> str:
-        # 統計：同時記錄 source_category
         source_stats: dict = {}
-        source_cat_map: dict = {}
         for item in all_news:
             key = f"{item['source_icon']} {item['source_name']}"
-            source_stats[key]   = source_stats.get(key, 0) + 1
-            source_cat_map[key] = item.get('source_category', '')
+            source_stats[key] = source_stats.get(key, 0) + 1
 
         if not source_stats:
             return (
@@ -473,25 +453,20 @@ class EmailRenderer:
 
         rows = ""
         for s, c in sorted(source_stats.items(), key=lambda x: -x[1]):
-            is_carrier = source_cat_map.get(s) == "航商動態"
-            # ★ 航商來源：計數徽章用青色，並加上 🏢 標記
-            badge_bg  = "#cffafe" if is_carrier else "#dbeafe"
-            badge_fg  = "#0891b2" if is_carrier else "#1d4ed8"
-            name_disp = f"🏢 {s}" if is_carrier else s
             rows += (
                 f'<tr>'
                 f'<td bgcolor="#ffffff" '
                 f'style="padding:12px 18px;border-bottom:1px solid #f1f5f9;">'
                 f'<font face="Microsoft JhengHei,Arial,sans-serif" '
-                f'size="3" color="#334155">{name_disp}</font>'
+                f'size="3" color="#334155">{s}</font>'
                 f'</td>'
                 f'<td bgcolor="#ffffff" align="right" width="60" '
                 f'style="padding:12px 18px;border-bottom:1px solid #f1f5f9;">'
                 f'<table border="0" cellpadding="4" cellspacing="0" '
-                f'bgcolor="{badge_bg}">'
+                f'bgcolor="#dbeafe">'
                 f'<tr><td align="center" width="30">'
                 f'<font face="Arial,sans-serif" size="3" '
-                f'color="{badge_fg}"><b>{c}</b></font>'
+                f'color="#1d4ed8"><b>{c}</b></font>'
                 f'</td></tr></table>'
                 f'</td></tr>'
             )
@@ -499,6 +474,7 @@ class EmailRenderer:
 
     # ─────────────────────────────────────────────────────────
     # 主渲染：完整 HTML
+    # ★ v2.1：移除 carrier_summary_row
     # ─────────────────────────────────────────────────────────
     def render_full_html(self, news_data: dict, run_time: datetime) -> str:
         cfg           = EmailConfig
@@ -506,10 +482,6 @@ class EmailRenderer:
         total_sources = len(self.rss_sources) + len(self.cnyes_sources)
         total_news    = len(news_data.get('all', []))
 
-        # ★ 航商動態新聞數（顯示於標題列）
-        carrier_count = len(news_data.get('carrier', []))
-
-        # 依 priority 排序分類
         cat_order = sorted(
             self.cats.keys(),
             key=lambda k: self.cats[k]['priority']
@@ -525,17 +497,6 @@ class EmailRenderer:
         )
         source_grid = self.render_source_grid()
         hit_rows    = self.render_hit_rows(news_data.get('all', []))
-
-        # ★ 航商動態摘要列（有資料才顯示）
-        carrier_summary_row = ""
-        if carrier_count > 0:
-            carrier_summary_row = f"""
-  <!-- ▌航商動態摘要提示 -->
-  <tr><td bgcolor="#ecfeff" style="padding:10px 24px;border-bottom:1px solid #a5f3fc;">
-    <font face="Microsoft JhengHei,Arial,sans-serif" size="2" color="#0e7490">
-      🏢&nbsp;<b>本次收錄 11 大航商動態 {carrier_count} 則</b>
-    </font>
-  </td></tr>"""
 
         return f"""<!DOCTYPE html>
 <html>
@@ -579,8 +540,6 @@ class EmailRenderer:
       </tr></table>
     </td>
   </tr>
-
-  {carrier_summary_row}
 
   <!-- ▌統計列 -->
   <tr><td style="padding:0;border-bottom:1px solid #cbd5e1;">
@@ -684,7 +643,8 @@ class NewsEmailSender:
         self.target_email = cfg.TARGET_EMAIL
         self.smtp_server  = cfg.SMTP_SERVER
         self.smtp_port    = cfg.SMTP_PORT
-        self.enabled      = all([self.mail_user, self.mail_pass, self.target_email])
+        self.enabled      = all([self.mail_user, self.mail_pass,
+                                  self.target_email])
 
         self.renderer = EmailRenderer(
             incident_categories=incident_categories,
@@ -711,14 +671,11 @@ class NewsEmailSender:
             tpe_time = run_time.astimezone(
                 timezone(timedelta(hours=cfg.DISPLAY_TZ_OFFSET)))
 
-            # ★ 主旨加入航商動態數量
-            carrier_count = len(news_data.get('carrier', []))
-            carrier_note  = (f" | 航商 {carrier_count} 則"
-                             if carrier_count > 0 else "")
+            # ★ v2.1：移除 carrier_note，主旨格式簡化
             subject = (
                 f"{cfg.SUBJECT_PREFIX} "
                 f"({tpe_time.strftime('%m/%d %H:%M')}) "
-                f"— {len(news_data['all'])} 則{carrier_note}"
+                f"— {len(news_data['all'])} 則"
             )
 
             html_body = self.renderer.render_full_html(news_data, run_time)

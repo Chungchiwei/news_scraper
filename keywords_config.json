@@ -1,7 +1,8 @@
 {
-  "_comment": "海事航運新聞監控系統 — 關鍵字設定檔，修改後重新執行主程式即生效",
-  "_version": "2.0",
+  "_comment": "海事航運新聞監控系統 — 關鍵字設定檔",
+  "_version": "2.1",
   "_updated": "2026-04-16",
+  "_changelog": "v2.1: 新增鋰電池火災、貨櫃落海、偷渡、毒品走私關鍵字；補強橋梁撞擊、索馬利亞海盜",
 
   "_carriers_covered": [
     "MSC（地中海航運）", "Maersk（馬士基）", "CMA CGM（達飛輪船）",
@@ -27,15 +28,46 @@
         "ship fire crew", "vessel fire rescue",
         "oil tanker fire", "bulk carrier fire", "container ship fire",
         "LNG fire", "LPG fire", "chemical tanker fire",
+
+        "lithium battery fire ship",
+        "lithium battery fire vessel",
+        "lithium battery fire cargo",
+        "lithium battery blaze",
+        "EV cargo fire",
+        "electric vehicle fire ship",
+        "EV ship fire",
+        "battery fire vessel",
+        "battery cargo fire",
+        "lithium fire container",
+        "EV carrier fire",
+        "car carrier fire",
+        "PCTC fire",
+        "ro-ro fire",
+        "ro-ro vessel fire",
+
         "MSC fire", "Maersk fire", "CMA CGM fire", "Evergreen fire",
         "COSCO fire", "Hapag-Lloyd fire", "ONE ship fire",
         "Yang Ming fire", "HMM fire",
+
         "船舶火災", "油輪火災", "貨輪火災", "貨櫃船火災",
         "船舶爆炸", "油輪爆炸", "輪機室火災", "船艙起火",
         "船隻起火", "商船火災", "船舶燃燒", "船舶失火",
-        "長榮火災", "陽明火災", "萬海火災",
+
+        "鋰電池起火", "鋰電池火災", "鋰電池爆炸",
+        "電動車起火", "電動車船舶火災", "電動車貨輪火災",
+        "電動車船火", "載車船火災", "汽車船火災",
+        "鋰電池货物起火", "鋰電池貨物火災",
+        "純電動車船火", "電池貨物起火",
+
+        "长荣火災", "陽明火災", "萬海火災",
         "油轮火灾", "货轮火灾", "集装箱船火灾",
         "轮机室火灾", "船舱起火", "船只起火", "商船火灾",
+
+        "锂电池起火", "锂电池火灾", "锂电池爆炸",
+        "电动车起火", "电动车船舶火灾", "电动车货轮火灾",
+        "载车船火灾", "汽车船火灾", "纯电动车船火",
+        "电池货物起火",
+
         "中远火灾", "达飞火灾"
       ]
     },
@@ -56,6 +88,12 @@
         "ship aground", "vessel aground", "grounded vessel",
         "ship struck reef", "vessel struck reef", "ship struck rocks",
         "ship allision", "vessel allision",
+
+        "ship struck bridge", "vessel struck bridge",
+        "ship hit bridge", "vessel hit bridge",
+        "bridge collision ship", "bridge strike vessel",
+        "ship bridge allision",
+
         "MSC collision", "MSC grounding", "MSC aground",
         "Maersk collision", "Maersk grounding", "Maersk aground",
         "CMA CGM collision", "CMA CGM grounding",
@@ -66,16 +104,20 @@
         "Yang Ming collision", "Yang Ming grounding",
         "HMM collision", "HMM grounding",
         "PIL collision", "Wan Hai collision",
+
         "船舶碰撞", "油輪碰撞", "貨輪碰撞", "貨櫃船碰撞",
         "船舶觸礁", "油輪觸礁", "貨輪觸礁", "船舶擱淺",
         "油輪擱淺", "貨輪擱淺", "貨櫃船擱淺", "船隻擱淺",
         "商船碰撞", "商船觸礁", "商船擱淺",
+        "船舶撞橋", "貨輪撞橋", "油輪撞橋", "船隻撞橋",
         "長榮碰撞", "長榮擱淺", "長榮觸礁",
         "陽明碰撞", "陽明擱淺", "萬海碰撞",
+
         "油轮碰撞", "货轮碰撞", "集装箱船碰撞",
         "船舶触礁", "油轮触礁", "货轮触礁", "船舶搁浅",
         "油轮搁浅", "货轮搁浅", "集装箱船搁浅", "船只搁浅",
         "商船碰撞", "商船触礁", "商船搁浅",
+        "船舶撞桥", "货轮撞桥", "油轮撞桥",
         "中远碰撞", "中远搁浅", "达飞碰撞"
       ]
     },
@@ -97,19 +139,34 @@
         "vessel submerged", "ship wrecked", "vessel wrecked",
         "shipwreck", "maritime casualty", "total loss vessel",
         "constructive total loss", "ship total loss",
+
+        "containers lost overboard", "containers overboard",
+        "containers fell overboard", "cargo lost overboard",
+        "containers washed overboard", "containers swept overboard",
+        "cargo overboard", "boxes overboard",
+        "container loss at sea",
+
         "MSC sinking", "MSC capsized", "MSC sank",
         "Maersk sinking", "Maersk vessel sank",
         "CMA CGM sinking", "Evergreen sinking", "Evergreen capsized",
         "COSCO sinking", "Hapag-Lloyd sinking",
         "ONE vessel sinking", "Yang Ming sinking",
+
         "船舶沉沒", "油輪沉沒", "貨輪沉沒", "貨櫃船沉沒",
         "船舶傾覆", "油輪傾覆", "貨輪傾覆", "船隻沉沒",
         "商船沉沒", "船舶擱淺沉沒", "棄船", "船員棄船",
         "船舶全損", "船舶失蹤", "船舶下沉",
+
+        "貨櫃落海", "貨櫃掉落", "貨櫃墜海", "貨物落海",
+        "貨櫃被沖落海", "貨櫃箱落海", "集裝箱落海",
         "長榮沉沒", "長榮傾覆", "陽明沉沒", "萬海沉沒",
+
         "船舶沉没", "油轮沉没", "货轮沉没", "集装箱船沉没",
         "船舶倾覆", "油轮倾覆", "货轮倾覆", "船只沉没",
         "商船沉没", "弃船", "船员弃船", "船舶全损", "船舶失踪",
+
+        "货柜落海", "货柜掉落", "集装箱落海", "货物落海",
+        "集装箱被冲落海", "货柜箱落海",
         "中远沉没", "达飞沉没"
       ]
     },
@@ -126,6 +183,10 @@
         "armed boarding", "armed robbery at sea", "crew kidnapped",
         "seafarer kidnapped", "crew taken hostage", "crew hostage",
         "ship seized piracy", "vessel seized piracy",
+        "Somalia piracy", "Somali pirates", "Gulf of Guinea piracy",
+        "West Africa piracy", "Strait of Malacca piracy",
+        "piracy incident", "piracy report",
+
         "Houthi attack", "Houthi missile", "Houthi drone",
         "Houthi ship attack", "Houthi tanker attack",
         "Houthi Red Sea", "Houthi Bab el-Mandeb",
@@ -138,6 +199,23 @@
         "Iranian seizure tanker", "Iranian navy seized",
         "UKMTO alert", "UKMTO incident", "UKMTO warning",
         "IMB piracy report", "maritime piracy",
+
+        "stowaways ship", "stowaways vessel", "stowaways found",
+        "stowaways discovered", "stowaways cargo ship",
+        "stowaways container ship", "stowaways tanker",
+        "illegal migrants ship", "migrants rescued at sea",
+        "migrants vessel", "boat people rescued",
+        "undocumented migrants ship",
+
+        "drug smuggling ship", "drug trafficking vessel",
+        "narcotics seized ship", "cocaine seized vessel",
+        "drug bust ship", "drugs found vessel",
+        "drug smuggling container", "narcotics container ship",
+        "cocaine container", "drug cargo ship",
+        "heroin seized vessel", "methamphetamine ship",
+        "drug interdiction vessel", "maritime drug seizure",
+        "customs drug ship",
+
         "MSC hijacked", "MSC attacked", "MSC seized",
         "Maersk attacked", "Maersk hijacked", "Maersk Red Sea",
         "CMA CGM attacked", "CMA CGM hijacked",
@@ -147,20 +225,42 @@
         "ONE ship attacked", "ONE ship hijacked",
         "Yang Ming attacked", "HMM attacked",
         "PIL attacked", "Wan Hai attacked",
+
         "海盜攻擊", "海盜劫持", "海盜登船", "武裝登船",
         "船員被劫持", "船員遭扣押", "船員成為人質",
         "船舶被劫持", "油輪被劫持", "貨輪被劫持",
+        "索馬利亞海盜", "幾內亞灣海盜", "馬六甲海盜",
         "胡塞攻擊", "胡塞飛彈", "胡塞無人機", "胡塞攻擊船隻",
         "紅海攻擊", "紅海船隻遇襲", "紅海油輪遭攻擊",
         "曼德海峽攻擊", "亞丁灣攻擊", "波斯灣油輪遭攻擊",
         "革命衛隊扣押油輪", "伊朗扣押船隻", "伊朗扣押油輪",
+
+        "偷渡客", "偷渡者", "船上發現偷渡", "貨輪偷渡",
+        "貨櫃偷渡", "偷渡被發現", "非法移民船",
+        "難民船", "移民船遇難", "移民船翻覆",
+
+        "毒品走私船", "毒品查獲船", "船上查獲毒品",
+        "貨輪毒品", "貨櫃毒品", "海上緝毒", "走私毒品船",
+        "古柯鹼查獲船", "海關查獲毒品", "毒品船",
+
         "長榮遭攻擊", "陽明遭攻擊", "萬海遭攻擊",
+
         "海盗攻击", "海盗劫持", "海盗登船", "武装登船",
         "船员被劫持", "船员遭扣押", "船员成为人质",
+        "索马里海盗", "几内亚湾海盗", "马六甲海盗",
         "胡塞攻击", "胡塞导弹", "胡塞无人机", "胡塞攻击船只",
         "红海攻击", "红海船只遇袭", "红海油轮遭攻击",
         "曼德海峡攻击", "亚丁湾攻击", "波斯湾油轮遭攻击",
         "革命卫队扣押油轮", "伊朗扣押船只", "伊朗扣押油轮",
+
+        "偷渡客", "偷渡者", "船上发现偷渡", "货轮偷渡",
+        "货柜偷渡", "偷渡被发现", "非法移民船",
+        "难民船", "移民船遇难", "移民船翻覆",
+
+        "毒品走私船", "毒品查获船", "船上查获毒品",
+        "货轮毒品", "货柜毒品", "海上缉毒", "走私毒品船",
+        "古柯碱查获船", "海关查获毒品", "毒品船",
+
         "中远遭攻击", "达飞遭攻击"
       ]
     },
@@ -188,12 +288,14 @@
         "MSC crew rescued", "MSC crew missing",
         "Maersk crew rescued", "Maersk crew missing",
         "Evergreen crew rescued", "Evergreen crew missing",
+
         "船員失蹤", "船員落海", "船員獲救", "船員死亡",
         "船員傷亡", "船員受傷", "海員失蹤", "海員獲救",
         "海上搜救", "搜救行動", "海巡救援", "直升機救援",
         "船員撤離", "緊急醫療撤離", "求救信號", "遇難信號",
         "發出求救", "救生艇", "船員被困",
         "長榮船員", "陽明船員", "萬海船員",
+
         "船员失踪", "船员落海", "船员获救", "船员死亡",
         "船员伤亡", "船员受伤", "海员失踪", "海员获救",
         "海上搜救", "搜救行动", "海巡救援", "直升机救援",
@@ -387,12 +489,14 @@
         "PIL incident", "Wan Hai incident",
         "MSC detained", "Maersk detained",
         "Evergreen detained", "COSCO detained",
+
         "油輪事件", "油輪漏油", "船舶漏油", "海洋污染",
         "船舶機械故障", "船舶引擎故障", "船舶失去動力",
         "港口事故", "碼頭事故", "蘇伊士運河延誤",
         "巴拿馬運河延誤", "影子船隊", "制裁油輪",
         "戰爭附加費", "航運保險", "護航艦隊",
         "長榮事故", "陽明事故", "萬海事故",
+
         "油轮事件", "油轮漏油", "船舶漏油", "海洋污染",
         "船舶机械故障", "船舶引擎故障", "船舶失去动力",
         "港口事故", "码头事故", "苏伊士运河延误",
@@ -429,6 +533,15 @@
       "Ocean Network Express", "OOCL",
       "Gemini Cooperation", "Ocean Alliance", "THE Alliance",
       "Premier Alliance",
+      "lithium battery fire", "EV cargo fire", "battery fire vessel",
+      "car carrier fire", "ro-ro fire", "PCTC fire",
+      "containers overboard", "containers lost overboard",
+      "stowaways ship", "stowaways vessel",
+      "drug smuggling ship", "narcotics seized ship",
+      "cocaine seized vessel", "drug trafficking vessel",
+      "Somalia piracy", "Gulf of Guinea piracy",
+      "ship struck bridge", "bridge collision ship",
+
       "油輪", "貨櫃船", "散裝船", "液化天然氣船", "液化石油氣船",
       "商船", "貨輪", "超大型油輪",
       "荷莫茲", "荷姆茲", "霍爾木茲", "波斯灣", "阿曼灣",
@@ -438,10 +551,15 @@
       "海盜劫船", "武裝登船", "船員被劫", "船員落海",
       "海上搜救", "水雷封鎖", "布雷", "掃雷",
       "戰爭附加費", "戰爭險", "航運保險費率",
+      "鋰電池起火", "鋰電池火災", "電動車起火", "載車船火災",
+      "貨櫃落海", "貨物落海",
+      "偷渡客", "偷渡者", "毒品走私船", "海上緝毒",
+      "船舶撞橋", "索馬利亞海盜",
       "馬士基", "達飛輪船", "長榮海運", "陽明海運",
       "萬海航運", "中遠海運", "東方海外", "赫伯羅特",
       "海洋網聯", "現代商船", "太平船務",
       "空班", "略港", "附加費", "運費上漲", "運價指數",
+
       "油轮", "集装箱船", "散装船", "液化天然气船",
       "货轮", "超大型油轮", "霍尔木兹", "波斯湾", "阿曼湾",
       "红海", "亚丁湾", "曼德海峡", "苏伊士运河", "巴拿马运河",
@@ -449,6 +567,10 @@
       "船舶火灾", "船舶搁浅", "船舶沉没",
       "海盗劫船", "武装登船", "船员被劫", "船员落海",
       "海上搜救", "水雷封锁",
+      "锂电池起火", "锂电池火灾", "电动车起火", "载车船火灾",
+      "货柜落海", "货物落海",
+      "偷渡客", "偷渡者", "毒品走私船", "海上缉毒",
+      "船舶撞桥", "索马里海盗",
       "马士基", "达飞轮船", "长荣海运", "阳明海运",
       "万海航运", "中远海运", "东方海外", "赫伯罗特",
       "海洋网联", "现代商船", "太平船务",
@@ -475,6 +597,11 @@
       "MSC", "Maersk", "CMA CGM", "COSCO", "Hapag-Lloyd",
       "Evergreen", "Yang Ming", "HMM", "PIL", "Wan Hai",
       "OOCL", "Ocean Network Express",
+      "lithium battery", "EV cargo", "battery fire",
+      "containers overboard", "cargo overboard",
+      "stowaways", "drug smuggling", "narcotics", "cocaine",
+      "piracy", "Somalia", "Gulf of Guinea",
+
       "油輪", "貨櫃船", "散裝船", "液化天然氣船",
       "商船", "貨輪", "荷莫茲", "荷姆茲", "霍爾木茲",
       "波斯灣", "阿曼灣", "紅海", "亞丁灣",
@@ -482,16 +609,21 @@
       "船舶火災", "船舶碰撞", "船舶擱淺", "船舶沉沒",
       "海盜", "水雷", "戰爭險", "航運市場", "運費",
       "船員落海", "海上搜救", "漏油",
+      "鋰電池", "電動車", "貨櫃落海",
+      "偷渡", "毒品", "緝毒",
       "馬士基", "達飛輪船", "長榮", "陽明", "萬海",
       "中遠", "東方海外", "赫伯羅特", "海洋網聯",
       "現代商船", "太平船務",
       "空班", "略港", "附加費", "運費",
+
       "油轮", "集装箱船", "散装船", "货轮",
       "霍尔木兹", "波斯湾", "阿曼湾", "红海", "亚丁湾",
       "苏伊士运河", "巴拿马运河", "胡塞", "革命卫队",
       "船舶火灾", "船舶搁浅", "船舶沉没",
       "海盗", "水雷", "战争险", "航运市场", "运费",
       "船员落海", "海上搜救", "漏油",
+      "锂电池", "电动车", "货柜落海",
+      "偷渡", "毒品", "缉毒",
       "马士基", "达飞轮船", "长荣", "阳明", "万海",
       "中远", "东方海外", "赫伯罗特", "海洋网联",
       "现代商船", "太平船务",
@@ -528,17 +660,17 @@
 
     "carrier_names": {
       "_comment": "航商名稱對照表，供主程式驗證語境使用",
-      "MSC":          ["MSC", "Mediterranean Shipping", "地中海航運"],
-      "Maersk":       ["Maersk", "AP Moller", "馬士基", "马士基"],
-      "CMA_CGM":      ["CMA CGM", "達飛輪船", "达飞轮船", "达飞"],
-      "COSCO":        ["COSCO", "中遠海運", "中远海运", "中遠集運", "中远集运", "OOCL", "東方海外", "东方海外"],
-      "Hapag_Lloyd":  ["Hapag-Lloyd", "赫伯羅特", "赫伯罗特"],
-      "Evergreen":    ["Evergreen", "長榮海運", "长荣海运", "長榮", "长荣"],
-      "ONE":          ["Ocean Network Express", "ONE", "海洋網聯", "海洋网联"],
-      "Yang_Ming":    ["Yang Ming", "陽明海運", "阳明海运", "陽明", "阳明"],
-      "HMM":          ["HMM", "Hyundai Merchant Marine", "現代商船", "现代商船"],
-      "PIL":          ["PIL", "Pacific International Lines", "太平船務", "太平船务"],
-      "Wan_Hai":      ["Wan Hai", "萬海航運", "万海航运", "萬海", "万海"]
+      "MSC":         ["MSC", "Mediterranean Shipping", "地中海航運"],
+      "Maersk":      ["Maersk", "AP Moller", "馬士基", "马士基"],
+      "CMA_CGM":     ["CMA CGM", "達飛輪船", "达飞轮船", "达飞"],
+      "COSCO":       ["COSCO", "中遠海運", "中远海运", "中遠集運", "中远集运", "OOCL", "東方海外", "东方海外"],
+      "Hapag_Lloyd": ["Hapag-Lloyd", "赫伯羅特", "赫伯罗特"],
+      "Evergreen":   ["Evergreen", "長榮海運", "长荣海运", "長榮", "长荣"],
+      "ONE":         ["Ocean Network Express", "ONE", "海洋網聯", "海洋网联"],
+      "Yang_Ming":   ["Yang Ming", "陽明海運", "阳明海运", "陽明", "阳明"],
+      "HMM":         ["HMM", "Hyundai Merchant Marine", "現代商船", "现代商船"],
+      "PIL":         ["PIL", "Pacific International Lines", "太平船務", "太平船务"],
+      "Wan_Hai":     ["Wan Hai", "萬海航運", "万海航运", "萬海", "万海"]
     }
   }
 }
