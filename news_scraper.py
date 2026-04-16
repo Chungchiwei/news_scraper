@@ -462,7 +462,6 @@ RSS_SOURCES = [
             "https://rsshub.rssforever.com/cna/aall",
         ],
         "lang": "zh-TW", "icon": "🏛️", "category": "中文媒體",
-        # 官方 RSS 不需要 need_clean，rsshub 備用才需要
     },
     {
         "name": "Yahoo新聞",

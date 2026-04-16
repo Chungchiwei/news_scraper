@@ -1,4 +1,7 @@
-feedparser==6.0.11
-requests==2.31.0
-python-dotenv==1.0.0
-urllib3==2.0.7
+# 海事航運新聞監控系統 — 依賴套件
+# 更新日期：2026-04-16
+
+feedparser>=6.0.11
+requests>=2.31.0
+urllib3>=2.0.0
+python-dotenv>=1.0.0
