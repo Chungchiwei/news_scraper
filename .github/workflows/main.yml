@@ -3,7 +3,7 @@ name: 🚢 海事航運新聞監控
 on:
   # ── 排程：每兩小時執行一次（UTC 時間）──────────────────────
   # cron 格式：分 時 日 月 星期
-  # 0 */4 * * * = 每兩小時整點執行
+  # 0 */2 * * * = 每兩小時整點執行
   # UTC 對應 TPE (UTC+8)：
   #   00:00 UTC = 08:00 TPE
   #   02:00 UTC = 10:00 TPE
@@ -41,7 +41,7 @@ jobs:
   fetch-and-send:
     name: 🔍 抓取海事新聞並發送 Email
     runs-on: ubuntu-latest
-    timeout-minutes: 15        # 最多執行 15 分鐘，避免卡住
+    timeout-minutes: 20        # ★ 從 15 調整為 20 分鐘（多一個腳本）
 
     steps:
 
@@ -74,23 +74,49 @@ jobs:
               exit 1
             fi
           done
+          # ★ news_scraper.py 為選填，缺少時警告但不中止
+          if [ -f "news_scraper.py" ]; then
+            echo "  ✅ news_scraper.py"
+          else
+            echo "  ⚠️  news_scraper.py 不存在，Step 6 將略過"
+          fi
 
-      # ── Step 5：執行新聞爬取與發送 ───────────────────────
-      - name: 🚀 執行新聞爬取與發送
+      # ── Step 5：執行主新聞爬取與發送（maritime_news.py）──
+      - name: 🚀 執行主新聞爬取與發送
         env:
-          # 從 GitHub Secrets 注入敏感資訊
           MAIL_USER:        ${{ secrets.MAIL_USER }}
           MAIL_PASSWORD:    ${{ secrets.MAIL_PASSWORD }}
           TARGET_EMAIL:     ${{ secrets.TARGET_EMAIL }}
           MAIL_SMTP_SERVER: ${{ secrets.MAIL_SMTP_SERVER }}
           MAIL_SMTP_PORT:   ${{ secrets.MAIL_SMTP_PORT }}
-          # 手動觸發時可覆蓋時間範圍，排程時使用預設值 2 小時
           NEWS_HOURS_BACK:  ${{ github.event.inputs.hours_back || '2' }}
-          # 僅手動觸發時有效，排程固定為 false
           DRY_RUN:          ${{ github.event.inputs.dry_run || 'false' }}
         run: python maritime_news.py
 
-      # ── Step 6：上傳執行 log（方便除錯）─────────────────
+      # ── Step 6：執行霍爾木茲海峽專項爬取（news_scraper.py）
+      # ★ 新增：maritime_news.py 完成後才執行
+      # ★ 使用 if: always() 確保即使 Step 5 失敗仍嘗試執行
+      # ★ 若 news_scraper.py 不存在則自動略過，不影響整體流程
+      - name: 🌊 執行霍爾木茲海峽新聞爬取
+        if: always()
+        env:
+          MAIL_USER:        ${{ secrets.MAIL_USER }}
+          MAIL_PASSWORD:    ${{ secrets.MAIL_PASSWORD }}
+          TARGET_EMAIL:     ${{ secrets.TARGET_EMAIL }}
+          MAIL_SMTP_SERVER: ${{ secrets.MAIL_SMTP_SERVER }}
+          MAIL_SMTP_PORT:   ${{ secrets.MAIL_SMTP_PORT }}
+          NEWS_HOURS_BACK:  ${{ github.event.inputs.hours_back || '2' }}
+          DRY_RUN:          ${{ github.event.inputs.dry_run || 'false' }}
+        run: |
+          if [ -f "news_scraper.py" ]; then
+            echo "▶️  開始執行 news_scraper.py"
+            python news_scraper.py
+            echo "✅  news_scraper.py 執行完畢"
+          else
+            echo "⚠️  news_scraper.py 不存在，略過此步驟"
+          fi
+
+      # ── Step 7：上傳執行 log（方便除錯）─────────────────
       - name: 📄 上傳執行 log
         if: always()            # 無論成功或失敗都上傳
         uses: actions/upload-artifact@v4
@@ -101,7 +127,7 @@ jobs:
           retention-days: 7     # log 保留 7 天後自動刪除
           if-no-files-found: ignore
 
-      # ── Step 7：執行失敗時顯示提示 ───────────────────────
+      # ── Step 8：執行失敗時顯示提示 ───────────────────────
       - name: ❌ 失敗診斷提示
         if: failure()
         run: |
@@ -125,6 +151,8 @@ jobs:
           echo "        - email_sender.py"
           echo "        - keywords_config.json"
           echo "        - requirements.txt"
+          echo "      選填檔案："
+          echo "        - news_scraper.py  （霍爾木茲專項爬取）"
           echo ""
           echo "  3️⃣  keywords_config.json 格式是否正確？"
           echo "      可用以下指令本地驗證："
