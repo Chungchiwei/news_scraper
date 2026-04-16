@@ -1,63 +1,136 @@
-name: ⚡ 美伊戰事新聞監控
+name: 🚢 海事航運新聞監控
 
 on:
-  # ── 排程：每四小時執行一次（UTC 時間）──
+  # ── 排程：每兩小時執行一次（UTC 時間）──────────────────────
   # cron 格式：分 時 日 月 星期
-  # 0 */4 * * * = 每四小時整點執行（00:00, 04:00, 08:00, 12:00, 16:00, 20:00 UTC）
+  # 0 */4 * * * = 每兩小時整點執行
+  # UTC 對應 TPE (UTC+8)：
+  #   00:00 UTC = 08:00 TPE
+  #   02:00 UTC = 10:00 TPE
+  #   04:00 UTC = 12:00 TPE
+  #   06:00 UTC = 14:00 TPE
+  #   08:00 UTC = 16:00 TPE
+  #   10:00 UTC = 18:00 TPE
+  #   12:00 UTC = 20:00 TPE
+  #   14:00 UTC = 22:00 TPE
+  #   16:00 UTC = 00:00 TPE
+  #   18:00 UTC = 02:00 TPE
+  #   20:00 UTC = 04:00 TPE
+  #   22:00 UTC = 06:00 TPE
   schedule:
-    - cron: '0 */4 * * *'
+    - cron: '0 */2 * * *'
 
-  # ── 允許手動從 GitHub 網頁觸發 ──
+  # ── 允許手動從 GitHub 網頁觸發 ──────────────────────────────
   workflow_dispatch:
     inputs:
       hours_back:
-        description: '抓取幾小時內的新聞'
+        description: '抓取幾小時內的新聞（預設 2）'
         required: false
-        default: '4'
+        default: '2'
+      dry_run:
+        description: '僅抓取，不發送 Email（true / false）'
+        required: false
+        default: 'false'
+
+# ── 同一時間只允許一個 workflow 執行，避免重複發信 ──────────────
+concurrency:
+  group: maritime-news-monitor
+  cancel-in-progress: false    # 不取消進行中的任務，等待完成
 
 jobs:
   fetch-and-send:
-    name: 抓取新聞並發送 Email
+    name: 🔍 抓取海事新聞並發送 Email
     runs-on: ubuntu-latest
-    timeout-minutes: 10       # 最多執行 10 分鐘，避免卡住
+    timeout-minutes: 15        # 最多執行 15 分鐘，避免卡住
 
     steps:
-      # Step 1: 取得程式碼
+
+      # ── Step 1：取得程式碼 ────────────────────────────────
       - name: 📥 Checkout 程式碼
         uses: actions/checkout@v4
 
-      # Step 2: 設定 Python 環境
+      # ── Step 2：設定 Python 環境 ──────────────────────────
       - name: 🐍 設定 Python 3.11
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
           cache: 'pip'          # 快取 pip 套件，加速後續執行
 
-      # Step 3: 安裝套件
+      # ── Step 3：安裝依賴套件 ──────────────────────────────
       - name: 📦 安裝依賴套件
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
-      # Step 4: 執行新聞爬取
+      # ── Step 4：確認關鍵檔案存在 ─────────────────────────
+      - name: 🔎 確認必要檔案
+        run: |
+          echo "── 檢查必要檔案 ──"
+          for f in maritime_news.py email_sender.py keywords_config.json requirements.txt; do
+            if [ -f "$f" ]; then
+              echo "  ✅ $f"
+            else
+              echo "  ❌ 缺少：$f"
+              exit 1
+            fi
+          done
+
+      # ── Step 5：執行新聞爬取與發送 ───────────────────────
       - name: 🚀 執行新聞爬取與發送
         env:
           # 從 GitHub Secrets 注入敏感資訊
-          MAIL_USER:         ${{ secrets.MAIL_USER }}
-          MAIL_PASSWORD:     ${{ secrets.MAIL_PASSWORD }}
-          TARGET_EMAIL:      ${{ secrets.TARGET_EMAIL }}
-          MAIL_SMTP_SERVER:  ${{ secrets.MAIL_SMTP_SERVER }}
-          MAIL_SMTP_PORT:    ${{ secrets.MAIL_SMTP_PORT }}
-          # 手動觸發時可覆蓋，排程時使用預設值 4 小時
-          NEWS_HOURS_BACK: ${{ github.event.inputs.hours_back || '4' }}
-        run: python news_scraper.py
+          MAIL_USER:        ${{ secrets.MAIL_USER }}
+          MAIL_PASSWORD:    ${{ secrets.MAIL_PASSWORD }}
+          TARGET_EMAIL:     ${{ secrets.TARGET_EMAIL }}
+          MAIL_SMTP_SERVER: ${{ secrets.MAIL_SMTP_SERVER }}
+          MAIL_SMTP_PORT:   ${{ secrets.MAIL_SMTP_PORT }}
+          # 手動觸發時可覆蓋時間範圍，排程時使用預設值 2 小時
+          NEWS_HOURS_BACK:  ${{ github.event.inputs.hours_back || '2' }}
+          # 僅手動觸發時有效，排程固定為 false
+          DRY_RUN:          ${{ github.event.inputs.dry_run || 'false' }}
+        run: python maritime_news.py
 
-      # Step 5: 執行失敗時顯示提示
-      - name: ❌ 失敗通知
+      # ── Step 6：上傳執行 log（方便除錯）─────────────────
+      - name: 📄 上傳執行 log
+        if: always()            # 無論成功或失敗都上傳
+        uses: actions/upload-artifact@v4
+        with:
+          name: maritime-news-log-${{ github.run_number }}
+          path: |
+            *.log
+          retention-days: 7     # log 保留 7 天後自動刪除
+          if-no-files-found: ignore
+
+      # ── Step 7：執行失敗時顯示提示 ───────────────────────
+      - name: ❌ 失敗診斷提示
         if: failure()
         run: |
-          echo "::error::新聞爬取失敗，請檢查 Secrets 設定或網路連線"
-          echo "請確認以下 Secrets 已設定："
-          echo "  - MAIL_USER"
-          echo "  - MAIL_PASSWORD"
-          echo "  - TARGET_EMAIL"
+          echo "::error::海事新聞監控執行失敗，請依下方清單排查"
+          echo ""
+          echo "═══════════════════════════════════════"
+          echo "  📋 常見問題排查清單"
+          echo "═══════════════════════════════════════"
+          echo ""
+          echo "  1️⃣  GitHub Secrets 是否已設定？"
+          echo "      必填項目："
+          echo "        - MAIL_USER        Gmail 帳號"
+          echo "        - MAIL_PASSWORD    Gmail App Password"
+          echo "        - TARGET_EMAIL     收件人 Email"
+          echo "      選填項目（有預設值）："
+          echo "        - MAIL_SMTP_SERVER 預設 smtp.gmail.com"
+          echo "        - MAIL_SMTP_PORT   預設 587"
+          echo ""
+          echo "  2️⃣  必要檔案是否存在於 repo 根目錄？"
+          echo "        - maritime_news.py"
+          echo "        - email_sender.py"
+          echo "        - keywords_config.json"
+          echo "        - requirements.txt"
+          echo ""
+          echo "  3️⃣  keywords_config.json 格式是否正確？"
+          echo "      可用以下指令本地驗證："
+          echo "        python -c \"import json; json.load(open('keywords_config.json'))\""
+          echo ""
+          echo "  4️⃣  Gmail App Password 是否為 16 碼（非帳號密碼）？"
+          echo "      申請路徑：Google 帳戶 → 安全性 → 兩步驟驗證 → 應用程式密碼"
+          echo ""
+          echo "═══════════════════════════════════════"
