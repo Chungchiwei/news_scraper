@@ -1,7 +1,9 @@
 # 海事航運新聞監控系統 — 依賴套件
-# 更新日期：2026-04-16
+# 更新日期：2026-04-17
 
 feedparser>=6.0.11
 requests>=2.31.0
 urllib3>=2.0.0
 python-dotenv>=1.0.0
+beautifulsoup4>=4.12.0
+lxml>=5.0.0
