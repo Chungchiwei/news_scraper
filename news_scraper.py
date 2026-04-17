@@ -232,12 +232,10 @@ CAT5_KEYWORDS = [
 ]
 
 OTHER_KEYWORDS = [
-    # ── 英文：具體船型 + 事件組合 ──
     "tanker incident", "tanker detained", "tanker boarded",
     "vessel incident", "vessel detained", "vessel boarded",
     "ship incident", "ship detained",
     "VLCC incident", "VLCC detained",
-    # ── 英文：具體地理 + 航運組合 ──
     "Persian Gulf shipping", "Persian Gulf tanker", "Persian Gulf vessel",
     "Gulf of Oman shipping", "Gulf of Oman tanker",
     "Strait of Hormuz tanker", "Strait of Hormuz shipping",
@@ -245,30 +243,24 @@ OTHER_KEYWORDS = [
     "Red Sea shipping", "Red Sea tanker", "Red Sea vessel",
     "Gulf of Aden shipping", "Gulf of Aden tanker",
     "Bab el-Mandeb shipping", "Bab el-Mandeb tanker",
-    # ── 英文：安全事件 ──
     "UKMTO alert", "UKMTO incident", "UKMTO warning",
     "IMB piracy report", "maritime piracy attack",
     "ship hijacking", "vessel hijacking",
     "armed robbery at sea", "crew kidnapped", "seafarer kidnapped",
     "crew hostage", "crew taken hostage",
     "maritime security incident", "maritime security alert",
-    # ── 英文：制裁/影子船隊 ──
     "shadow fleet tanker", "dark fleet vessel",
     "sanctioned tanker", "sanctioned vessel",
     "Iran oil sanctions", "Iran shipping sanctions",
     "tanker sanctions evasion",
-    # ── 英文：護航/軍事 ──
     "naval escort tanker", "navy escort shipping",
     "Operation Prosperity Guardian",
     "CTF-151", "Combined Maritime Forces",
     "US Navy escort Gulf", "US escort tanker Hormuz",
-    # ── 英文：保險/戰爭險（需有地理語境）──
     "war risk surcharge Gulf", "war risk premium Hormuz",
     "tanker insurance Gulf", "war risk Red Sea",
     "insurance suspended Gulf", "government backstop tanker",
-    # ── 英文：黑海（次要但相關）──
     "Black Sea tanker attack", "Black Sea vessel seized",
-    # ── 繁體中文 ──
     "油輪事件", "油輪被扣", "油輪遭扣押", "油輪遭攔截",
     "商船事件", "商船被扣", "貨輪被扣",
     "波斯灣航運", "波斯灣油輪", "波斯灣商船",
@@ -281,7 +273,6 @@ OTHER_KEYWORDS = [
     "伊朗石油制裁", "伊朗航運制裁",
     "護航艦隊", "繁榮衛士行動",
     "戰爭附加費波斯灣", "戰爭險紅海", "航運保險費率上漲",
-    # ── 簡體中文 ──
     "油轮事件", "油轮被扣", "油轮遭扣押", "油轮遭拦截",
     "商船事件", "商船被扣", "货轮被扣",
     "波斯湾航运", "波斯湾油轮", "波斯湾商船",
@@ -329,25 +320,20 @@ for _kw in _ALL_RAW:
 # 語境驗證詞集
 # ══════════════════════════════════════════════════════════════
 TITLE_SHIPPING_TERMS = {
-    # ── 英文：船型（必須是複合詞，避免 ship/vessel 單獨誤觸）──
     "oil tanker", "product tanker", "chemical tanker", "gas tanker",
     "container ship", "containership", "bulk carrier", "cargo vessel",
     "merchant vessel", "merchant ship", "lng carrier", "lpg carrier",
     "vlcc", "ulcc", "aframax", "suezmax", "panamax",
-    # ── 英文：地理（具體航運水道）──
     "strait of hormuz", "persian gulf", "gulf of oman", "red sea",
     "gulf of aden", "bab el-mandeb", "suez canal", "panama canal",
-    # ── 英文：事件型（必須是複合詞）──
     "tanker attack", "vessel attack", "ship attack", "vessel seized",
     "tanker seized", "ship hijack", "vessel hijack", "piracy attack",
     "armed boarding", "maritime attack", "naval mine",
     "houthi", "irgc",
-    # ── 英文：航運術語（具體）──
     "shipping lane", "sea lane", "maritime security",
     "war risk", "bunker fuel", "charter rate", "freight rate",
     "seafarer", "crew hostage", "crew kidnap",
     "ukmto", "imb piracy", "ctf-151",
-    # ── 繁體中文 ──
     "油輪", "貨櫃船", "散裝船", "液化天然氣船", "液化石油氣船",
     "商船", "貨輪", "超大型油輪",
     "荷莫茲", "荷姆茲", "霍爾木茲", "霍爾木茲海峽",
@@ -358,7 +344,6 @@ TITLE_SHIPPING_TERMS = {
     "水雷封鎖", "布雷", "掃雷",
     "戰爭附加費", "戰爭險", "航運保險費率",
     "航運市場", "運費上漲", "運價指數",
-    # ── 簡體中文 ──
     "油轮", "集装箱船", "散装船", "液化天然气船",
     "货轮", "超大型油轮",
     "霍尔木兹", "波斯湾", "阿曼湾", "红海", "亚丁湾", "曼德海峡",
@@ -370,9 +355,7 @@ TITLE_SHIPPING_TERMS = {
     "航运市场", "运费上涨",
 }
 
-# 正文至少含 2 個以下詞，才視為「航運語境成立」
 BODY_SHIPPING_TERMS = {
-    # ── 英文 ──
     "tanker", "containership", "container ship", "bulk carrier",
     "merchant vessel", "merchant ship", "cargo vessel", "lng carrier",
     "vlcc", "aframax", "suezmax",
@@ -383,7 +366,6 @@ BODY_SHIPPING_TERMS = {
     "houthi", "irgc", "ansarallah",
     "bunker", "charter rate", "freight rate", "war risk",
     "seafarer", "ukmto", "ctf-151",
-    # ── 繁體中文 ──
     "油輪", "貨櫃船", "散裝船", "液化天然氣船",
     "商船", "貨輪",
     "荷莫茲", "荷姆茲", "霍爾木茲",
@@ -392,7 +374,6 @@ BODY_SHIPPING_TERMS = {
     "胡塞", "革命衛隊",
     "海盜", "水雷", "戰爭險",
     "航運市場", "運費",
-    # ── 簡體中文 ──
     "油轮", "集装箱船", "散装船", "货轮",
     "霍尔木兹", "波斯湾", "阿曼湾", "红海", "亚丁湾",
     "苏伊士运河", "巴拿马运河",
@@ -402,7 +383,6 @@ BODY_SHIPPING_TERMS = {
 }
 
 FINANCE_NOISE_TITLE_TERMS = {
-    # ── 台股財經 ──
     "台股", "股市", "股價", "漲停", "跌停", "大盤", "指數", "外資", "法人",
     "投信", "自營商", "主力", "籌碼", "加權指數", "櫃買指數", "ETF", "基金",
     "投資組合", "選股", "存股", "殖利率", "本益比", "市值",
@@ -410,21 +390,17 @@ FINANCE_NOISE_TITLE_TERMS = {
     "漲幅", "跌幅", "價格戰", "通膨", "升息", "降息", "央行", "聯準會",
     "GDP", "CPI", "PPI", "PMI", "VIX", "恐慌指數", "風險溢價",
     "焦點股", "熱門股", "強勢股", "弱勢股",
-    # ── 油價財經（新增）──
     "油價上漲", "油價下跌", "油價走勢", "原油價格", "布蘭特原油", "WTI原油",
     "crude oil price", "oil price surge", "oil price drop", "brent crude",
     "wti crude", "crude futures", "energy stocks", "oil stocks",
-    # ── 一般政治/外交（新增，避免誤抓）──
     "ceasefire", "peace talks", "diplomatic", "sanctions lifted",
     "trade deal", "trade war", "tariff", "關稅", "貿易戰", "外交談判",
     "停火協議", "和平談判", "制裁解除",
-    # ── 英文財經 ──
     "stock market", "equity market", "share price", "hedge fund",
     "portfolio", "dividend", "earnings report", "interest rate cut",
     "interest rate hike", "central bank", "federal reserve",
 }
 
-# 正文含 ≥2 個以下詞 → 排除（財經雜訊）
 FINANCE_NOISE_BODY_TERMS = {
     "台股", "股市", "股價", "漲停", "跌停", "外資賣超", "ETF", "基金",
     "法人", "籌碼", "財報", "營收", "獲利", "EPS",
@@ -435,7 +411,7 @@ FINANCE_NOISE_BODY_TERMS = {
 }
 
 # ══════════════════════════════════════════════════════════════
-# RSS 來源設定 (已修正失效連結)
+# RSS 來源設定
 # ══════════════════════════════════════════════════════════════
 RSS_SOURCES = [
     # ── 中文媒體（台灣）──
@@ -455,7 +431,7 @@ RSS_SOURCES = [
     },
     {
         "name": "中央社",
-        "url":        "https://www.cna.com.tw/rss/aall.aspx",   # ★ 改用官方 RSS
+        "url":        "https://www.cna.com.tw/rss/aall.aspx",
         "backup_url": "https://www.cna.com.tw/rss/aopl.aspx",
         "extra_urls": [
             "https://rsshub.app/cna/aall",
@@ -472,7 +448,7 @@ RSS_SOURCES = [
     },
     {
         "name": "風傳媒",
-        "url":        "https://www.storm.mg/feeds",             # ★ 改用官方 feed
+        "url":        "https://www.storm.mg/feeds",
         "backup_url": "https://rsshub.app/storm/latest",
         "extra_urls": ["https://rsshub.rssforever.com/storm/latest"],
         "lang": "zh-TW", "icon": "🌪️", "category": "中文媒體",
@@ -480,7 +456,7 @@ RSS_SOURCES = [
     # ── 中文媒體（大陸）──
     {
         "name": "海事服務網 CNSS",
-        "url":        "https://www.cnss.com.cn/rss.xml",        # ★ 改用官方 RSS
+        "url":        "https://www.cnss.com.cn/rss.xml",
         "backup_url": "https://rsshub.app/cnss/news",
         "extra_urls": [
             "https://rsshub.rssforever.com/cnss/news",
@@ -497,8 +473,26 @@ RSS_SOURCES = [
         "_html_scraper": True,
     },
     {
+        "name":     "AMZ123",
+        "icon":     "📦",
+        "url":      "https://www.amz123.com/author-23325",
+        "backup_url": None, "extra_urls": [],
+        "lang":     "zh-CN",
+        "category": "中文媒體",
+        "_html_scraper": True,
+    },
+    {
+        "name":     "信德海事網",
+        "icon":     "⚓",
+        "url":      "https://www.xindemarinenews.com/plus/top.php",
+        "backup_url": None, "extra_urls": [],
+        "lang":     "zh-CN",
+        "category": "中文媒體",
+        "_html_scraper": True,
+    },
+    {
         "name": "人民網 國際",
-        "url":        "http://www.people.com.cn/rss/world.xml", # ★ 官方直連優先
+        "url":        "http://www.people.com.cn/rss/world.xml",
         "backup_url": "https://rsshub.app/people/world",
         "extra_urls": [
             "https://rsshub.rssforever.com/people/world",
@@ -508,7 +502,7 @@ RSS_SOURCES = [
     },
     {
         "name": "環球時報",
-        "url":        "https://www.globaltimes.cn/rss/outbrain.xml", # ★ 英文版官方 RSS
+        "url":        "https://www.globaltimes.cn/rss/outbrain.xml",
         "backup_url": "https://rsshub.app/huanqiu/world",
         "extra_urls": [
             "https://rsshub.rssforever.com/huanqiu/world",
@@ -519,7 +513,7 @@ RSS_SOURCES = [
     },
     {
         "name": "新華社 國際",
-        "url":        "http://www.xinhuanet.com/world/news_world.xml", # ★ 官方直連
+        "url":        "http://www.xinhuanet.com/world/news_world.xml",
         "backup_url": "https://rsshub.app/xinhua/world",
         "extra_urls": [
             "https://rsshub.rssforever.com/xinhua/world",
@@ -553,7 +547,7 @@ RSS_SOURCES = [
     # ── 航運專業媒體 ──
     {
         "name": "TradeWinds",
-        "url":        "https://www.tradewindsnews.com/rss",     # ★ 換新官方 RSS
+        "url":        "https://www.tradewindsnews.com/rss",
         "backup_url": "https://rsshub.app/tradewindsnews/latest",
         "extra_urls": ["https://rsshub.rssforever.com/tradewindsnews/latest"],
         "lang": "en", "icon": "🚢", "category": "航運專業",
@@ -573,7 +567,7 @@ RSS_SOURCES = [
     },
     {
         "name": "Maritime Exec",
-        "url":        "https://www.maritime-executive.com/rss/articles", # ★ 修正路徑
+        "url":        "https://www.maritime-executive.com/rss/articles",
         "backup_url": "https://maritime-executive.com/feed",
         "extra_urls": [
             "https://rsshub.app/maritime-executive/article",
@@ -587,7 +581,7 @@ RSS_SOURCES = [
         "backup_url": "https://www.hellenicshippingnews.com/feed/rss/",
         "extra_urls": [],
         "lang": "en", "icon": "🏛️", "category": "航運專業",
-        "need_clean": True,   # ★ 加上 need_clean 解決 bytes pattern 錯誤
+        "need_clean": True,
     },
     {
         "name": "Safety4Sea",
@@ -595,7 +589,7 @@ RSS_SOURCES = [
         "backup_url": "https://safety4sea.com/feed/rss/",
         "extra_urls": [],
         "lang": "en", "icon": "🛡️", "category": "航運專業",
-        "need_clean": True,   # ★ 加上 need_clean
+        "need_clean": True,
     },
     {
         "name": "Container News",
@@ -622,7 +616,7 @@ RSS_SOURCES = [
         "backup_url": "https://newsbase.com/feed",
         "extra_urls": [],
         "lang": "en", "icon": "🛢️", "category": "航運專業",
-        "need_clean": True,   # ★ 加上 need_clean
+        "need_clean": True,
     },
     {
         "name":     "Marine Insight",
@@ -632,7 +626,7 @@ RSS_SOURCES = [
         "extra_urls": [],
         "lang":     "en",
         "category": "航運專業",
-        "need_clean": True,   # ★ 加上 need_clean 解決 SAXParseException
+        "need_clean": True,
     },
     {
         "name":     "Lloyd's List",
@@ -645,7 +639,7 @@ RSS_SOURCES = [
     # ── 國際媒體 ──
     {
         "name": "Reuters",
-        "url":        "https://feeds.reuters.com/reuters/worldNews", # ★ 改回 Reuters 官方
+        "url":        "https://feeds.reuters.com/reuters/worldNews",
         "backup_url": "https://news.yahoo.com/rss/world",
         "extra_urls": [
             "https://rsshub.app/reuters/world",
@@ -680,12 +674,6 @@ RSS_SOURCES = [
         "lang": "en", "icon": "📡", "category": "國際媒體",
         "need_clean": True,
     },
-    # HOCC 請替換為真實 URL，目前 example.com 無法連線
-    # {
-    #     "name": "HOCC",
-    #     "url":  "https://hocc.example.com/feed/",
-    #     ...
-    # },
 ]
 
 
@@ -715,20 +703,16 @@ CNYES_SOURCES = [
 # XML 清洗工具
 # ══════════════════════════════════════════════════════════════
 def clean_xml_content(raw) -> str:
-    """接受 bytes 或 str，統一清洗為合法 XML 字串。"""
     import gzip as _gzip
 
     if isinstance(raw, bytes):
-        # 解壓縮
         if raw[:2] == b'\x1f\x8b':
             try:
                 raw = _gzip.decompress(raw)
             except Exception:
                 pass
-        # 移除 BOM
         if raw[:3] == b'\xef\xbb\xbf':
             raw = raw[3:]
-        # 嘗試從 XML 宣告偵測 encoding
         encoding = 'utf-8'
         enc_match = re.search(rb'encoding=["\']([^"\']+)["\']', raw[:200])
         if enc_match:
@@ -743,12 +727,9 @@ def clean_xml_content(raw) -> str:
     else:
         text = raw
 
-    # 移除非法 XML 控制字元（保留 \t \n \r）
     text = re.sub(r'[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]', '', text)
-    # 修復裸露的 & 符號
     text = re.sub(r'&(?!(amp|lt|gt|quot|apos|#\d+|#x[0-9a-fA-F]+);)', '&amp;', text)
     return text
-
 
 
 # ══════════════════════════════════════════════════════════════
@@ -942,10 +923,11 @@ class OneShippingScraper:
         logger.info(
             f"  📋 壹航運 | 候選 {len(candidates)} | "
             f"命中 {matched_count} | 無關鍵字 {skipped_kw} | "
-            f"時間 {skipped_time} | 重複 {skipped_dup}"
+                        f"時間 {skipped_time} | 重複 {skipped_dup}"
         )
         return results
-    
+
+
 # ══════════════════════════════════════════════════════════════
 # Lloyd's List 搜尋頁爬蟲
 # ══════════════════════════════════════════════════════════════
@@ -1194,6 +1176,265 @@ class LloydsListScraper:
 
 
 # ══════════════════════════════════════════════════════════════
+# AMZ123 作者頁 HTML 爬蟲
+# ══════════════════════════════════════════════════════════════
+class Amz123Scraper:
+    LIST_URL = "https://www.amz123.com/author-23325"
+    BASE_URL = "https://www.amz123.com"
+    HEADERS = {
+        "User-Agent": (
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+            "AppleWebKit/537.36 (KHTML, like Gecko) "
+            "Chrome/124.0.0.0 Safari/537.36"
+        ),
+        "Accept":          "text/html,application/xhtml+xml,*/*;q=0.9",
+        "Accept-Language": "zh-CN,zh;q=0.9,en-US;q=0.8,en;q=0.7",
+        "Accept-Encoding": "gzip, deflate, br",
+        "Connection":      "keep-alive",
+        "Referer":         "https://www.amz123.com/",
+    }
+    SOURCE_META = {
+        "name":     "AMZ123",
+        "icon":     "📦",
+        "lang":     "zh-CN",
+        "category": "中文媒體",
+    }
+
+    def __init__(self, keywords: list, hours_back: int = 2):
+        self.keywords   = keywords
+        self.hours_back = hours_back
+        self.seen_urls: set = set()
+
+    def _parse_date(self, date_str: str) -> datetime | None:
+        if not date_str:
+            return None
+        for fmt in ('%Y-%m-%d %H:%M:%S', '%Y-%m-%d %H:%M', '%Y-%m-%d'):
+            try:
+                dt = datetime.strptime(date_str.strip(), fmt)
+                return dt.replace(
+                    tzinfo=timezone(timedelta(hours=8))
+                ).astimezone(timezone.utc)
+            except ValueError:
+                continue
+        return None
+
+    def fetch(self, scraper_ref) -> list[dict]:
+        from bs4 import BeautifulSoup
+
+        results       = []
+        cutoff        = datetime.now(tz=timezone.utc) - timedelta(hours=self.hours_back)
+        matched_count = skipped_kw = skipped_time = skipped_dup = 0
+
+        logger.info("\n  📡 [中文媒體][zh-CN] AMZ123（作者頁直接解析）")
+
+        try:
+            session = requests.Session()
+            session.headers.update(self.HEADERS)
+            resp = session.get(self.LIST_URL, verify=False, timeout=15)
+            resp.raise_for_status()
+            resp.encoding = "utf-8"
+        except Exception as e:
+            logger.warning(f"    ⚠️  AMZ123 列表頁失敗: {e}")
+            return results
+
+        soup  = BeautifulSoup(resp.text, "html.parser")
+        items = soup.select("div.article-item-container")
+        logger.info(f"    📊 共發現 {len(items)} 篇文章")
+
+        for item in items:
+            title_tag = item.select_one("a.article-title")
+            date_tag  = item.select_one("div.article-bottom span:first-child")
+            reads_tag = item.select_one("div.article-bottom span:last-child")
+            desc_tag  = item.select_one("p.article-description")
+
+            if not title_tag:
+                continue
+
+            title    = title_tag.get_text(strip=True)
+            url      = title_tag.get("href", "")
+            if url and not url.startswith("http"):
+                url = self.BASE_URL + url
+            date_str = date_tag.get_text(strip=True) if date_tag else ""
+            summary  = desc_tag.get_text(strip=True)[:300] if desc_tag else ""
+            reads    = reads_tag.get_text(strip=True) if reads_tag else ""
+
+            if url in self.seen_urls:
+                skipped_dup += 1
+                continue
+
+            pub_time = self._parse_date(date_str)
+            if pub_time is not None and pub_time < cutoff:
+                skipped_time += 1
+                continue
+
+            matched = scraper_ref._match_keywords(title, summary)
+            if not matched:
+                skipped_kw += 1
+                continue
+
+            self.seen_urls.add(url)
+            incident_cat = scraper_ref._classify_incident(title, summary)
+            pub_display  = (
+                pub_time.strftime('%Y-%m-%d %H:%M UTC')
+                if pub_time else '時間未知'
+            )
+
+            results.append({
+                'source_name':     self.SOURCE_META['name'],
+                'source_icon':     self.SOURCE_META['icon'],
+                'source_lang':     self.SOURCE_META['lang'],
+                'source_category': self.SOURCE_META['category'],
+                'title':           title,
+                'summary':         summary + (f"  （閱讀 {reads}）" if reads else ""),
+                'link':            url,
+                'published':       pub_display,
+                'matched':         matched,
+                'incident_cat':    incident_cat,
+            })
+            matched_count += 1
+
+        logger.info(
+            f"  📋 AMZ123 | 候選 {len(items)} | "
+            f"命中 {matched_count} | 無關鍵字 {skipped_kw} | "
+            f"時間 {skipped_time} | 重複 {skipped_dup}"
+        )
+        return results
+
+
+# ══════════════════════════════════════════════════════════════
+# 信德海事網 HTML 爬蟲
+# ══════════════════════════════════════════════════════════════
+class XindeScraper:
+    LIST_URL = "https://www.xindemarinenews.com/plus/top.php"
+    BASE_URL = "https://www.xindemarinenews.com"
+    HEADERS = {
+        "User-Agent": (
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+            "AppleWebKit/537.36 (KHTML, like Gecko) "
+            "Chrome/124.0.0.0 Safari/537.36"
+        ),
+        "Accept":          "text/html,application/xhtml+xml,*/*;q=0.9",
+        "Accept-Language": "zh-CN,zh;q=0.9,en-US;q=0.8,en;q=0.7",
+        "Accept-Encoding": "gzip, deflate, br",
+        "Connection":      "keep-alive",
+        "Referer":         "https://www.xindemarinenews.com/",
+    }
+    SOURCE_META = {
+        "name":     "信德海事網",
+        "icon":     "⚓",
+        "lang":     "zh-CN",
+        "category": "中文媒體",
+    }
+
+    def __init__(self, keywords: list, hours_back: int = 2):
+        self.keywords   = keywords
+        self.hours_back = hours_back
+        self.seen_urls: set = set()
+
+    def _parse_date(self, date_str: str) -> datetime | None:
+        if not date_str:
+            return None
+        match = re.search(r'(\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}:\d{2})', date_str)
+        if not match:
+            match = re.search(r'(\d{4}-\d{2}-\d{2})', date_str)
+        if not match:
+            return None
+        for fmt in ('%Y-%m-%d %H:%M:%S', '%Y-%m-%d %H:%M', '%Y-%m-%d'):
+            try:
+                dt = datetime.strptime(match.group(1).strip(), fmt)
+                return dt.replace(
+                    tzinfo=timezone(timedelta(hours=8))
+                ).astimezone(timezone.utc)
+            except ValueError:
+                continue
+        return None
+
+    def fetch(self, scraper_ref) -> list[dict]:
+        from bs4 import BeautifulSoup
+
+        results       = []
+        cutoff        = datetime.now(tz=timezone.utc) - timedelta(hours=self.hours_back)
+        matched_count = skipped_kw = skipped_time = skipped_dup = 0
+
+        logger.info("\n  📡 [中文媒體][zh-CN] 信德海事網（列表頁直接解析）")
+
+        try:
+            session = requests.Session()
+            session.headers.update(self.HEADERS)
+            resp = session.get(self.LIST_URL, verify=False, timeout=15)
+            resp.raise_for_status()
+            resp.encoding = "utf-8"
+        except Exception as e:
+            logger.warning(f"    ⚠️  信德海事網列表頁失敗: {e}")
+            return results
+
+        soup  = BeautifulSoup(resp.text, "html.parser")
+        items = soup.select("li div.box")
+        logger.info(f"    📊 共發現 {len(items)} 篇文章")
+
+        for item in items:
+            title_tag   = item.select_one("p.text_title a")
+            summary_tag = item.select_one("p.text_con")
+            date_tag    = item.select_one("p[style*='color: grey']")
+
+            if not title_tag:
+                continue
+
+            title    = title_tag.get_text(strip=True)
+            href     = title_tag.get("href", "")
+            url      = href if href.startswith("http") else self.BASE_URL + href
+            date_str = date_tag.get_text(strip=True) if date_tag else ""
+
+            summary = ""
+            if summary_tag:
+                for a in summary_tag.find_all("a"):
+                    a.decompose()
+                summary = summary_tag.get_text(strip=True)[:300]
+
+            if url in self.seen_urls:
+                skipped_dup += 1
+                continue
+
+            pub_time = self._parse_date(date_str)
+            if pub_time is not None and pub_time < cutoff:
+                skipped_time += 1
+                continue
+
+            matched = scraper_ref._match_keywords(title, summary)
+            if not matched:
+                skipped_kw += 1
+                continue
+
+            self.seen_urls.add(url)
+            incident_cat = scraper_ref._classify_incident(title, summary)
+            pub_display  = (
+                pub_time.strftime('%Y-%m-%d %H:%M UTC')
+                if pub_time else '時間未知'
+            )
+
+            results.append({
+                'source_name':     self.SOURCE_META['name'],
+                'source_icon':     self.SOURCE_META['icon'],
+                'source_lang':     self.SOURCE_META['lang'],
+                'source_category': self.SOURCE_META['category'],
+                'title':           title,
+                'summary':         summary,
+                'link':            url,
+                'published':       pub_display,
+                'matched':         matched,
+                'incident_cat':    incident_cat,
+            })
+            matched_count += 1
+
+        logger.info(
+            f"  📋 信德海事網 | 候選 {len(items)} | "
+            f"命中 {matched_count} | 無關鍵字 {skipped_kw} | "
+            f"時間 {skipped_time} | 重複 {skipped_dup}"
+        )
+        return results
+
+
+# ══════════════════════════════════════════════════════════════
 # 新聞爬取器
 # ══════════════════════════════════════════════════════════════
 class NewsRssScraper:
@@ -1241,12 +1482,10 @@ class NewsRssScraper:
         title_lower   = title_clean.lower()
         full_lower    = (title_clean + " " + summary_clean).lower()
 
-        # ── 第一關：標題含財經雜訊詞 → 直接排除 ──
         for term in FINANCE_NOISE_TITLE_TERMS:
             if term.lower() in title_lower:
                 return False
 
-        # ── 第二關：正文財經雜訊詞 ≥ 2 個 → 排除 ──
         body_finance_hits = sum(
             1 for term in FINANCE_NOISE_BODY_TERMS
             if term.lower() in full_lower
@@ -1254,7 +1493,6 @@ class NewsRssScraper:
         if body_finance_hits >= 2:
             return False
 
-        # ── 第三關：高信心詞（標題含任一個 → 直接通過）──
         HIGH_CONFIDENCE_TERMS = {
             "houthi", "irgc", "ansarallah",
             "strait of hormuz", "persian gulf", "gulf of oman",
@@ -1271,14 +1509,10 @@ class NewsRssScraper:
             if term.lower() in title_lower:
                 return True
 
-        # ── 第四關：標題含 TITLE_SHIPPING_TERMS 中的複合詞 → 通過 ──
-        # （已移除 ship/vessel/port/canal 等單詞，只剩複合詞）
         for term in TITLE_SHIPPING_TERMS:
             if term.lower() in title_lower:
                 return True
 
-        # ── 第五關：標題無明確航運詞，但正文航運詞 ≥ 3 個 → 通過 ──
-        # （比原本的 ≥2 更嚴格）
         body_shipping_hits = sum(
             1 for term in BODY_SHIPPING_TERMS
             if term.lower() in full_lower
@@ -1347,7 +1581,6 @@ class NewsRssScraper:
 
     def _download_rss(self, url: str, need_clean: bool = False, is_cn: bool = False):
         headers = self.HEADERS_CN if is_cn else self.HEADERS_DEFAULT
-        # 加入更完整的 headers，降低 403 機率
         headers = {
             **headers,
             "Accept-Encoding": "gzip, deflate, br",
@@ -1366,19 +1599,15 @@ class NewsRssScraper:
                 return None
 
             if need_clean:
-                # 先清洗再解析（處理非法字元、亂碼實體）
-                cleaned = clean_xml_content(resp.content)   # ← 傳 bytes，讓函式自動解碼
+                cleaned = clean_xml_content(resp.content)
                 parsed  = feedparser.parse(io.StringIO(cleaned))
             else:
-                # ★ 核心修復：統一用 BytesIO，避免 bytes pattern on str-like object
                 try:
                     parsed = feedparser.parse(io.BytesIO(resp.content))
                 except Exception:
-                    # fallback：清洗後再試
                     cleaned = clean_xml_content(resp.content)
                     parsed  = feedparser.parse(io.StringIO(cleaned))
 
-            # bozo=True 但有內容時，嘗試清洗後重新解析
             if getattr(parsed, 'bozo', False) and not parsed.entries:
                 try:
                     cleaned = clean_xml_content(resp.content)
@@ -1396,7 +1625,6 @@ class NewsRssScraper:
                 + (f" ({type(bozo_exc).__name__})" if bozo_exc else "")
             )
 
-            # bozo=True 且無內容 → 視為失敗
             if bozo and not parsed.entries:
                 logger.warning(f"    ⚠️  bozo 且無資料，跳過")
                 return None
@@ -1412,7 +1640,6 @@ class NewsRssScraper:
         except Exception as e:
             logger.warning(f"    ⚠️  錯誤: {url[:60]} → {e}")
         return None
-
 
     def _build_item(self, source: dict, title: str, summary: str,
                     link: str, pub_time: datetime | None,
@@ -1578,21 +1805,40 @@ class NewsRssScraper:
 
     def fetch_all(self) -> dict:
         all_news = []
+
+        # ── RSS 來源 ──
         for source in self.sources:
             all_news.extend(self.fetch_from_source(source))
 
+        # ── 壹航運 HTML 爬蟲 ──
         oneshipping_scraper = OneShippingScraper(
             keywords   = self.keywords,
             hours_back = self.hours_back,
         )
         all_news.extend(oneshipping_scraper.fetch(self))
 
+        # ── Lloyd's List 爬蟲 ──
         lloyds_scraper = LloydsListScraper(
             keywords   = self.keywords,
             hours_back = self.hours_back,
         )
         all_news.extend(lloyds_scraper.fetch(self))
 
+        # ── AMZ123 爬蟲 ──
+        amz123_scraper = Amz123Scraper(
+            keywords   = self.keywords,
+            hours_back = self.hours_back,
+        )
+        all_news.extend(amz123_scraper.fetch(self))
+
+        # ── 信德海事網爬蟲 ──
+        xinde_scraper = XindeScraper(
+            keywords   = self.keywords,
+            hours_back = self.hours_back,
+        )
+        all_news.extend(xinde_scraper.fetch(self))
+
+        # ── 鉅亨網 API ──
         for cnyes_source in self.cnyes_sources:
             all_news.extend(self.fetch_from_cnyes(cnyes_source))
 
@@ -1605,12 +1851,12 @@ class NewsRssScraper:
         zh_cn_news    = [n for n in all_news if n['source_category'] == '中文媒體' and n['source_lang'] == 'zh-CN']
         shipping_news = [n for n in all_news if n['source_category'] == '航運專業']
         intl_news     = [n for n in all_news if n['source_category'] == '國際媒體']
-        cat1_news = [n for n in all_news if n['incident_cat'] == 'CAT1']
-        cat2_news = [n for n in all_news if n['incident_cat'] == 'CAT2']
-        cat3_news = [n for n in all_news if n['incident_cat'] == 'CAT3']
-        cat4_news = [n for n in all_news if n['incident_cat'] == 'CAT4']
-        cat5_news = [n for n in all_news if n['incident_cat'] == 'CAT5']
-        other_news  = [n for n in all_news if n['incident_cat'] == 'OTHER']
+        cat1_news  = [n for n in all_news if n['incident_cat'] == 'CAT1']
+        cat2_news  = [n for n in all_news if n['incident_cat'] == 'CAT2']
+        cat3_news  = [n for n in all_news if n['incident_cat'] == 'CAT3']
+        cat4_news  = [n for n in all_news if n['incident_cat'] == 'CAT4']
+        cat5_news  = [n for n in all_news if n['incident_cat'] == 'CAT5']
+        other_news = [n for n in all_news if n['incident_cat'] == 'OTHER']
 
         logger.info(
             f"\n{'='*60}\n"
@@ -2153,12 +2399,13 @@ class NewsEmailSender:
 </body>
 </html>"""
 
+
 # ══════════════════════════════════════════════════════════════
 # 主程式
 # ══════════════════════════════════════════════════════════════
 if __name__ == "__main__":
     logger.info("\n" + "=" * 60)
-    logger.info("🚢 航運安全監控系統 v5.2")
+    logger.info("🚢 航運安全監控系統 v5.3")
     logger.info("=" * 60)
 
     run_time   = datetime.now(tz=timezone.utc)
@@ -2180,3 +2427,7 @@ if __name__ == "__main__":
         logger.error(f"❌ 執行失敗: {e}")
         traceback.print_exc()
         exit(1)
+
+       
+
+            
