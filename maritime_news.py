@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-maritime_news.py  v6.3
+maritime_news.py  v6.4
 海事航運新聞監控系統 — 主程式
 職責：爬蟲 / 關鍵字比對 / 分類
 新增：AMZ123 / 信德海事網 HTML 爬蟲整合
+新增：Reddit 航運社群爬蟲 (r/Ships / r/maritime / r/shipping)
 Email 發送 → 委派給 email_sender.py
 """
 
@@ -13,6 +14,7 @@ import io
 import re
 import ssl
 import json
+import time
 import html as _html_module
 import logging
 import traceback
@@ -23,6 +25,7 @@ import requests
 from datetime import datetime, timezone, timedelta
 from pathlib import Path
 from bs4 import BeautifulSoup
+
 from urllib3.exceptions import InsecureRequestWarning
 warnings.filterwarnings('ignore', category=InsecureRequestWarning)
 
@@ -239,6 +242,20 @@ RSS_SOURCES = [
      "backup_url": "https://www.marinelink.com/news/rss?take=20",
      "extra_urls": [], "lang": "en", "category": "航運專業", "need_clean": True},
 
+    # ── Reddit 航運社群（標記為 _reddit_scraper）────────────
+    {"name": "Reddit r/Ships",    "url": "__reddit_ships__",
+     "backup_url": None, "extra_urls": [],
+     "lang": "en", "icon": "🤖", "category": "航運專業", "_reddit_scraper": True,
+     "_reddit_sub": "Ships"},
+    {"name": "Reddit r/maritime", "url": "__reddit_maritime__",
+     "backup_url": None, "extra_urls": [],
+     "lang": "en", "icon": "🤖", "category": "航運專業", "_reddit_scraper": True,
+     "_reddit_sub": "maritime"},
+    {"name": "Reddit r/shipping", "url": "__reddit_shipping__",
+     "backup_url": None, "extra_urls": [],
+     "lang": "en", "icon": "🤖", "category": "航運專業", "_reddit_scraper": True,
+     "_reddit_sub": "shipping"},
+
     # ── 11 大航商官方新聞 RSS ─────────────────────────────────
     {"name": "Maersk News",      "icon": "🔵",
      "url": "https://www.maersk.com/news/rss",
@@ -324,6 +341,24 @@ CNYES_SOURCES = [
      "icon": "💹", "category": "中文媒體", "lang": "zh-TW"},
 ]
 
+# ── Reddit 爬蟲設定（可在 .env 或環境變數中設定）────────────
+REDDIT_CONFIG = {
+    # 設為 True 啟用 PRAW（需填入下方 API 金鑰）
+    # 設為 False 使用免 API Key 的 requests JSON 模式（預設）
+    "use_praw": os.environ.get("REDDIT_USE_PRAW", "false").lower() == "true",
+
+    # PRAW 設定（use_praw=True 時才需要）
+    "client_id":     os.environ.get("REDDIT_CLIENT_ID",     ""),
+    "client_secret": os.environ.get("REDDIT_CLIENT_SECRET", ""),
+    "user_agent":    os.environ.get("REDDIT_USER_AGENT",
+                                    "MaritimeNewsScraper/1.0"),
+
+    # 爬取設定
+    "posts_per_sub": int(os.environ.get("REDDIT_POSTS_PER_SUB", "15")),
+    "category":      os.environ.get("REDDIT_CATEGORY", "hot"),  # hot / new / top
+    "flair_filter":  os.environ.get("REDDIT_FLAIR_FILTER", ""),  # 如 "News!" 只抓新聞
+}
+
 
 # ══════════════════════════════════════════════════════════════
 # XML 清洗工具
@@ -355,6 +390,270 @@ def clean_xml_content(raw) -> str:
     text = re.sub(r'&(?!(amp|lt|gt|quot|apos|#\d+|#x[0-9a-fA-F]+);)',
                   '&amp;', text)
     return text
+
+
+# ══════════════════════════════════════════════════════════════
+# Reddit 航運社群爬蟲  ★ 新增 ★
+# ══════════════════════════════════════════════════════════════
+class RedditShippingScraper:
+    """
+    爬取 Reddit 航運相關 Subreddit 的貼文。
+    支援兩種模式：
+      - requests JSON 模式（預設，無需 API Key）
+      - PRAW 模式（需設定 REDDIT_USE_PRAW=true 及相關金鑰）
+    """
+
+    HEADERS = {
+        "User-Agent":      "MaritimeNewsScraper/1.0 (compatible; Python requests)",
+        "Accept":          "application/json",
+        "Accept-Language": "en-US,en;q=0.9",
+    }
+
+    # 航運相關 Subreddit 清單（可依需求擴充）
+    SHIPPING_SUBREDDITS = [
+        "Ships",
+        "maritime",
+        "shipping",
+    ]
+
+    def __init__(self, keywords: list, hours_back: int = 2,
+                 config: dict | None = None):
+        self.keywords   = keywords
+        self.hours_back = hours_back
+        self.config     = config or REDDIT_CONFIG
+        self.seen_urls: set = set()
+
+    # ── 時間解析 ──────────────────────────────────────────────
+    def _parse_timestamp(self, ts) -> datetime | None:
+        """將 Unix timestamp 轉為 UTC datetime"""
+        try:
+            return datetime.fromtimestamp(float(ts), tz=timezone.utc)
+        except (TypeError, ValueError, OSError):
+            return None
+
+    # ── 建立統一格式的新聞項目 ───────────────────────────────
+    def _build_reddit_item(self, post_data: dict,
+                           source_name: str, scraper_ref) -> dict | None:
+        """
+        將 Reddit 貼文資料轉換為系統統一格式。
+        post_data 需包含: title, selftext, url, permalink,
+                          created_utc, score, num_comments,
+                          link_flair_text, author
+        """
+        title       = post_data.get("title", "").strip()
+        selftext    = post_data.get("selftext", "") or ""
+        permalink   = post_data.get("permalink", "")
+        created_utc = post_data.get("created_utc", 0)
+        score       = post_data.get("score", 0)
+        num_comments= post_data.get("num_comments", 0)
+        flair       = post_data.get("link_flair_text", "") or ""
+        author      = post_data.get("author", "") or ""
+        subreddit   = post_data.get("subreddit", "") or ""
+
+        if not title:
+            return None
+
+        # 組合貼文永久連結
+        link = (f"https://www.reddit.com{permalink}"
+                if permalink.startswith("/") else permalink)
+
+        # 去重
+        if link in self.seen_urls:
+            return None
+
+        # 時間篩選
+        pub_time = self._parse_timestamp(created_utc)
+        cutoff   = datetime.now(tz=timezone.utc) - timedelta(hours=self.hours_back)
+        if pub_time is not None and pub_time < cutoff:
+            return None
+
+        # Flair 篩選（若設定了只抓特定 flair）
+        flair_filter = self.config.get("flair_filter", "")
+        if flair_filter and flair_filter.lower() not in flair.lower():
+            return None
+
+        # 清理 selftext（移除 Markdown 語法）
+        summary = re.sub(r'\[([^\]]+)\]\([^\)]+\)', r'\1', selftext)  # [text](url)
+        summary = re.sub(r'[*_~`#>]+', '', summary)                   # Markdown 符號
+        summary = re.sub(r'\s+', ' ', summary).strip()
+        if len(summary) > 300:
+            summary = summary[:300] + "..."
+
+        # 補充 meta 資訊到 summary
+        meta = f"[r/{subreddit} | u/{author} | ⬆️{score} | 💬{num_comments}"
+        if flair:
+            meta += f" | 🏷️{flair}"
+        meta += "]"
+        summary = f"{meta}  {summary}" if summary else meta
+
+        # 關鍵字比對
+        matched = scraper_ref._match_keywords(title, summary)
+        if not matched:
+            # Reddit 航運版：標題含航運詞也收錄（社群討論較口語）
+            if not any(t.lower() in title.lower()
+                       for t in TITLE_SHIPPING_TERMS):
+                return None
+            cfg_other = INCIDENT_CATEGORIES.get(
+                "OTHER", {"label": "其他", "color": "#888888"}
+            )
+            matched = [("shipping community",
+                        cfg_other["label"], cfg_other["color"])]
+
+        self.seen_urls.add(link)
+        return {
+            'source_name':     source_name,
+            'source_icon':     "🤖",
+            'source_lang':     "en",
+            'source_category': "航運專業",
+            'title':           title,
+            'summary':         summary,
+            'link':            link,
+            'published':       (pub_time.strftime('%Y-%m-%d %H:%M UTC')
+                                if pub_time else '時間未知'),
+            'matched':         matched,
+            'incident_cat':    scraper_ref._classify_incident(title, summary),
+        }
+
+    # ── requests JSON 模式（無需 API Key）───────────────────
+    def _fetch_via_requests(self, subreddit: str,
+                            scraper_ref) -> list[dict]:
+        results = []
+        category = self.config.get("category", "hot")
+        limit    = self.config.get("posts_per_sub", 15)
+        url      = (f"https://www.reddit.com/r/{subreddit}"
+                    f"/{category}.json?limit={limit}")
+
+        logger.info(f"    🔗 {url}")
+        try:
+            resp = requests.get(url, headers=self.HEADERS,
+                                timeout=20, verify=False)
+
+            # Reddit 有時回傳 429（限流），等待後重試一次
+            if resp.status_code == 429:
+                logger.warning(f"    ⚠️  Reddit 限流 (429)，等待 5 秒後重試...")
+                time.sleep(5)
+                resp = requests.get(url, headers=self.HEADERS,
+                                    timeout=20, verify=False)
+
+            resp.raise_for_status()
+            data  = resp.json()
+            posts = data.get("data", {}).get("children", [])
+            logger.info(f"    📊 取得 {len(posts)} 篇貼文")
+
+        except requests.exceptions.HTTPError as e:
+            logger.warning(f"    ⚠️  HTTP 錯誤: {e}")
+            return results
+        except Exception as e:
+            logger.warning(f"    ⚠️  r/{subreddit} 請求失敗: {e}")
+            return results
+
+        for post in posts:
+            if post.get("kind") != "t3":
+                continue
+            item = self._build_reddit_item(
+                post.get("data", {}),
+                f"Reddit r/{subreddit}",
+                scraper_ref
+            )
+            if item:
+                results.append(item)
+
+        return results
+
+    # ── PRAW 模式（需 API Key）──────────────────────────────
+    def _fetch_via_praw(self, subreddit: str, scraper_ref) -> list[dict]:
+        results = []
+        try:
+            import praw
+        except ImportError:
+            logger.warning(
+                "    ⚠️  未安裝 praw，請執行 pip install praw"
+                "，或設定 REDDIT_USE_PRAW=false 改用免 Key 模式"
+            )
+            return results
+
+        try:
+            reddit = praw.Reddit(
+                client_id     = self.config["client_id"],
+                client_secret = self.config["client_secret"],
+                user_agent    = self.config["user_agent"],
+            )
+            sub      = reddit.subreddit(subreddit)
+            category = self.config.get("category", "hot")
+            limit    = self.config.get("posts_per_sub", 15)
+
+            if category == "new":
+                posts = sub.new(limit=limit)
+            elif category == "top":
+                posts = sub.top(limit=limit, time_filter="day")
+            else:
+                posts = sub.hot(limit=limit)
+
+            logger.info(f"    🔗 PRAW → r/{subreddit} [{category}]")
+
+            for post in posts:
+                post_data = {
+                    "title":           post.title,
+                    "selftext":        post.selftext or "",
+                    "permalink":       post.permalink,
+                    "created_utc":     post.created_utc,
+                    "score":           post.score,
+                    "num_comments":    post.num_comments,
+                    "link_flair_text": post.link_flair_text or "",
+                    "author":          str(post.author) if post.author else "[deleted]",
+                    "subreddit":       post.subreddit.display_name,
+                }
+                item = self._build_reddit_item(
+                    post_data, f"Reddit r/{subreddit}", scraper_ref
+                )
+                if item:
+                    results.append(item)
+
+        except Exception as e:
+            logger.warning(f"    ⚠️  PRAW r/{subreddit} 失敗: {e}")
+
+        return results
+
+    # ── 主入口：爬取所有航運 Subreddit ──────────────────────
+    def fetch(self, scraper_ref, subreddits: list[str] | None = None) -> list[dict]:
+        """
+        爬取所有指定 Subreddit 的航運貼文。
+        subreddits: 若為 None，使用 SHIPPING_SUBREDDITS 預設清單
+        """
+        target_subs  = subreddits or self.SHIPPING_SUBREDDITS
+        use_praw     = self.config.get("use_praw", False)
+        all_results  = []
+
+        logger.info(
+            f"\n  📡 [航運專業][en] Reddit 社群爬蟲"
+            f"（模式：{'PRAW' if use_praw else 'requests JSON'}）"
+        )
+        logger.info(f"    📋 目標 Subreddit：{', '.join(f'r/{s}' for s in target_subs)}")
+
+        for sub in target_subs:
+            logger.info(f"\n    🔍 爬取 r/{sub} ...")
+            try:
+                if use_praw:
+                    posts = self._fetch_via_praw(sub, scraper_ref)
+                else:
+                    posts = self._fetch_via_requests(sub, scraper_ref)
+
+                logger.info(f"    ✅ r/{sub} 命中 {len(posts)} 篇")
+                all_results.extend(posts)
+
+                # 避免觸發 Reddit 限流（requests 模式）
+                if not use_praw:
+                    time.sleep(2)
+
+            except Exception as e:
+                logger.warning(f"    ❌ r/{sub} 爬取失敗: {e}")
+
+        logger.info(
+            f"\n  📋 Reddit 總計 | "
+            f"Subreddit {len(target_subs)} 個 | "
+            f"命中 {len(all_results)} 篇"
+        )
+        return all_results
 
 
 # ══════════════════════════════════════════════════════════════
@@ -727,21 +1026,8 @@ class LloydsListScraper:
 
 
 # ══════════════════════════════════════════════════════════════
-# AMZ123 作者頁 HTML 爬蟲
+# AMZ123 作者頁 HTML 爬蟲（續）
 # ══════════════════════════════════════════════════════════════
-class Amz123Scraper:
-    LIST_URL = "https://www.amz123.com/author-23325"
-    BASE_URL = "https://www.amz123.com"
-    HEADERS  = {
-        "User-Agent":      "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
-                           "AppleWebKit/537.36 (KHTML, like Gecko) "
-                           "Chrome/124.0.0.0 Safari/537.36",
-        "Accept":          "text/html,application/xhtml+xml,*/*;q=0.9",
-        "Accept-Language": "zh-CN,zh;q=0.9,en-US;q=0.8,en;q=0.7",
-        "Accept-Encoding": "gzip, deflate, br",
-        "Connection":      "keep-alive",
-        "Referer":         "https://www.amz123.com/",
-    }
     SOURCE_META = {"name": "AMZ123", "icon": "📦",
                    "lang": "zh-CN", "category": "中文媒體"}
 
@@ -763,8 +1049,6 @@ class Amz123Scraper:
         return None
 
     def fetch(self, scraper_ref) -> list[dict]:
-        from bs4 import BeautifulSoup
-
         results = []
         cutoff  = datetime.now(tz=timezone.utc) - timedelta(hours=self.hours_back)
         matched_count = skipped_kw = skipped_time = skipped_dup = 0
@@ -880,8 +1164,6 @@ class XindeScraper:
         return None
 
     def fetch(self, scraper_ref) -> list[dict]:
-        from bs4 import BeautifulSoup
-
         results = []
         cutoff  = datetime.now(tz=timezone.utc) - timedelta(hours=self.hours_back)
         matched_count = skipped_kw = skipped_time = skipped_dup = 0
@@ -1049,34 +1331,27 @@ class NewsRssScraper:
         title_lower   = title_clean.lower()
         full_lower    = (title_clean + " " + summary_clean).lower()
 
-        # 航商官方來源直接通過（仍排除財經雜訊）
         if source_category == "航商動態":
             if any(t.lower() in title_lower for t in FINANCE_NOISE_TITLE_TERMS):
                 return False
             return True
 
-        # 第一關：標題財經雜訊 → 排除
         if any(t.lower() in title_lower for t in FINANCE_NOISE_TITLE_TERMS):
             return False
 
-        # 第二關：正文財經雜訊 ≥ 2 → 排除
         if sum(1 for t in FINANCE_NOISE_BODY_TERMS
                if t.lower() in full_lower) >= 2:
             return False
 
-        # 第三關：高信心詞 → 直接通過
         if any(t.lower() in title_lower for t in self.HIGH_CONFIDENCE_TERMS):
             return True
 
-        # 第三關補充：標題含任一航商名稱變體 → 直接通過
         if any(n in title_lower for n in _CARRIER_NAME_SET):
             return True
 
-        # 第四關：標題含航運複合詞 → 通過
         if any(t.lower() in title_lower for t in TITLE_SHIPPING_TERMS):
             return True
 
-        # 第五關：正文航運詞 ≥ 3 → 通過
         return sum(1 for t in BODY_SHIPPING_TERMS
                    if t.lower() in full_lower) >= 3
 
@@ -1115,7 +1390,6 @@ class NewsRssScraper:
                 matched.append((kw, cfg["label"], cfg["color"]))
                 seen_kw.add(kw)
 
-        # 航商來源：若無關鍵字命中，補預設 CAT6 標籤
         if not matched and source_category == "航商動態":
             cfg6 = INCIDENT_CATEGORIES.get("CAT6", INCIDENT_CATEGORIES["OTHER"])
             matched = [("carrier news", cfg6["label"], cfg6["color"])]
@@ -1236,7 +1510,8 @@ class NewsRssScraper:
 
     # ── 單一 RSS 來源抓取 ─────────────────────────────────────
     def fetch_from_source(self, source: dict) -> list:
-        if source.get("_html_scraper"):
+        # _html_scraper 與 _reddit_scraper 均由專屬爬蟲處理
+        if source.get("_html_scraper") or source.get("_reddit_scraper"):
             return []
         results         = []
         cutoff          = datetime.now(tz=timezone.utc) - timedelta(hours=self.hours_back)
@@ -1286,7 +1561,6 @@ class NewsRssScraper:
                     re.sub(r'<[^>]+>', '', summary)
                 ).strip()
 
-                # 快速排除財經噪音（航商來源跳過）
                 if source_category != "航商動態":
                     if any(re.search(p, title) for p in self.SKIP_PATTERNS):
                         skipped_ctx += 1
@@ -1425,6 +1699,15 @@ class NewsRssScraper:
             ).fetch(self)
         )
 
+        # ── Reddit 航運社群爬蟲 ★ 新增 ★ ────────────────────
+        all_news.extend(
+            RedditShippingScraper(
+                keywords=self.keywords,
+                hours_back=self.hours_back,
+                config=REDDIT_CONFIG,
+            ).fetch(self)
+        )
+
         # ── 鉅亨網 API ───────────────────────────────────────
         for cnyes_source in self.cnyes_sources:
             all_news.extend(self.fetch_from_cnyes(cnyes_source))
@@ -1490,10 +1773,11 @@ class NewsRssScraper:
 # ══════════════════════════════════════════════════════════════
 if __name__ == "__main__":
     logger.info("\n" + "=" * 60)
-    logger.info("🚢 海事航運新聞監控系統 v6.3")
+    logger.info("🚢 海事航運新聞監控系統 v6.4")
     logger.info("   分類：火災 / 碰撞觸礁 / 擱淺沉沒 / 海盜攻擊 / 船員傷亡")
     logger.info("   新增：AMZ123 / 信德海事網 HTML 爬蟲")
     logger.info("   新增：11大航商營運動態 (CAT6)")
+    logger.info("   新增：Reddit 航運社群 (r/Ships / r/maritime / r/shipping)")
     logger.info("   發信模組：email_sender.py")
     logger.info("=" * 60)
 
