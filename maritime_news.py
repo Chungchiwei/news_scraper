@@ -403,9 +403,18 @@ def clean_xml_content(raw) -> str:
 # ══════════════════════════════════════════════════════════════
 class RedditShippingScraper:
     HEADERS = {
-        "User-Agent":      "MaritimeNewsScraper/1.0 (compatible; Python requests)",
-        "Accept":          "application/json",
+        # ★ 修正：使用更擬真的瀏覽器 UA，避免被 Reddit 封鎖
+        "User-Agent": (
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+            "AppleWebKit/537.36 (KHTML, like Gecko) "
+            "Chrome/124.0.0.0 Safari/537.36"
+        ),
+        "Accept":          "application/json, text/javascript, */*; q=0.01",
         "Accept-Language": "en-US,en;q=0.9",
+        "Accept-Encoding": "gzip, deflate, br",
+        "Referer":         "https://www.reddit.com/",
+        "DNT":             "1",
+        "Connection":      "keep-alive",
     }
     SHIPPING_SUBREDDITS = ["Ships", "maritime", "shipping"]
 
@@ -496,19 +505,41 @@ class RedditShippingScraper:
         category = self.config.get("category", "hot")
         limit    = self.config.get("posts_per_sub", 15)
         url      = (f"https://www.reddit.com/r/{subreddit}"
-                    f"/{category}.json?limit={limit}")
+                    f"/{category}.json?limit={limit}&raw_json=1")
         logger.info(f"    🔗 {url}")
         try:
-            resp = requests.get(url, headers=self.HEADERS,
-                                timeout=20, verify=False)
+            # ★ 修正：加入 session + cookies 模擬瀏覽器行為
+            session = requests.Session()
+            session.headers.update(self.HEADERS)
+            # 先訪問首頁取得 cookie
+            try:
+                session.get("https://www.reddit.com/", timeout=10,
+                            verify=False)
+                time.sleep(1)
+            except Exception:
+                pass
+
+            resp = session.get(url, timeout=20, verify=False)
+
             if resp.status_code == 429:
-                logger.warning("    ⚠️  Reddit 限流 (429)，等待 5 秒後重試...")
-                time.sleep(5)
-                resp = requests.get(url, headers=self.HEADERS,
-                                    timeout=20, verify=False)
+                logger.warning("    ⚠️  Reddit 限流 (429)，等待 10 秒後重試...")
+                time.sleep(10)
+                resp = session.get(url, timeout=20, verify=False)
+
+            if resp.status_code == 403:
+                logger.warning(
+                    f"    ⚠️  Reddit r/{subreddit} 拒絕存取 (403)，"
+                    f"嘗試備用 old.reddit.com ..."
+                )
+                # ★ 備用：改用 old.reddit.com
+                old_url = (f"https://old.reddit.com/r/{subreddit}"
+                           f"/{category}.json?limit={limit}&raw_json=1")
+                resp = session.get(old_url, timeout=20, verify=False)
+
             resp.raise_for_status()
             posts = resp.json().get("data", {}).get("children", [])
             logger.info(f"    📊 取得 {len(posts)} 篇貼文")
+
         except requests.exceptions.HTTPError as e:
             logger.warning(f"    ⚠️  HTTP 錯誤: {e}")
             return results
@@ -527,6 +558,7 @@ class RedditShippingScraper:
             if item:
                 results.append(item)
         return results
+
 
     def _fetch_via_praw(self, subreddit: str, scraper_ref) -> list[dict]:
         results = []
@@ -1407,29 +1439,50 @@ class NewsRssScraper:
                 logger.warning(f"    ⚠️  回應過短 ({len(resp.content)} bytes)")
                 return None
 
-            if need_clean:
-                parsed = feedparser.parse(
-                    io.StringIO(clean_xml_content(resp.content))
-                )
-            else:
-                try:
-                    parsed = feedparser.parse(io.BytesIO(resp.content))
-                except Exception:
-                    parsed = feedparser.parse(
-                        io.StringIO(clean_xml_content(resp.content))
-                    )
+            raw_content = resp.content
 
-            if getattr(parsed, 'bozo', False) and not parsed.entries:
+            # ★ 修正：統一先嘗試 BytesIO，失敗或 need_clean 時改用 StringIO
+            parsed = None
+
+            # 第一優先：直接用 BytesIO（最快，保留原始編碼）
+            if not need_clean:
                 try:
-                    parsed2 = feedparser.parse(
-                        io.StringIO(clean_xml_content(resp.content))
-                    )
-                    if parsed2.entries:
+                    parsed = feedparser.parse(io.BytesIO(raw_content))
+                    # 若 bozo 且有 bytes pattern 錯誤，改用 StringIO
+                    if (getattr(parsed, 'bozo', False) and
+                            isinstance(getattr(parsed, 'bozo_exception', None),
+                                       TypeError)):
+                        parsed = None
+                except TypeError:
+                    parsed = None
+
+            # 第二優先：StringIO（處理編碼問題）
+            if parsed is None or not parsed.entries:
+                try:
+                    cleaned = clean_xml_content(raw_content)
+                    parsed2 = feedparser.parse(io.StringIO(cleaned))
+                    # 若 StringIO 結果更好則採用
+                    if parsed2.entries or parsed is None:
                         parsed = parsed2
                 except Exception:
                     pass
 
-            entry_count = len(parsed.entries) if parsed else 0
+            # 第三優先：直接傳字串給 feedparser
+            if parsed is None or (getattr(parsed, 'bozo', False)
+                                   and not parsed.entries):
+                try:
+                    cleaned = clean_xml_content(raw_content)
+                    parsed3 = feedparser.parse(cleaned)
+                    if parsed3.entries:
+                        parsed = parsed3
+                except Exception:
+                    pass
+
+            if parsed is None:
+                logger.warning("    ⚠️  feedparser 解析失敗")
+                return None
+
+            entry_count = len(parsed.entries)
             bozo        = getattr(parsed, 'bozo', False)
             bozo_exc    = getattr(parsed, 'bozo_exception', None)
             logger.info(
@@ -1450,6 +1503,7 @@ class NewsRssScraper:
         except Exception as e:
             logger.warning(f"    ⚠️  錯誤: {url[:60]} → {e}")
         return None
+
 
     # ── 建立新聞項目 ──────────────────────────────────────────
     def _build_item(self, source: dict, title: str, summary: str,
@@ -1742,7 +1796,7 @@ if __name__ == "__main__":
     logger.info("=" * 60)
 
     run_time   = datetime.now(tz=timezone.utc)
-    hours_back = int(os.environ.get("NEWS_HOURS_BACK", "2"))
+    hours_back = int(os.environ.get("NEWS_HOURS_BACK", "8"))
 
     scraper = NewsRssScraper(
         keywords      = ALL_KEYWORDS,
