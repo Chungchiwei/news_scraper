@@ -341,22 +341,28 @@ CNYES_SOURCES = [
      "icon": "💹", "category": "中文媒體", "lang": "zh-TW"},
 ]
 
-# ── Reddit 爬蟲設定（可在 .env 或環境變數中設定）────────────
+# ══════════════════════════════════════════════════════════════
+# ★ Reddit 爬蟲設定（內建，無需 .env）★
+# ══════════════════════════════════════════════════════════════
 REDDIT_CONFIG = {
-    # 設為 True 啟用 PRAW（需填入下方 API 金鑰）
-    # 設為 False 使用免 API Key 的 requests JSON 模式（預設）
-    "use_praw": os.environ.get("REDDIT_USE_PRAW", "false").lower() == "true",
+    # False = 免 API Key 的 requests JSON 模式（預設）
+    # True  = PRAW 模式（需填入下方 client_id / client_secret）
+    "use_praw":      False,
 
-    # PRAW 設定（use_praw=True 時才需要）
-    "client_id":     os.environ.get("REDDIT_CLIENT_ID",     ""),
-    "client_secret": os.environ.get("REDDIT_CLIENT_SECRET", ""),
-    "user_agent":    os.environ.get("REDDIT_USER_AGENT",
-                                    "MaritimeNewsScraper/1.0"),
+    # PRAW 模式才需要填寫
+    "client_id":     "",                         # ← 填入你的 Reddit Client ID
+    "client_secret": "",                         # ← 填入你的 Reddit Client Secret
+    "user_agent":    "MaritimeNewsScraper/1.0",
 
-    # 爬取設定
-    "posts_per_sub": int(os.environ.get("REDDIT_POSTS_PER_SUB", "15")),
-    "category":      os.environ.get("REDDIT_CATEGORY", "hot"),  # hot / new / top
-    "flair_filter":  os.environ.get("REDDIT_FLAIR_FILTER", ""),  # 如 "News!" 只抓新聞
+    # 每個 Subreddit 抓取篇數
+    "posts_per_sub": 15,
+
+    # 排序方式：hot / new / top
+    "category":      "hot",
+
+    # Flair 篩選：只抓有 "News!" 標籤的貼文
+    # 若要全抓請改為空字串 ""
+    "flair_filter":  "News!",
 }
 
 
@@ -393,28 +399,15 @@ def clean_xml_content(raw) -> str:
 
 
 # ══════════════════════════════════════════════════════════════
-# Reddit 航運社群爬蟲  ★ 新增 ★
+# Reddit 航運社群爬蟲
 # ══════════════════════════════════════════════════════════════
 class RedditShippingScraper:
-    """
-    爬取 Reddit 航運相關 Subreddit 的貼文。
-    支援兩種模式：
-      - requests JSON 模式（預設，無需 API Key）
-      - PRAW 模式（需設定 REDDIT_USE_PRAW=true 及相關金鑰）
-    """
-
     HEADERS = {
         "User-Agent":      "MaritimeNewsScraper/1.0 (compatible; Python requests)",
         "Accept":          "application/json",
         "Accept-Language": "en-US,en;q=0.9",
     }
-
-    # 航運相關 Subreddit 清單（可依需求擴充）
-    SHIPPING_SUBREDDITS = [
-        "Ships",
-        "maritime",
-        "shipping",
-    ]
+    SHIPPING_SUBREDDITS = ["Ships", "maritime", "shipping"]
 
     def __init__(self, keywords: list, hours_back: int = 2,
                  config: dict | None = None):
@@ -423,73 +416,56 @@ class RedditShippingScraper:
         self.config     = config or REDDIT_CONFIG
         self.seen_urls: set = set()
 
-    # ── 時間解析 ──────────────────────────────────────────────
     def _parse_timestamp(self, ts) -> datetime | None:
-        """將 Unix timestamp 轉為 UTC datetime"""
         try:
             return datetime.fromtimestamp(float(ts), tz=timezone.utc)
         except (TypeError, ValueError, OSError):
             return None
 
-    # ── 建立統一格式的新聞項目 ───────────────────────────────
     def _build_reddit_item(self, post_data: dict,
                            source_name: str, scraper_ref) -> dict | None:
-        """
-        將 Reddit 貼文資料轉換為系統統一格式。
-        post_data 需包含: title, selftext, url, permalink,
-                          created_utc, score, num_comments,
-                          link_flair_text, author
-        """
-        title       = post_data.get("title", "").strip()
-        selftext    = post_data.get("selftext", "") or ""
-        permalink   = post_data.get("permalink", "")
-        created_utc = post_data.get("created_utc", 0)
-        score       = post_data.get("score", 0)
-        num_comments= post_data.get("num_comments", 0)
-        flair       = post_data.get("link_flair_text", "") or ""
-        author      = post_data.get("author", "") or ""
-        subreddit   = post_data.get("subreddit", "") or ""
+        title        = post_data.get("title", "").strip()
+        selftext     = post_data.get("selftext", "") or ""
+        permalink    = post_data.get("permalink", "")
+        created_utc  = post_data.get("created_utc", 0)
+        score        = post_data.get("score", 0)
+        num_comments = post_data.get("num_comments", 0)
+        flair        = post_data.get("link_flair_text", "") or ""
+        author       = post_data.get("author", "") or ""
+        subreddit    = post_data.get("subreddit", "") or ""
 
         if not title:
             return None
 
-        # 組合貼文永久連結
         link = (f"https://www.reddit.com{permalink}"
                 if permalink.startswith("/") else permalink)
 
-        # 去重
         if link in self.seen_urls:
             return None
 
-        # 時間篩選
         pub_time = self._parse_timestamp(created_utc)
         cutoff   = datetime.now(tz=timezone.utc) - timedelta(hours=self.hours_back)
         if pub_time is not None and pub_time < cutoff:
             return None
 
-        # Flair 篩選（若設定了只抓特定 flair）
         flair_filter = self.config.get("flair_filter", "")
         if flair_filter and flair_filter.lower() not in flair.lower():
             return None
 
-        # 清理 selftext（移除 Markdown 語法）
-        summary = re.sub(r'\[([^\]]+)\]\([^\)]+\)', r'\1', selftext)  # [text](url)
-        summary = re.sub(r'[*_~`#>]+', '', summary)                   # Markdown 符號
+        summary = re.sub(r'\[([^\]]+)\]\([^\)]+\)', r'\1', selftext)
+        summary = re.sub(r'[*_~`#>]+', '', summary)
         summary = re.sub(r'\s+', ' ', summary).strip()
         if len(summary) > 300:
             summary = summary[:300] + "..."
 
-        # 補充 meta 資訊到 summary
         meta = f"[r/{subreddit} | u/{author} | ⬆️{score} | 💬{num_comments}"
         if flair:
             meta += f" | 🏷️{flair}"
         meta += "]"
         summary = f"{meta}  {summary}" if summary else meta
 
-        # 關鍵字比對
         matched = scraper_ref._match_keywords(title, summary)
         if not matched:
-            # Reddit 航運版：標題含航運詞也收錄（社群討論較口語）
             if not any(t.lower() in title.lower()
                        for t in TITLE_SHIPPING_TERMS):
                 return None
@@ -514,32 +490,25 @@ class RedditShippingScraper:
             'incident_cat':    scraper_ref._classify_incident(title, summary),
         }
 
-    # ── requests JSON 模式（無需 API Key）───────────────────
     def _fetch_via_requests(self, subreddit: str,
                             scraper_ref) -> list[dict]:
-        results = []
+        results  = []
         category = self.config.get("category", "hot")
         limit    = self.config.get("posts_per_sub", 15)
         url      = (f"https://www.reddit.com/r/{subreddit}"
                     f"/{category}.json?limit={limit}")
-
         logger.info(f"    🔗 {url}")
         try:
             resp = requests.get(url, headers=self.HEADERS,
                                 timeout=20, verify=False)
-
-            # Reddit 有時回傳 429（限流），等待後重試一次
             if resp.status_code == 429:
-                logger.warning(f"    ⚠️  Reddit 限流 (429)，等待 5 秒後重試...")
+                logger.warning("    ⚠️  Reddit 限流 (429)，等待 5 秒後重試...")
                 time.sleep(5)
                 resp = requests.get(url, headers=self.HEADERS,
                                     timeout=20, verify=False)
-
             resp.raise_for_status()
-            data  = resp.json()
-            posts = data.get("data", {}).get("children", [])
+            posts = resp.json().get("data", {}).get("children", [])
             logger.info(f"    📊 取得 {len(posts)} 篇貼文")
-
         except requests.exceptions.HTTPError as e:
             logger.warning(f"    ⚠️  HTTP 錯誤: {e}")
             return results
@@ -557,10 +526,8 @@ class RedditShippingScraper:
             )
             if item:
                 results.append(item)
-
         return results
 
-    # ── PRAW 模式（需 API Key）──────────────────────────────
     def _fetch_via_praw(self, subreddit: str, scraper_ref) -> list[dict]:
         results = []
         try:
@@ -568,12 +535,11 @@ class RedditShippingScraper:
         except ImportError:
             logger.warning(
                 "    ⚠️  未安裝 praw，請執行 pip install praw"
-                "，或設定 REDDIT_USE_PRAW=false 改用免 Key 模式"
+                "，或將 use_praw 改為 False 使用免 Key 模式"
             )
             return results
-
         try:
-            reddit = praw.Reddit(
+            reddit   = praw.Reddit(
                 client_id     = self.config["client_id"],
                 client_secret = self.config["client_secret"],
                 user_agent    = self.config["user_agent"],
@@ -581,16 +547,11 @@ class RedditShippingScraper:
             sub      = reddit.subreddit(subreddit)
             category = self.config.get("category", "hot")
             limit    = self.config.get("posts_per_sub", 15)
-
-            if category == "new":
-                posts = sub.new(limit=limit)
-            elif category == "top":
-                posts = sub.top(limit=limit, time_filter="day")
-            else:
-                posts = sub.hot(limit=limit)
-
+            posts    = (sub.new(limit=limit)   if category == "new"  else
+                        sub.top(limit=limit,
+                                time_filter="day") if category == "top" else
+                        sub.hot(limit=limit))
             logger.info(f"    🔗 PRAW → r/{subreddit} [{category}]")
-
             for post in posts:
                 post_data = {
                     "title":           post.title,
@@ -608,50 +569,37 @@ class RedditShippingScraper:
                 )
                 if item:
                     results.append(item)
-
         except Exception as e:
             logger.warning(f"    ⚠️  PRAW r/{subreddit} 失敗: {e}")
-
         return results
 
-    # ── 主入口：爬取所有航運 Subreddit ──────────────────────
-    def fetch(self, scraper_ref, subreddits: list[str] | None = None) -> list[dict]:
-        """
-        爬取所有指定 Subreddit 的航運貼文。
-        subreddits: 若為 None，使用 SHIPPING_SUBREDDITS 預設清單
-        """
-        target_subs  = subreddits or self.SHIPPING_SUBREDDITS
-        use_praw     = self.config.get("use_praw", False)
-        all_results  = []
-
+    def fetch(self, scraper_ref,
+              subreddits: list[str] | None = None) -> list[dict]:
+        target_subs = subreddits or self.SHIPPING_SUBREDDITS
+        use_praw    = self.config.get("use_praw", False)
+        all_results = []
         logger.info(
             f"\n  📡 [航運專業][en] Reddit 社群爬蟲"
             f"（模式：{'PRAW' if use_praw else 'requests JSON'}）"
         )
-        logger.info(f"    📋 目標 Subreddit：{', '.join(f'r/{s}' for s in target_subs)}")
-
+        logger.info(
+            f"    📋 目標：{', '.join(f'r/{s}' for s in target_subs)}"
+        )
         for sub in target_subs:
             logger.info(f"\n    🔍 爬取 r/{sub} ...")
             try:
-                if use_praw:
-                    posts = self._fetch_via_praw(sub, scraper_ref)
-                else:
-                    posts = self._fetch_via_requests(sub, scraper_ref)
-
+                posts = (self._fetch_via_praw(sub, scraper_ref)
+                         if use_praw else
+                         self._fetch_via_requests(sub, scraper_ref))
                 logger.info(f"    ✅ r/{sub} 命中 {len(posts)} 篇")
                 all_results.extend(posts)
-
-                # 避免觸發 Reddit 限流（requests 模式）
                 if not use_praw:
                     time.sleep(2)
-
             except Exception as e:
                 logger.warning(f"    ❌ r/{sub} 爬取失敗: {e}")
-
         logger.info(
             f"\n  📋 Reddit 總計 | "
-            f"Subreddit {len(target_subs)} 個 | "
-            f"命中 {len(all_results)} 篇"
+            f"Subreddit {len(target_subs)} 個 | 命中 {len(all_results)} 篇"
         )
         return all_results
 
@@ -759,7 +707,8 @@ class OneShippingScraper:
             if last_date and last_date >= cutoff:
                 try:
                     r2 = requests.get(self.LIST_URL, headers=self.HEADERS,
-                                      timeout=20, verify=False, params={"page": 2})
+                                      timeout=20, verify=False,
+                                      params={"page": 2})
                     if r2.status_code == 200:
                         extra = self._parse_list_items(r2.text)
                         if extra:
@@ -1026,8 +975,21 @@ class LloydsListScraper:
 
 
 # ══════════════════════════════════════════════════════════════
-# AMZ123 作者頁 HTML 爬蟲（續）
+# AMZ123 作者頁 HTML 爬蟲  ← ★ class 宣告完整，不再截斷 ★
 # ══════════════════════════════════════════════════════════════
+class Amz123Scraper:
+    LIST_URL = "https://www.amz123.com/author-23325"
+    BASE_URL = "https://www.amz123.com"
+    HEADERS  = {
+        "User-Agent":      "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+                           "AppleWebKit/537.36 (KHTML, like Gecko) "
+                           "Chrome/124.0.0.0 Safari/537.36",
+        "Accept":          "text/html,application/xhtml+xml,*/*;q=0.9",
+        "Accept-Language": "zh-CN,zh;q=0.9,en-US;q=0.8,en;q=0.7",
+        "Accept-Encoding": "gzip, deflate, br",
+        "Connection":      "keep-alive",
+        "Referer":         "https://www.amz123.com/",
+    }
     SOURCE_META = {"name": "AMZ123", "icon": "📦",
                    "lang": "zh-CN", "category": "中文媒體"}
 
@@ -1100,8 +1062,7 @@ class LloydsListScraper:
                 continue
 
             self.seen_urls.add(url)
-            results.append({
-                'source_name':     self.SOURCE_META['name'],
+            results.append({                'source_name':     self.SOURCE_META['name'],
                 'source_icon':     self.SOURCE_META['icon'],
                 'source_lang':     self.SOURCE_META['lang'],
                 'source_category': self.SOURCE_META['category'],
@@ -1510,7 +1471,6 @@ class NewsRssScraper:
 
     # ── 單一 RSS 來源抓取 ─────────────────────────────────────
     def fetch_from_source(self, source: dict) -> list:
-        # _html_scraper 與 _reddit_scraper 均由專屬爬蟲處理
         if source.get("_html_scraper") or source.get("_reddit_scraper"):
             return []
         results         = []
@@ -1673,7 +1633,7 @@ class NewsRssScraper:
     def fetch_all(self) -> dict:
         all_news: list = []
 
-        # ── RSS 來源（含航商官方 RSS）────────────────────────
+        # ── RSS 來源 ─────────────────────────────────────────
         for source in self.sources:
             all_news.extend(self.fetch_from_source(source))
 
@@ -1699,7 +1659,7 @@ class NewsRssScraper:
             ).fetch(self)
         )
 
-        # ── Reddit 航運社群爬蟲 ★ 新增 ★ ────────────────────
+        # ── Reddit 航運社群爬蟲 ──────────────────────────────
         all_news.extend(
             RedditShippingScraper(
                 keywords=self.keywords,

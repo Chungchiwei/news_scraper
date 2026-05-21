@@ -1,15 +1,15 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-email_sender.py  v2.1
+email_sender.py  v2.2
 海事航運新聞監控系統 — Email 發送模組
 職責：HTML 渲染 + SMTP 發送
-v2.1 更新：
-  - 移除「11大航商」來源群組（航商 RSS 已於 v6.3 移除）
-  - 移除 carrier_summary_row / carrier_note（無航商 RSS 來源）
-  - 簡化 render_hit_rows（移除航商特殊標記）
+v2.2 更新：
+  - Email 設定改為內建硬寫（無需 .env）
+  - 移除「11大航商」來源群組
+  - 移除 carrier_summary_row / carrier_note
+  - 簡化 render_hit_rows
   - EMAIL_SUBTITLE 補上鋰電池/貨櫃落海/偷渡/毒品走私
-  - 版本號 v2.0 → v2.1
 修改此檔案不影響爬蟲邏輯
 """
 
@@ -31,16 +31,16 @@ logger = logging.getLogger(__name__)
 class EmailConfig:
     """
     所有 Email 相關設定集中於此。
-    優先讀取環境變數，若無則使用下方預設值。
+    ★ v2.2：改為內建硬寫，無需 .env 或環境變數。
     """
     # ── SMTP 設定 ──────────────────────────────────────────────
-    SMTP_SERVER: str = os.environ.get("MAIL_SMTP_SERVER", "smtp.gmail.com")
-    SMTP_PORT:   int = int(os.environ.get("MAIL_SMTP_PORT", "587"))
+    SMTP_SERVER: str = "smtp.gmail.com"
+    SMTP_PORT:   int = 587
 
-    # ── 帳號設定 ──────────────────────────────────────────────
-    MAIL_USER:    str = os.environ.get("MAIL_USER",     "")
-    MAIL_PASS:    str = os.environ.get("MAIL_PASSWORD", "")
-    TARGET_EMAIL: str = os.environ.get("TARGET_EMAIL",  "")
+    # ── 帳號設定（★ 請填入實際資訊）─────────────────────────
+    MAIL_USER:    str = "your_email@gmail.com"      # ← 寄件 Gmail 帳號
+    MAIL_PASS:    str = "your_app_password"          # ← Gmail App 密碼（16碼）
+    TARGET_EMAIL: str = "recipient@example.com"      # ← 收件人（多人用逗號分隔）
 
     # ── 郵件外觀設定 ──────────────────────────────────────────
     SENDER_NAME:    str = "海事航運監控系統"
@@ -48,7 +48,6 @@ class EmailConfig:
 
     # ── 版面文字設定 ──────────────────────────────────────────
     EMAIL_TITLE:    str = "🚢 海事航運新聞監控快報"
-    # ★ v2.1 更新：補上 v6.3 新增風險類型，移除航商動態
     EMAIL_SUBTITLE: str = (
         "火災(含鋰電池) · 碰撞(含撞橋) · 擱淺沉沒(含貨櫃落海) · "
         "海盜攻擊(含偷渡/毒品走私) · 船員傷亡 · 其他海事動態"
@@ -59,17 +58,18 @@ class EmailConfig:
         "Maritime News Monitoring System · "
         "Powered by WHL Fleet Risk Management"
     )
+
     # ── 分類副標題（顯示於每個分類區塊標題列下方）────────────
-    # ★ v2.2 新增：與 keywords_config.json 的新增風險類型對應
     CAT_SUBTITLES: dict = {
         "CAT1": "🔋 含鋰電池火災 · EV 載車船 · RoRo 火災",
         "CAT2": "🌉 含橋梁撞擊 · 礁石觸礁 · 海峽擱淺",
         "CAT3": "📦 含貨櫃落海 · 船舶全損 · 沉船事故",
         "CAT4": "🚶 含偷渡事件 · 毒品走私 · 索馬利亞／幾內亞灣海盜",
-        "CAT5": "",   # 無需副標題
+        "CAT5": "",
         "CAT6": "",
         "OTHER": "",
     }
+
     # ── 版面寬度 ──────────────────────────────────────────────
     EMAIL_WIDTH: int = 720
 
@@ -87,15 +87,14 @@ class EmailRenderer:
     所有視覺樣式集中在此，修改版面只需動這個類別。
     """
 
-    # ── 顏色對照（CAT6 保留，關鍵字仍存在）──────────────────
     KW_COLOR_MAP: dict = {
-        "#dc2626": ("#fef2f2", "#dc2626"),   # CAT1 火災
-        "#b45309": ("#fffbeb", "#b45309"),   # CAT2 碰撞
-        "#7c3aed": ("#f5f3ff", "#7c3aed"),   # CAT3 沉沒
-        "#0369a1": ("#eff6ff", "#0369a1"),   # CAT4 海盜
-        "#047857": ("#ecfdf5", "#047857"),   # CAT5 船員
-        "#0891b2": ("#ecfeff", "#0891b2"),   # CAT6 航商動態
-        "#475569": ("#f1f5f9", "#475569"),   # OTHER
+        "#dc2626": ("#fef2f2", "#dc2626"),
+        "#b45309": ("#fffbeb", "#b45309"),
+        "#7c3aed": ("#f5f3ff", "#7c3aed"),
+        "#0369a1": ("#eff6ff", "#0369a1"),
+        "#047857": ("#ecfdf5", "#047857"),
+        "#0891b2": ("#ecfeff", "#0891b2"),
+        "#475569": ("#f1f5f9", "#475569"),
     }
 
     DARKER_COLOR_MAP: dict = {
@@ -104,7 +103,7 @@ class EmailRenderer:
         "#7c3aed": "#6d28d9",
         "#0369a1": "#075985",
         "#047857": "#065f46",
-        "#0891b2": "#0e7490",   # CAT6
+        "#0891b2": "#0e7490",
         "#475569": "#334155",
     }
 
@@ -156,7 +155,6 @@ class EmailRenderer:
         safe_title   = self._esc(item.get('title',   ''))
         safe_summary = self._esc(item.get('summary', ''))
 
-        # 關鍵字標籤（最多 3 個）
         kw_cells = ""
         for kw, _label, color in item.get('matched', [])[:3]:
             bg_c, fg_c = self.KW_COLOR_MAP.get(color, ("#f1f5f9", "#475569"))
@@ -246,7 +244,6 @@ class EmailRenderer:
     def render_incident_section(self, cat_key: str, news_list: list) -> str:
         cfg = self.cats[cat_key]
 
-        # ── 無新聞時：簡易標題列 ─────────────────────────────
         if not news_list:
             return f"""
 <table width="100%" border="0" cellpadding="0" cellspacing="0"
@@ -270,11 +267,9 @@ class EmailRenderer:
   </tr>
 </table>"""
 
-        # ── 有新聞時：完整區塊 ───────────────────────────────
         cards    = "".join(self.render_card(item) for item in news_list)
         count_bg = self.DARKER_COLOR_MAP.get(cfg['color'], "#334155")
 
-        # ★ v2.2：副標題（空字串則不渲染）
         subtitle = EmailConfig.CAT_SUBTITLES.get(cat_key, "")
         subtitle_row = ""
         if subtitle:
@@ -317,7 +312,6 @@ class EmailRenderer:
   </tr>
 </table>"""
 
-
     # ─────────────────────────────────────────────────────────
     # 元件 3：統計格（頂部數字列）
     # ─────────────────────────────────────────────────────────
@@ -343,7 +337,6 @@ class EmailRenderer:
 
     # ─────────────────────────────────────────────────────────
     # 元件 4：來源格線
-    # ★ v2.1：移除「11大航商官方新聞」群組（來源已移除）
     # ─────────────────────────────────────────────────────────
     def render_source_grid(self) -> str:
         SOURCE_GROUPS = [
@@ -414,14 +407,28 @@ class EmailRenderer:
                         name = src.get("name", "")
                         icon = src.get("icon", "📰")
                         url  = src.get("url") or src.get("api_url", "")
-                        if url == "__oneshipping_html__":
-                            url = "https://www.oneshipping.info"
+                        if url in ("__oneshipping_html__",
+                                   "__reddit_ships__",
+                                   "__reddit_maritime__",
+                                   "__reddit_shipping__"):
+                            url_map = {
+                                "__oneshipping_html__": "https://www.oneshipping.info",
+                                "__reddit_ships__":     "https://www.reddit.com/r/Ships",
+                                "__reddit_maritime__":  "https://www.reddit.com/r/maritime",
+                                "__reddit_shipping__":  "https://www.reddit.com/r/shipping",
+                            }
+                            url = url_map.get(url, url)
                         display_url = url
                         for rsshub in ("rsshub.app/", "rsshub.rssforever.com/"):
                             if rsshub in url:
                                 bk = src.get("backup_url", "")
                                 if (bk and "rsshub" not in bk
-                                        and bk != "__oneshipping_html__"):
+                                        and bk not in (
+                                            "__oneshipping_html__",
+                                            "__reddit_ships__",
+                                            "__reddit_maritime__",
+                                            "__reddit_shipping__",
+                                        )):
                                     display_url = bk
                                 break
                         domain = re.sub(
@@ -462,7 +469,6 @@ class EmailRenderer:
 
     # ─────────────────────────────────────────────────────────
     # 元件 5：命中來源統計列
-    # ★ v2.1：移除航商特殊標記（無航商 RSS 來源）
     # ─────────────────────────────────────────────────────────
     def render_hit_rows(self, all_news: list) -> str:
         source_stats: dict = {}
@@ -500,7 +506,6 @@ class EmailRenderer:
 
     # ─────────────────────────────────────────────────────────
     # 主渲染：完整 HTML
-    # ★ v2.1：移除 carrier_summary_row
     # ─────────────────────────────────────────────────────────
     def render_full_html(self, news_data: dict, run_time: datetime) -> str:
         cfg           = EmailConfig
@@ -680,8 +685,8 @@ class NewsEmailSender:
 
         if not self.enabled:
             logger.error(
-                "❌ Email 環境變數未設定："
-                "MAIL_USER / MAIL_PASSWORD / TARGET_EMAIL"
+                "❌ Email 設定未填寫："
+                "請在 EmailConfig 填入 MAIL_USER / MAIL_PASS / TARGET_EMAIL"
             )
         else:
             logger.info(f"✅ Email → {self.target_email}")
@@ -697,7 +702,6 @@ class NewsEmailSender:
             tpe_time = run_time.astimezone(
                 timezone(timedelta(hours=cfg.DISPLAY_TZ_OFFSET)))
 
-            # ★ v2.1：移除 carrier_note，主旨格式簡化
             subject = (
                 f"{cfg.SUBJECT_PREFIX} "
                 f"({tpe_time.strftime('%m/%d %H:%M')}) "
@@ -722,7 +726,7 @@ class NewsEmailSender:
             return True
 
         except smtplib.SMTPAuthenticationError:
-            logger.error("❌ Gmail 認證失敗，請確認 App Password")
+            logger.error("❌ Gmail 認證失敗，請確認 App Password 是否正確")
         except Exception as e:
             logger.error(f"❌ Email 發送失敗: {e}")
             traceback.print_exc()
