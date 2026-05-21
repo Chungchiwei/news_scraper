@@ -399,24 +399,35 @@ def clean_xml_content(raw) -> str:
 
 
 # ══════════════════════════════════════════════════════════════
-# Reddit 航運社群爬蟲
+# Reddit 航運社群爬蟲（★ v2：改用 RSS 方式，繞過 403）
 # ══════════════════════════════════════════════════════════════
 class RedditShippingScraper:
+    """
+    改用 Reddit RSS feed 抓取，無需 API Key，
+    且不受 JSON API 的 IP 封鎖影響。
+    RSS URL 格式：https://www.reddit.com/r/{sub}/{category}.rss
+    """
+
     HEADERS = {
-        # ★ 修正：使用更擬真的瀏覽器 UA，避免被 Reddit 封鎖
         "User-Agent": (
             "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
             "AppleWebKit/537.36 (KHTML, like Gecko) "
             "Chrome/124.0.0.0 Safari/537.36"
         ),
-        "Accept":          "application/json, text/javascript, */*; q=0.01",
+        "Accept":          "application/rss+xml, application/xml, text/xml, */*",
         "Accept-Language": "en-US,en;q=0.9",
         "Accept-Encoding": "gzip, deflate, br",
         "Referer":         "https://www.reddit.com/",
-        "DNT":             "1",
-        "Connection":      "keep-alive",
     }
+
     SHIPPING_SUBREDDITS = ["Ships", "maritime", "shipping"]
+
+    # RSS Bridge 備援清單（當 reddit.com 被封時依序嘗試）
+    RSS_TEMPLATES = [
+        "https://www.reddit.com/r/{sub}/{cat}.rss?limit={limit}",
+        "https://old.reddit.com/r/{sub}/{cat}.rss?limit={limit}",
+        "https://www.reddittopofalltime.com/r/{sub}.rss",
+    ]
 
     def __init__(self, keywords: list, hours_back: int = 2,
                  config: dict | None = None):
@@ -431,49 +442,73 @@ class RedditShippingScraper:
         except (TypeError, ValueError, OSError):
             return None
 
-    def _build_reddit_item(self, post_data: dict,
-                           source_name: str, scraper_ref) -> dict | None:
-        title        = post_data.get("title", "").strip()
-        selftext     = post_data.get("selftext", "") or ""
-        permalink    = post_data.get("permalink", "")
-        created_utc  = post_data.get("created_utc", 0)
-        score        = post_data.get("score", 0)
-        num_comments = post_data.get("num_comments", 0)
-        flair        = post_data.get("link_flair_text", "") or ""
-        author       = post_data.get("author", "") or ""
-        subreddit    = post_data.get("subreddit", "") or ""
+    def _parse_rss_time(self, entry) -> datetime | None:
+        """解析 RSS entry 的時間"""
+        try:
+            if hasattr(entry, 'published_parsed') and entry.published_parsed:
+                import calendar as _cal
+                ts = _cal.timegm(entry.published_parsed)
+                if ts > 0:
+                    return datetime.fromtimestamp(ts, tz=timezone.utc)
+        except Exception:
+            pass
+        raw = getattr(entry, 'published', '') or getattr(entry, 'updated', '') or ''
+        if not raw:
+            return None
+        for fmt in (
+            '%a, %d %b %Y %H:%M:%S %z',
+            '%Y-%m-%dT%H:%M:%S%z',
+            '%Y-%m-%dT%H:%M:%SZ',
+        ):
+            try:
+                dt = datetime.strptime(raw.strip(), fmt)
+                if dt.tzinfo is None:
+                    dt = dt.replace(tzinfo=timezone.utc)
+                return dt.astimezone(timezone.utc)
+            except ValueError:
+                continue
+        return None
 
-        if not title:
+    def _build_item_from_rss(self, entry, source_name: str,
+                              scraper_ref) -> dict | None:
+        """將 RSS entry 轉為系統統一格式"""
+        import html as _h
+        title    = _h.unescape(getattr(entry, 'title',   '') or '').strip()
+        link     = getattr(entry, 'link',    '') or ''
+        summary  = getattr(entry, 'summary', '') or ''
+        author   = getattr(entry, 'author',  '') or ''
+
+        if not title or not link:
             return None
 
-        link = (f"https://www.reddit.com{permalink}"
-                if permalink.startswith("/") else permalink)
+        # 清理 summary（移除 HTML 標籤）
+        summary_clean = re.sub(r'<[^>]+>', '', summary).strip()
+        summary_clean = re.sub(r'\s+', ' ', summary_clean)
+        if len(summary_clean) > 300:
+            summary_clean = summary_clean[:300] + "..."
+
+        # 補充 meta
+        if author:
+            summary_clean = f"[u/{author}]  {summary_clean}" if summary_clean \
+                            else f"[u/{author}]"
 
         if link in self.seen_urls:
             return None
 
-        pub_time = self._parse_timestamp(created_utc)
+        pub_time = self._parse_rss_time(entry)
         cutoff   = datetime.now(tz=timezone.utc) - timedelta(hours=self.hours_back)
         if pub_time is not None and pub_time < cutoff:
             return None
 
+        # Flair 篩選
         flair_filter = self.config.get("flair_filter", "")
-        if flair_filter and flair_filter.lower() not in flair.lower():
-            return None
+        if flair_filter:
+            tags = getattr(entry, 'tags', []) or []
+            tag_terms = [t.get('term', '') for t in tags]
+            if not any(flair_filter.lower() in t.lower() for t in tag_terms):
+                return None
 
-        summary = re.sub(r'\[([^\]]+)\]\([^\)]+\)', r'\1', selftext)
-        summary = re.sub(r'[*_~`#>]+', '', summary)
-        summary = re.sub(r'\s+', ' ', summary).strip()
-        if len(summary) > 300:
-            summary = summary[:300] + "..."
-
-        meta = f"[r/{subreddit} | u/{author} | ⬆️{score} | 💬{num_comments}"
-        if flair:
-            meta += f" | 🏷️{flair}"
-        meta += "]"
-        summary = f"{meta}  {summary}" if summary else meta
-
-        matched = scraper_ref._match_keywords(title, summary)
+        matched = scraper_ref._match_keywords(title, summary_clean)
         if not matched:
             if not any(t.lower() in title.lower()
                        for t in TITLE_SHIPPING_TERMS):
@@ -491,128 +526,74 @@ class RedditShippingScraper:
             'source_lang':     "en",
             'source_category': "航運專業",
             'title':           title,
-            'summary':         summary,
+            'summary':         summary_clean,
             'link':            link,
             'published':       (pub_time.strftime('%Y-%m-%d %H:%M UTC')
                                 if pub_time else '時間未知'),
             'matched':         matched,
-            'incident_cat':    scraper_ref._classify_incident(title, summary),
+            'incident_cat':    scraper_ref._classify_incident(title, summary_clean),
         }
 
-    def _fetch_via_requests(self, subreddit: str,
-                            scraper_ref) -> list[dict]:
+    def _fetch_subreddit_rss(self, subreddit: str,
+                              scraper_ref) -> list[dict]:
+        """用 RSS 方式抓取單一 subreddit"""
         results  = []
         category = self.config.get("category", "hot")
-        limit    = self.config.get("posts_per_sub", 15)
-        url      = (f"https://www.reddit.com/r/{subreddit}"
-                    f"/{category}.json?limit={limit}&raw_json=1")
-        logger.info(f"    🔗 {url}")
-        try:
-            # ★ 修正：加入 session + cookies 模擬瀏覽器行為
-            session = requests.Session()
-            session.headers.update(self.HEADERS)
-            # 先訪問首頁取得 cookie
+        limit    = self.config.get("posts_per_sub", 25)
+
+        for template in self.RSS_TEMPLATES:
+            rss_url = template.format(
+                sub=subreddit, cat=category, limit=limit
+            )
+            logger.info(f"    🔗 {rss_url}")
             try:
-                session.get("https://www.reddit.com/", timeout=10,
-                            verify=False)
-                time.sleep(1)
-            except Exception:
-                pass
-
-            resp = session.get(url, timeout=20, verify=False)
-
-            if resp.status_code == 429:
-                logger.warning("    ⚠️  Reddit 限流 (429)，等待 10 秒後重試...")
-                time.sleep(10)
-                resp = session.get(url, timeout=20, verify=False)
-
-            if resp.status_code == 403:
-                logger.warning(
-                    f"    ⚠️  Reddit r/{subreddit} 拒絕存取 (403)，"
-                    f"嘗試備用 old.reddit.com ..."
+                resp = requests.get(
+                    rss_url, headers=self.HEADERS,
+                    timeout=20, verify=False, allow_redirects=True
                 )
-                # ★ 備用：改用 old.reddit.com
-                old_url = (f"https://old.reddit.com/r/{subreddit}"
-                           f"/{category}.json?limit={limit}&raw_json=1")
-                resp = session.get(old_url, timeout=20, verify=False)
+                if resp.status_code == 403:
+                    logger.warning(f"    ⚠️  403，嘗試下一個備援...")
+                    continue
+                if resp.status_code == 429:
+                    logger.warning("    ⚠️  限流 429，等待 5 秒...")
+                    time.sleep(5)
+                    resp = requests.get(
+                        rss_url, headers=self.HEADERS,
+                        timeout=20, verify=False
+                    )
+                resp.raise_for_status()
 
-            resp.raise_for_status()
-            posts = resp.json().get("data", {}).get("children", [])
-            logger.info(f"    📊 取得 {len(posts)} 篇貼文")
+                # 用 feedparser 解析 RSS
+                parsed = feedparser.parse(io.BytesIO(resp.content))
+                if not parsed or not parsed.entries:
+                    parsed = feedparser.parse(resp.text)
 
-        except requests.exceptions.HTTPError as e:
-            logger.warning(f"    ⚠️  HTTP 錯誤: {e}")
-            return results
-        except Exception as e:
-            logger.warning(f"    ⚠️  r/{subreddit} 請求失敗: {e}")
-            return results
+                if parsed and parsed.entries:
+                    logger.info(f"    📊 取得 {len(parsed.entries)} 篇貼文")
+                    for entry in parsed.entries:
+                        item = self._build_item_from_rss(
+                            entry, f"Reddit r/{subreddit}", scraper_ref
+                        )
+                        if item:
+                            results.append(item)
+                    return results  # 成功則直接回傳，不繼續嘗試備援
 
-        for post in posts:
-            if post.get("kind") != "t3":
-                continue
-            item = self._build_reddit_item(
-                post.get("data", {}),
-                f"Reddit r/{subreddit}",
-                scraper_ref
-            )
-            if item:
-                results.append(item)
-        return results
+                logger.warning("    ⚠️  RSS 無資料，嘗試下一個備援...")
 
+            except requests.exceptions.HTTPError as e:
+                logger.warning(f"    ⚠️  HTTP {e.response.status_code}，嘗試下一個備援...")
+            except Exception as e:
+                logger.warning(f"    ⚠️  {e}，嘗試下一個備援...")
 
-    def _fetch_via_praw(self, subreddit: str, scraper_ref) -> list[dict]:
-        results = []
-        try:
-            import praw
-        except ImportError:
-            logger.warning(
-                "    ⚠️  未安裝 praw，請執行 pip install praw"
-                "，或將 use_praw 改為 False 使用免 Key 模式"
-            )
-            return results
-        try:
-            reddit   = praw.Reddit(
-                client_id     = self.config["client_id"],
-                client_secret = self.config["client_secret"],
-                user_agent    = self.config["user_agent"],
-            )
-            sub      = reddit.subreddit(subreddit)
-            category = self.config.get("category", "hot")
-            limit    = self.config.get("posts_per_sub", 15)
-            posts    = (sub.new(limit=limit)   if category == "new"  else
-                        sub.top(limit=limit,
-                                time_filter="day") if category == "top" else
-                        sub.hot(limit=limit))
-            logger.info(f"    🔗 PRAW → r/{subreddit} [{category}]")
-            for post in posts:
-                post_data = {
-                    "title":           post.title,
-                    "selftext":        post.selftext or "",
-                    "permalink":       post.permalink,
-                    "created_utc":     post.created_utc,
-                    "score":           post.score,
-                    "num_comments":    post.num_comments,
-                    "link_flair_text": post.link_flair_text or "",
-                    "author":          str(post.author) if post.author else "[deleted]",
-                    "subreddit":       post.subreddit.display_name,
-                }
-                item = self._build_reddit_item(
-                    post_data, f"Reddit r/{subreddit}", scraper_ref
-                )
-                if item:
-                    results.append(item)
-        except Exception as e:
-            logger.warning(f"    ⚠️  PRAW r/{subreddit} 失敗: {e}")
+        logger.warning(f"    ❌ r/{subreddit} 所有備援均失敗")
         return results
 
     def fetch(self, scraper_ref,
               subreddits: list[str] | None = None) -> list[dict]:
         target_subs = subreddits or self.SHIPPING_SUBREDDITS
-        use_praw    = self.config.get("use_praw", False)
         all_results = []
         logger.info(
-            f"\n  📡 [航運專業][en] Reddit 社群爬蟲"
-            f"（模式：{'PRAW' if use_praw else 'requests JSON'}）"
+            f"\n  📡 [航運專業][en] Reddit 社群爬蟲（模式：RSS Feed）"
         )
         logger.info(
             f"    📋 目標：{', '.join(f'r/{s}' for s in target_subs)}"
@@ -620,13 +601,10 @@ class RedditShippingScraper:
         for sub in target_subs:
             logger.info(f"\n    🔍 爬取 r/{sub} ...")
             try:
-                posts = (self._fetch_via_praw(sub, scraper_ref)
-                         if use_praw else
-                         self._fetch_via_requests(sub, scraper_ref))
+                posts = self._fetch_subreddit_rss(sub, scraper_ref)
                 logger.info(f"    ✅ r/{sub} 命中 {len(posts)} 篇")
                 all_results.extend(posts)
-                if not use_praw:
-                    time.sleep(2)
+                time.sleep(2)
             except Exception as e:
                 logger.warning(f"    ❌ r/{sub} 爬取失敗: {e}")
         logger.info(
@@ -634,6 +612,7 @@ class RedditShippingScraper:
             f"Subreddit {len(target_subs)} 個 | 命中 {len(all_results)} 篇"
         )
         return all_results
+
 
 
 # ══════════════════════════════════════════════════════════════
@@ -653,7 +632,7 @@ class OneShippingScraper:
     SOURCE_META = {"name": "壹航運", "icon": "🚢",
                    "lang": "zh-CN", "category": "中文媒體"}
 
-    def __init__(self, keywords: list, hours_back: int = 2):
+    def __init__(self, keywords: list, hours_back: int = 6):
         self.keywords   = keywords
         self.hours_back = hours_back
         self.seen_urls: set = set()
@@ -806,7 +785,7 @@ class LloydsListScraper:
         "liner+shipping",
     ]
 
-    def __init__(self, keywords: list, hours_back: int = 2):
+    def __init__(self, keywords: list, hours_back: int = 6):
         self.keywords   = keywords
         self.hours_back = hours_back
         self.seen_urls: set = set()
@@ -1025,7 +1004,7 @@ class Amz123Scraper:
     SOURCE_META = {"name": "AMZ123", "icon": "📦",
                    "lang": "zh-CN", "category": "中文媒體"}
 
-    def __init__(self, keywords: list, hours_back: int = 2):
+    def __init__(self, keywords: list, hours_back: int = 6):
         self.keywords   = keywords
         self.hours_back = hours_back
         self.seen_urls: set = set()
@@ -1134,7 +1113,7 @@ class XindeScraper:
     SOURCE_META = {"name": "信德海事網", "icon": "⚓",
                    "lang": "zh-CN", "category": "中文媒體"}
 
-    def __init__(self, keywords: list, hours_back: int = 2):
+    def __init__(self, keywords: list, hours_back: int = 6):
         self.keywords   = keywords
         self.hours_back = hours_back
         self.seen_urls: set = set()
@@ -1309,7 +1288,7 @@ class NewsRssScraper:
     }
 
     def __init__(self, keywords: list, sources: list,
-                 cnyes_sources: list, hours_back: int = 2):
+                 cnyes_sources: list, hours_back: int = 6):
         self.keywords      = keywords
         self.sources       = sources
         self.cnyes_sources = cnyes_sources
@@ -1441,40 +1420,46 @@ class NewsRssScraper:
 
             raw_content = resp.content
 
-            # ★ 修正：統一先嘗試 BytesIO，失敗或 need_clean 時改用 StringIO
+            # ★ 修正策略：依序嘗試四種解析方式
             parsed = None
 
-            # 第一優先：直接用 BytesIO（最快，保留原始編碼）
+            # 方式 1：直接傳 URL 給 feedparser（最相容，讓 feedparser 自行處理）
+            try:
+                parsed = feedparser.parse(url)
+                if parsed and parsed.entries:
+                    entry_count = len(parsed.entries)
+                    bozo        = getattr(parsed, 'bozo', False)
+                    logger.info(f"    📊 {entry_count} 則 | bozo={bozo}")
+                    return parsed
+            except Exception:
+                pass
+
+            # 方式 2：BytesIO（標準方式）
             if not need_clean:
                 try:
-                    parsed = feedparser.parse(io.BytesIO(raw_content))
-                    # 若 bozo 且有 bytes pattern 錯誤，改用 StringIO
-                    if (getattr(parsed, 'bozo', False) and
-                            isinstance(getattr(parsed, 'bozo_exception', None),
-                                       TypeError)):
-                        parsed = None
-                except TypeError:
-                    parsed = None
+                    p = feedparser.parse(io.BytesIO(raw_content))
+                    if p and p.entries:
+                        parsed = p
+                except (TypeError, Exception):
+                    pass
 
-            # 第二優先：StringIO（處理編碼問題）
+            # 方式 3：clean_xml_content → StringIO
             if parsed is None or not parsed.entries:
                 try:
                     cleaned = clean_xml_content(raw_content)
-                    parsed2 = feedparser.parse(io.StringIO(cleaned))
-                    # 若 StringIO 結果更好則採用
-                    if parsed2.entries or parsed is None:
-                        parsed = parsed2
+                    p = feedparser.parse(io.StringIO(cleaned))
+                    if p and p.entries:
+                        parsed = p
                 except Exception:
                     pass
 
-            # 第三優先：直接傳字串給 feedparser
-            if parsed is None or (getattr(parsed, 'bozo', False)
-                                   and not parsed.entries):
+            # 方式 4：直接傳字串
+            if parsed is None or not parsed.entries:
                 try:
                     cleaned = clean_xml_content(raw_content)
-                    parsed3 = feedparser.parse(cleaned)
-                    if parsed3.entries:
-                        parsed = parsed3
+                    p = feedparser.parse(cleaned)
+                    if p and p.entries:
+                        parsed = p
                 except Exception:
                     pass
 
@@ -1503,6 +1488,7 @@ class NewsRssScraper:
         except Exception as e:
             logger.warning(f"    ⚠️  錯誤: {url[:60]} → {e}")
         return None
+
 
 
     # ── 建立新聞項目 ──────────────────────────────────────────
@@ -1796,7 +1782,7 @@ if __name__ == "__main__":
     logger.info("=" * 60)
 
     run_time   = datetime.now(tz=timezone.utc)
-    hours_back = int(os.environ.get("NEWS_HOURS_BACK", "8"))
+    hours_back = int(os.environ.get("NEWS_HOURS_BACK", "6"))
 
     scraper = NewsRssScraper(
         keywords      = ALL_KEYWORDS,
