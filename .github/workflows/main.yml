@@ -1,32 +1,22 @@
 name: 🚢 海事航運新聞監控
 
 on:
-  # ── 排程：每兩小時執行一次（UTC 時間）──────────────────────
+  # ── 排程：每天執行兩次（UTC 時間）──────────────────────
   # cron 格式：分 時 日 月 星期
-  # 0 */4 * * * = 每四小時整點執行
-  # UTC 對應 TPE (UTC+8)：
-  #   00:00 UTC = 08:00 TPE
-  #   02:00 UTC = 10:00 TPE
-  #   04:00 UTC = 12:00 TPE
-  #   06:00 UTC = 14:00 TPE
-  #   08:00 UTC = 16:00 TPE
-  #   10:00 UTC = 18:00 TPE
-  #   12:00 UTC = 20:00 TPE
-  #   14:00 UTC = 22:00 TPE
-  #   16:00 UTC = 00:00 TPE
-  #   18:00 UTC = 02:00 TPE
-  #   20:00 UTC = 04:00 TPE
-  #   22:00 UTC = 06:00 TPE
+  # 台灣時間 TPE = UTC+8
+  #   00:00 UTC = 08:00 TPE（早班）
+  #   12:00 UTC = 20:00 TPE（晚班）
   schedule:
-    - cron: '0 */2 * * *'
+    - cron: '0 0 * * *'
+    - cron: '0 12 * * *'
 
   # ── 允許手動從 GitHub 網頁觸發 ──────────────────────────────
   workflow_dispatch:
     inputs:
       hours_back:
-        description: '抓取幾小時內的新聞（預設 2）'
+        description: '抓取幾小時內的新聞（預設 12）'
         required: false
-        default: '2'
+        default: '12'
       dry_run:
         description: '僅抓取，不發送 Email（true / false）'
         required: false
@@ -89,7 +79,7 @@ jobs:
           TARGET_EMAIL:     ${{ secrets.TARGET_EMAIL }}
           MAIL_SMTP_SERVER: ${{ secrets.MAIL_SMTP_SERVER }}
           MAIL_SMTP_PORT:   ${{ secrets.MAIL_SMTP_PORT }}
-          NEWS_HOURS_BACK:  ${{ github.event.inputs.hours_back || '2' }}
+          NEWS_HOURS_BACK:  ${{ github.event.inputs.hours_back || '12' }}
           DRY_RUN:          ${{ github.event.inputs.dry_run || 'false' }}
         run: python maritime_news.py
 
@@ -105,7 +95,7 @@ jobs:
           TARGET_EMAIL:     ${{ secrets.TARGET_EMAIL }}
           MAIL_SMTP_SERVER: ${{ secrets.MAIL_SMTP_SERVER }}
           MAIL_SMTP_PORT:   ${{ secrets.MAIL_SMTP_PORT }}
-          NEWS_HOURS_BACK:  ${{ github.event.inputs.hours_back || '2' }}
+          NEWS_HOURS_BACK:  ${{ github.event.inputs.hours_back || '12' }}
           DRY_RUN:          ${{ github.event.inputs.dry_run || 'false' }}
         run: |
           if [ -f "news_scraper.py" ]; then
