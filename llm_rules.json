@@ -1,0 +1,67 @@
+{
+  "_comment": "Phase 5 — LLM Maritime Intelligence Enhancement 設定檔。密鑰/開關一律走環境變數（見 llm_config.py），這裡只放非機密的成本控制與 eligibility 規則，不寫死在 Python。",
+  "schema_version": 1,
+
+  "prompt_version": "5.0.0",
+  "prompt_file": "prompts/maritime_intelligence_v5.txt",
+
+  "cost_controls": {
+    "max_events_per_run": 8,
+    "max_sources_per_event": 5,
+    "max_chars_per_source": 2500,
+    "max_total_context_chars": 10000
+  },
+
+  "reliability": {
+    "timeout_seconds": 30,
+    "max_retries": 2,
+    "failure_circuit_breaker": 3,
+    "_circuit_breaker_note": "同一次 run 連續 N 次 LLM call 失敗（timeout/429/5xx）後，本次 run 剩餘事件全部直接 fallback rule-based，不再呼叫 provider（§五十四）。"
+  },
+
+  "eligibility": {
+    "_note": "只有這裡列出的組合才會呼叫 LLM；其餘一律直接使用 Phase 4 Rule-Based Summary（§九）。",
+    "always_analyze": [
+      { "priority": "P1", "notification_state": ["NEW", "MATERIAL_UPDATE"] },
+      { "priority": "P2", "notification_state": ["NEW", "MATERIAL_UPDATE"] }
+    ],
+    "optional_priority": "P3",
+    "optional_notification_state": ["NEW", "MATERIAL_UPDATE"],
+    "optional_event_types": ["REGULATORY", "SECURITY", "OPERATIONS"],
+    "optional_fleet_relevance_threshold": 15,
+    "resolved_update_priorities": ["P1", "P2"],
+    "never_analyze_priorities": ["P4"],
+    "never_analyze_notification_states": ["UNCHANGED", "MINOR_UPDATE"]
+  },
+
+  "output_limits": {
+    "management_summary_zh_max_chars": 200,
+    "why_it_matters_zh_max_chars": 200,
+    "what_changed_zh_max_chars": 200,
+    "max_timeline_items": 5,
+    "max_confirmed_facts": 8,
+    "max_unconfirmed_claims": 8,
+    "max_contradictions": 5,
+    "max_monitoring_points": 5
+  },
+
+  "email_display": {
+    "show_timeline_for": ["P1"],
+    "show_timeline_min_material_updates": 2,
+    "show_ai_disclaimer_footer": true,
+    "ai_disclaimer_text": "Management summaries may include automated source-grounded analysis. All summaries are traceable to the original sources listed on each event."
+  },
+
+  "own_fleet_guardrail": {
+    "carrier_key": "WAN_HAI",
+    "forbidden_invented_action_phrases_zh": [
+      "公司已啟動緊急應變", "船長已回報", "公司已聯絡代理", "營運部門已處理",
+      "已派員處理", "公司已回應", "已啟動應變機制", "船東已確認採取"
+    ]
+  },
+
+  "forbidden_operational_command_phrases_zh": [
+    "應立即改道", "應立即停俥", "應立即停車", "船長應", "應下令",
+    "Master should", "should alter course", "should stop engine"
+  ]
+}

@@ -1,0 +1,53 @@
+{
+  "_comment": "GitHub Actions Runtime State Lifecycle（見 GITHUB_ACTIONS_PACKAGING_REPORT.md §11）。列出需要跨 GitHub Actions Run 保存的 SQLite 檔案。路徑皆相對於 repository root 的 data/ 目錄，與各模組 DEFAULT_*_DB_PATH（可被對應環境變數覆寫）一致。此清單由 .github/workflows/maritime-intelligence.yml 的 Save/Restore State step 讀取，不是程式執行期間會 import 的模組，僅供 workflow 使用。",
+  "state_files": [
+    {
+      "id": "event_store",
+      "path": "data/maritime_intelligence.db",
+      "env_override": "MARITIME_DB_PATH",
+      "phase": "Phase 3 — Persistent Event Memory",
+      "required": true,
+      "note": "缺少此檔會被 maritime_news.py 視為 Fatal（EventStoreError），workflow 必須確保 restore 成功或允許 First Run 自動建立"
+    },
+    {
+      "id": "ai_cache",
+      "path": "data/ai_analysis.db",
+      "env_override": "MARITIME_AI_CACHE_DB_PATH",
+      "phase": "Phase 5 — LLM Analysis Cache",
+      "required": false,
+      "note": "LLM_ENABLED=false 時不會產生內容，遺失不影響主流程"
+    },
+    {
+      "id": "operational_history",
+      "path": "data/operational_relevance.db",
+      "env_override": "MARITIME_OPERATIONAL_HISTORY_DB_PATH",
+      "phase": "Phase 6 — Operational Exposure History",
+      "required": false,
+      "note": "遺失只會讓 Exposure Escalation 比對從空白重新開始（不是 Fatal，但會影響 Dual-Axis Trigger 的跨 Run 比較準確度，建議一併保存)"
+    },
+    {
+      "id": "delivery_history",
+      "path": "data/delivery_history.db",
+      "env_override": "MARITIME_DELIVERY_HISTORY_DB_PATH",
+      "phase": "Phase 7 — Delivery / Duplicate Suppression History",
+      "required": true,
+      "note": "遺失會導致 Duplicate Suppression 失效（同一事件可能重複通知），視同 required"
+    },
+    {
+      "id": "source_health",
+      "path": "data/source_health.db",
+      "env_override": "MARITIME_SOURCE_HEALTH_DB_PATH",
+      "phase": "Phase 7 — Source Health Monitoring",
+      "required": false,
+      "note": "遺失只會讓來源健康度統計從零開始，不影響本次新聞判讀"
+    }
+  ],
+  "excluded_from_state": [
+    "logs/",
+    "output/",
+    "backup/",
+    "dist/",
+    "__pycache__/",
+    "*.pyc"
+  ]
+}

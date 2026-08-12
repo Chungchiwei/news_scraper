@@ -1,0 +1,219 @@
+{
+  "_comment": "Phase 3 — Persistent Event Memory 設定檔。所有 matching window / expiry / material change threshold / notification 規則集中於此，不散落在 Python 程式碼中。與 risk_rules.json（Phase 2/2.1 風險評分）分開維護，職責不同：risk_rules.json 回答『這件事有多嚴重』，memory_rules.json 回答『這件事跟上次相比是否值得再次通知』。",
+  "schema_version": 1,
+
+  "database": {
+    "path": "data/maritime_intelligence.db",
+    "wal_mode": true,
+    "_wal_note": "WAL 失敗時（例如某些唯讀檔案系統）自動退回 SQLite 預設 journal mode 並記錄 WARNING，不視為 fatal error。"
+  },
+
+  "matching_windows": {
+    "_comment": "Cross-run Persistent Matching 的搜尋窗口（天），依 event_type 決定。這與 Phase 2 EventClusterer 的 time_window_hours（同一次 execution 內的 story clustering，以小時計）是完全不同的時間概念，不可混用。",
+    "default_days": 7,
+    "by_event_type": {
+      "SAFETY": 14,
+      "SECURITY": 14,
+      "CREW": 14,
+      "OPERATIONS": 7,
+      "REGULATORY": 30,
+      "ENVIRONMENT": 14,
+      "MARKET": 3,
+      "COMPETITOR": 7,
+      "OTHER": 7
+    },
+    "match_score_threshold": 50,
+    "hard_reject_score": -9999
+  },
+
+  "matching_weights": {
+    "_comment": "PersistentEventMatcher 用來比較『這次 run 新產生的 Event』與『資料庫中既有 Event』是否為同一事件。沿用 Phase 2.1 EventClusterer 的 positive/negative signal 設計哲學，但這裡比的是跨 run 的事件層級欄位，不是同一次 run 內的文章層級欄位。",
+    "same_imo": 200,
+    "same_vessel_name": 60,
+    "different_vessel_type": -70,
+    "same_carrier": 15,
+    "same_incident_subtype": 30,
+    "different_incident_subtype": -35,
+    "same_event_type": 15,
+    "different_event_type": -10,
+    "same_sea_area": 15,
+    "related_region_group": 10,
+    "carrier_and_location_bonus": 20,
+    "_carrier_and_location_bonus_note": "Level 3 identity（§十二）：Carrier + Location 同時成立時的額外加分，獨立於個別 same_carrier / same_sea_area 分數之外，反映『航商 + 地點同時吻合』本身就是比兩個訊號單純相加更強的身份證據，尤其是後續進度報導（例如 refloated/reopened）常常抓不到具體 event_type/incident_subtype 關鍵字時。",
+    "title_similarity_high": 15,
+    "title_similarity_cutoff": 0.7,
+    "summary_similarity_high": 15,
+    "summary_similarity_cutoff": 0.45,
+    "time_proximity_bonus": 5,
+    "time_proximity_hours": 24
+  },
+
+  "expiry_days": {
+    "_comment": "距離最近一次 last_seen_utc 超過這麼多天，且沒有 ongoing 關鍵字、且尚未 RESOLVED，才會被標記 EXPIRED。",
+    "default": 7,
+    "by_event_type": {
+      "SAFETY": 14,
+      "SECURITY": 14,
+      "CREW": 14,
+      "OPERATIONS": 7,
+      "REGULATORY": 30,
+      "ENVIRONMENT": 14,
+      "MARKET": 3,
+      "COMPETITOR": 7,
+      "OTHER": 7
+    },
+    "monitoring_after_days": 3,
+    "_monitoring_note": "ACTIVE 事件若超過此天數沒有 MATERIAL_UPDATE（只有 UNCHANGED/MINOR_UPDATE），轉為 MONITORING 狀態（仍追蹤，但不再視為新鮮事件）。",
+    "ongoing_keywords_en": [
+      "ongoing", "still ongoing", "continues", "continuing",
+      "in progress", "remains closed", "remains active", "still underway",
+      "situation is still developing", "developing situation"
+    ],
+    "ongoing_keywords_zh": [
+      "持續中", "仍在進行", "尚未解除", "持續封閉", "情況仍在發展",
+      "仍在持续", "尚未解除警报"
+    ]
+  },
+
+  "material_change": {
+    "score_delta_threshold": 15,
+    "priority_escalation": true,
+    "confidence_upgrade_for_high_priority": true,
+    "high_priority_set": ["P1", "P2"],
+    "fleet_relevance_delta_threshold": 10
+  },
+
+  "resolution_keywords": {
+    "en": [
+      "fire extinguished", "fire is out", "brought under control",
+      "refloated", "re-floated", "successfully refloated",
+      "port reopened", "reopened to traffic", "channel reopened",
+      "restriction lifted", "restrictions lifted",
+      "incident concluded", "investigation concluded",
+      "crew rescued", "all crew rescued", "all crew safe",
+      "operations resumed", "resumed normal operations",
+      "situation resolved", "all clear"
+    ],
+    "zh": [
+      "火勢已撲滅", "火已扑灭", "已獲控制",
+      "已重新浮起", "成功脫淺", "已脱浅",
+      "港口已重新開放", "港口重新开放", "航道已重新開放", "航道重新开放",
+      "限制已解除", "限制已经解除",
+      "事件已落幕", "調查已結束",
+      "船員已獲救", "全體船員已獲救", "全体船员已获救",
+      "已恢復作業", "已恢复作业", "恢復正常營運",
+      "警報已解除"
+    ]
+  },
+
+  "reopen_keywords": {
+    "en": [
+      "reignited", "fire reignited", "re-ignited",
+      "closed again", "re-closed", "closed once more",
+      "reinstated restriction", "restriction reinstated",
+      "port closed again", "channel closed again"
+    ],
+    "zh": [
+      "再次起火", "再度起火", "再度關閉", "再次關閉", "重新封閉",
+      "恢復管制", "限制重新實施"
+    ]
+  },
+
+  "notification": {
+    "_comment": "notification_state × management_priority → 是否立即通知（should_notify）。P3 目前保留給 Daily Brief（Phase 4），本階段只標記 eligible，不真的拆兩套 Email。",
+    "new": { "P1": true, "P2": true, "P3": false, "P4": false },
+    "material_update": { "P1": true, "P2": true, "P3": false, "P4": false },
+    "minor_update": { "P1": false, "P2": false, "P3": false, "P4": false },
+    "unchanged": { "P1": false, "P2": false, "P3": false, "P4": false },
+    "resolved_update": { "P1": true, "P2": true, "P3": false, "P4": false }
+  },
+
+  "baseline_mode": {
+    "default": "notify",
+    "_note": "MEMORY_BASELINE_MODE 環境變數可覆寫。'silent' = 資料庫是空的（系統第一次正式執行）時，仍正常寫入所有事件，但 should_notify 一律強制 False（避免第一天把歷史累積的所有事件當成 P1 轟炸主管信箱）。'notify' = 第一次執行時所有事件正常視為 NEW，依一般規則決定是否通知。"
+  },
+
+  "status_keywords": {
+    "_comment": "Rule-based operational status extraction（無 LLM）。沒有明確證據一律回傳 None，不得猜測。",
+
+    "vessel_status": {
+      "DISABLED":  { "en": ["loss of propulsion", "disabled", "dead in the water", "adrift", "engine failure", "blackout"],
+                      "zh": ["失去動力", "失去推进", "失去推進能力", "主機故障", "漂流"] },
+      "GROUNDED":  { "en": ["ran aground", "aground", "grounded", "grounding reported"],
+                      "zh": ["擱淺", "搁浅"] },
+      "REFLOATED": { "en": ["refloated", "re-floated", "successfully refloated"],
+                      "zh": ["重新浮起", "脫淺", "脱浅", "成功脫淺"] },
+      "ABANDONED": { "en": ["abandoned ship", "crew abandoned", "vessel abandoned", "order to abandon ship"],
+                      "zh": ["棄船", "弃船", "下令棄船"] },
+      "UNDER_TOW": { "en": ["under tow", "being towed", "taken under tow", "tugs deployed", "tug assistance"],
+                      "zh": ["拖航中", "拖帶中", "拖轮协助", "拖船協助"] },
+      "SANK":      { "en": ["has sunk", "vessel sank", "foundered", "went down"],
+                      "zh": ["已沉沒", "已沉没", "沉沒", "沉没"] },
+      "UNDERWAY":  { "en": ["proceeding to", "underway to", "continuing voyage", "resumed voyage"],
+                      "zh": ["續航前往", "继续航行", "恢復航行", "驶往"] }
+    },
+
+    "fire_status": {
+      "ONGOING":      { "en": ["fire ongoing", "fire continues", "still burning", "fire still raging"],
+                         "zh": ["火勢仍在燃燒", "火势仍在燃烧", "火勢持續", "仍在燃燒"] },
+      "EXTINGUISHED": { "en": ["fire extinguished", "fire is out", "fire has been put out", "brought under control"],
+                         "zh": ["火勢已撲滅", "火已扑灭", "火勢已獲控制", "已獲控制"] }
+    },
+
+    "casualty_status": {
+      "NONE_REPORTED": { "en": ["no casualties", "no injuries reported", "no crew injuries", "all crew safe", "no fatalities"],
+                          "zh": ["無人員傷亡", "无人伤亡", "船員均安全", "船员均安全"] },
+      "INJURED":        { "en": ["crew member injured", "crew injured", "seriously injured", "sustained injuries"],
+                          "zh": ["船員受傷", "船员受伤", "受傷", "受伤"] },
+      "FATALITY":        { "en": ["fatality", "fatalities", "crew member killed", "confirmed dead", "died"],
+                          "zh": ["死亡", "罹難", "遇难", "船員罹難"] },
+      "MISSING":         { "en": ["crew member missing", "seafarer missing", "reported missing", "search continues for missing"],
+                          "zh": ["船員失蹤", "船员失踪", "失蹤", "失踪"] }
+    },
+
+    "pollution_status": {
+      "REPORTED":  { "en": ["oil spill", "pollution reported", "leaking fuel", "bunker spill"],
+                     "zh": ["漏油", "污染事件", "燃油洩漏", "燃油泄漏"] },
+      "CONTAINED": { "en": ["spill contained", "pollution contained", "spill controlled"],
+                     "zh": ["污染已控制", "溢油已控制"] }
+    },
+
+    "port_status": {
+      "CONGESTED": { "en": ["port congestion", "congested", "berthing delays"],
+                     "zh": ["塞港", "港口壅塞", "泊位延誤"] },
+      "CLOSED":    { "en": ["port closed", "terminal closed", "port shut down", "suspended port operations"],
+                     "zh": ["港口關閉", "港口封閉", "封港", "碼頭關閉"] },
+      "REOPENED":  { "en": ["port reopened", "reopened to traffic", "port resumed operations"],
+                     "zh": ["港口已重新開放", "港口重新开放", "恢復通行"] }
+    },
+
+    "navigation_status": {
+      "RESTRICTED": { "en": ["channel restricted", "navigation restricted", "draft restriction"],
+                      "zh": ["航道受限", "通行受限"] },
+      "CLOSED":     { "en": ["channel closed", "canal closed", "transit suspended", "waterway closed"],
+                      "zh": ["航道關閉", "運河關閉", "停止通行"] },
+      "REOPENED":   { "en": ["channel reopened", "canal reopened", "transit resumed", "waterway reopened"],
+                      "zh": ["航道已重新開放", "航道重新开放", "運河重新開放"] }
+    },
+
+    "operational_status": {
+      "DISRUPTED": { "en": ["operations suspended", "operations disrupted", "services suspended"],
+                     "zh": ["作業中斷", "营运中断", "服務暫停"] },
+      "RESUMED":   { "en": ["operations resumed", "resumed normal operations", "services resumed"],
+                     "zh": ["已恢復作業", "已恢复作业", "恢復正常營運"] }
+    }
+  },
+
+  "status_escalation_order": {
+    "_comment": "用來判斷『狀態是否往更嚴重方向惡化』，只有沿著這個順序前進才視為 escalation（material）；同狀態重複或無法辨識順序的跳轉一律交給明確的 keyword 對照，不用猜測方向。",
+    "vessel_status": ["UNDERWAY", "DISABLED", "GROUNDED", "ABANDONED", "SANK"],
+    "vessel_status_recovery": ["GROUNDED", "UNDER_TOW", "REFLOATED", "UNDERWAY"],
+    "fire_status": ["ONGOING", "EXTINGUISHED"],
+    "casualty_status": ["NONE_REPORTED", "INJURED", "FATALITY"],
+    "casualty_status_missing": ["NONE_REPORTED", "MISSING"],
+    "port_status": ["CONGESTED", "CLOSED"],
+    "port_status_recovery": ["CLOSED", "REOPENED"],
+    "navigation_status": ["RESTRICTED", "CLOSED"],
+    "navigation_status_recovery": ["CLOSED", "REOPENED"]
+  }
+}

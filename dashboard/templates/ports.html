@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block title %}Port Exposure — Maritime Intelligence Dashboard{% endblock %}
+{% block content %}
+<div class="section-title">AFFECTED PORTS</div>
+<div class="card">
+  {% if ports %}
+  <table>
+    <tr><th>Port</th><th>Active Events</th><th>Highest Priority</th><th>Affected WHL Vessels</th><th>Closest ETA</th><th>Exposure Level</th></tr>
+    {% for p in ports %}
+    <tr>
+      <td>{{ p.port }}</td>
+      <td>{{ p.active_events|length }}</td>
+      <td><span class="badge" style="background:{{ p.highest_priority|priority_color }}">{{ p.highest_priority }}</span></td>
+      <td>{{ p.affected_vessels|join(', ') or '—' }}</td>
+      <td>{{ p.closest_eta_hours|fmt_hours }}</td>
+      <td><span class="badge" style="background:{{ p.exposure_level|exposure_color }}">{{ p.exposure_level }}</span></td>
+    </tr>
+    {% endfor %}
+  </table>
+  {% else %}
+  <div class="muted">No ports currently carry an operational relevance assessment.</div>
+  {% endif %}
+</div>
+{% endblock %}

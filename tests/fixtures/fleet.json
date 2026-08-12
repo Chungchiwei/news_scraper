@@ -1,0 +1,39 @@
+{
+  "_comment": "Phase 6 測試用 fixture — 不是 runtime config/fleet_config.json。刻意包含一筆缺 vessel_name 的壞資料，用來測試 ConfigFleetProvider 逐筆略過壞資料、不整批 crash 的行為（§六十六）。",
+  "generated_at_utc": "2026-08-11T00:00:00Z",
+  "vessels": [
+    {
+      "vessel_id": "WH503",
+      "vessel_name": "WAN HAI 503",
+      "imo_number": "9876543",
+      "call_sign": "BQAB3",
+      "service_code": "AEX1",
+      "status": "UNDERWAY",
+      "current_port": "TWKHH",
+      "previous_port": null,
+      "next_port": "SGSIN",
+      "eta": "2026-08-11T18:00:00Z",
+      "etd": null
+    },
+    {
+      "vessel_id": "WH510",
+      "vessel_name": "WAN HAI 510",
+      "imo_number": "9876550",
+      "call_sign": "BQAC7",
+      "service_code": "AEX1",
+      "status": "UNDERWAY",
+      "current_port": "HKHKG",
+      "previous_port": null,
+      "next_port": "TWKHH",
+      "eta": "2026-08-15T00:00:00Z",
+      "etd": null
+    },
+    {
+      "vessel_id": "WH901",
+      "vessel_name": null,
+      "imo_number": "9990001",
+      "service_code": "IA2",
+      "status": "UNDERWAY"
+    }
+  ]
+}

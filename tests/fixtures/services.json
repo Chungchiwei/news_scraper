@@ -1,0 +1,20 @@
+{
+  "_comment": "Phase 6 測試用 fixture — 不是 runtime config/services_config.json。AEX1 涵蓋 Red Sea/Suez Canal/Singapore Strait，供 route_relevance.py / geographic_relevance.py 測試比對用。",
+  "generated_at_utc": "2026-08-11T00:00:00Z",
+  "services": [
+    {
+      "service_code": "AEX1",
+      "service_name": "Asia-Europe Express 1",
+      "ports": ["TWKHH", "SGSIN", "NLRTM", "DEHAM"],
+      "regions": ["ASIA", "EUROPE", "MIDDLE_EAST"],
+      "major_shipping_lanes": ["RED_SEA", "SUEZ_CANAL", "SINGAPORE_STRAIT"]
+    },
+    {
+      "service_code": "IA2",
+      "service_name": "Intra-Asia 2",
+      "ports": ["HKHKG", "TWKHH", "TWKEL"],
+      "regions": ["ASIA"],
+      "major_shipping_lanes": ["TAIWAN_STRAIT"]
+    }
+  ]
+}

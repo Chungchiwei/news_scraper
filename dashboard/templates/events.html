@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{% block title %}Active Events — Maritime Intelligence Dashboard{% endblock %}
+{% block content %}
+<div class="section-title">ACTIVE EVENT BOARD</div>
+<form class="filters" method="get" action="/events">
+  <select name="priority"><option value="">Priority: All</option>
+    {% for p in ["P1","P2","P3","P4"] %}<option value="{{ p }}" {{ 'selected' if filters.priority==p }}>{{ p }}</option>{% endfor %}
+  </select>
+  <select name="relevance_level"><option value="">WHL Exposure: All</option>
+    {% for lvl in ["DIRECT","HIGH","MODERATE","LOW","NONE"] %}<option value="{{ lvl }}" {{ 'selected' if filters.relevance_level==lvl }}>{{ lvl }}</option>{% endfor %}
+  </select>
+  <select name="confidence"><option value="">Confidence: All</option>
+    {% for c in ["HIGH","MEDIUM","LOW"] %}<option value="{{ c }}" {{ 'selected' if filters.confidence==c }}>{{ c }}</option>{% endfor %}
+  </select>
+  <select name="event_status"><option value="">Lifecycle: All</option>
+    {% for s in ["ACTIVE","MONITORING","RESOLVED","EXPIRED"] %}<option value="{{ s }}" {{ 'selected' if filters.event_status==s }}>{{ s }}</option>{% endfor %}
+  </select>
+  <input type="text" name="q" placeholder="Vessel / Headline / Port / Carrier / Event ID" value="{{ filters.q or '' }}">
+  <button type="submit">Filter</button>
+  <a href="/events" style="align-self:center;">Reset</a>
+</form>
+
+<div class="card">
+  {% if events %}
+  <table>
+    <tr>
+      <th>Priority</th><th>Headline</th><th>Event Type</th><th>Status</th><th>Notification</th>
+      <th>Confidence</th><th>Information</th><th>WHL Exposure</th><th>Vessels</th><th>Location</th><th>Last Updated</th>
+    </tr>
+    {% for e in events %}
+    <tr onclick="window.location='/events/{{ e.event_id }}'" style="cursor:pointer;">
+      <td><span class="badge" style="background:{{ e.management_priority|priority_color }}">{{ e.management_priority }}</span></td>
+      <td>{{ e.headline }}</td>
+      <td>{{ e.event_type or '—' }}</td>
+      <td>{{ e.event_status or '—' }}</td>
+      <td>{{ e.notification_state or '—' }}</td>
+      <td>{{ e.confidence_level or '—' }}</td>
+      <td>{{ e.information_status or '—' }}</td>
+      <td><span class="badge" style="background:{{ e.relevance_level|exposure_color }}">{{ e.relevance_level|exposure_label(e.relevance_status) }}</span></td>
+      <td>{{ e.affected_vessels|length }}</td>
+      <td>{{ e.location or e.port or '—' }}</td>
+      <td>{{ (e.last_material_update_utc or e.last_seen_utc)|fmt_tpe }}</td>
+    </tr>
+    {% endfor %}
+  </table>
+  {% else %}
+  <div class="muted">No events match the current filters.</div>
+  {% endif %}
+</div>
+{% endblock %}

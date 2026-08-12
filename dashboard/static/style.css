@@ -1,0 +1,53 @@
+/* Phase 7 Dashboard — local CSS only, no external CDN (§一百〜一百零一) */
+:root {
+  --navy: #0b1f3a;
+  --port-blue: #13315c;
+  --white: #ffffff;
+  --light-gray: #f1f5f9;
+  --border: #e2e8f0;
+  --text: #1e293b;
+  --muted: #64748b;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0; font-family: Arial, "Microsoft JhengHei", sans-serif;
+  background: var(--light-gray); color: var(--text);
+}
+header.topbar {
+  background: var(--navy); color: var(--white); padding: 14px 24px;
+  display: flex; align-items: center; justify-content: space-between;
+}
+header.topbar .brand { font-weight: bold; letter-spacing: 0.5px; }
+nav.tabs { display: flex; gap: 4px; }
+nav.tabs a {
+  color: #cbd5e1; text-decoration: none; padding: 6px 12px; border-radius: 4px; font-size: 13px;
+}
+nav.tabs a.active, nav.tabs a:hover { background: var(--port-blue); color: var(--white); }
+main { max-width: 1100px; margin: 0 auto; padding: 20px 16px 60px; }
+.card {
+  background: var(--white); border: 1px solid var(--border); border-radius: 6px;
+  padding: 16px 18px; margin-bottom: 16px;
+}
+.kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; }
+.kpi { background: var(--white); border: 1px solid var(--border); border-radius: 6px; padding: 14px; text-align: center; }
+.kpi .value { font-size: 28px; font-weight: bold; }
+.kpi .label { font-size: 12px; color: var(--muted); margin-top: 4px; }
+.badge {
+  display: inline-block; color: #fff; font-size: 11px; font-weight: bold;
+  padding: 3px 8px; border-radius: 3px; letter-spacing: 0.4px;
+}
+table { width: 100%; border-collapse: collapse; font-size: 13px; }
+th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--border); }
+th { color: var(--muted); font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; }
+tr:hover { background: #f8fafc; }
+a { color: #1d4ed8; }
+.filters { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
+.filters select, .filters input {
+  padding: 6px 8px; border: 1px solid var(--border); border-radius: 4px; font-size: 13px;
+}
+.muted { color: var(--muted); font-size: 12px; }
+.section-title { font-size: 12px; font-weight: bold; letter-spacing: 0.6px; color: var(--muted); margin: 18px 0 8px; }
+footer.disclaimer {
+  text-align: center; color: var(--muted); font-size: 11px; padding: 24px 16px;
+}
+.notes li { margin-bottom: 4px; }

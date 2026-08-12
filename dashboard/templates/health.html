@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+{% block title %}System Health — Maritime Intelligence Dashboard{% endblock %}
+{% block content %}
+<div class="section-title">SYSTEM HEALTH</div>
+<div class="card">
+  <span class="badge" style="background:{{ r.overall_status|health_color }};font-size:16px;padding:6px 14px;">{{ r.overall_status }}</span>
+  <div class="muted" style="margin-top:8px;">Generated: {{ r.generated_at|fmt_tpe }}</div>
+</div>
+
+<div class="kpi-grid">
+  <div class="kpi"><div class="value" style="font-size:16px;color:{{ r.event_store_status|health_color }}">{{ r.event_store_status }}</div><div class="label">Event Store</div></div>
+  <div class="kpi"><div class="value" style="font-size:16px;color:{{ r.email_status|health_color }}">{{ r.email_status }}</div><div class="label">Email Delivery</div></div>
+  <div class="kpi"><div class="value" style="font-size:16px;color:{{ r.teams_status|health_color }}">{{ r.teams_status }}</div><div class="label">Teams Delivery</div></div>
+  <div class="kpi"><div class="value" style="font-size:16px;">{{ r.fleet_provider_status }}</div><div class="label">Fleet Provider</div></div>
+  <div class="kpi"><div class="value" style="font-size:16px;">{{ r.schedule_provider_status }}</div><div class="label">Schedule Provider</div></div>
+  <div class="kpi"><div class="value" style="font-size:16px;">{{ r.route_provider_status }}</div><div class="label">Route Provider</div></div>
+  <div class="kpi"><div class="value" style="font-size:16px;">{{ r.llm_status }}</div><div class="label">LLM Enhancement</div></div>
+</div>
+
+<div class="section-title">LAST RUN</div>
+<div class="card">
+  {% if r.last_run %}
+  <table>
+    <tr><th>Run ID</th><td>{{ r.last_run.run_id }}</td></tr>
+    <tr><th>Started</th><td>{{ r.last_run.started_at_utc|fmt_tpe }}</td></tr>
+    <tr><th>Completed</th><td>{{ r.last_run.completed_at_utc|fmt_tpe if r.last_run.completed_at_utc else '—' }}</td></tr>
+    <tr><th>Status</th><td>{{ r.last_run.status or '—' }}</td></tr>
+    <tr><th>Articles Collected</th><td>{{ r.last_run.articles_collected if r.last_run.articles_collected is not none else '—' }}</td></tr>
+    <tr><th>Events Detected</th><td>{{ r.last_run.events_detected if r.last_run.events_detected is not none else '—' }}</td></tr>
+  </table>
+  {% else %}
+  <div class="muted">No run recorded yet.</div>
+  {% endif %}
+</div>
+
+<div class="section-title">SOURCE HEALTH</div>
+<div class="card">
+  <table>
+    <tr><th>Healthy</th><th>Degraded</th><th>Down</th><th>Unknown</th><th>Total</th></tr>
+    <tr>
+      <td>{{ r.source_health_summary.HEALTHY }}</td>
+      <td>{{ r.source_health_summary.DEGRADED }}</td>
+      <td>{{ r.source_health_summary.DOWN }}</td>
+      <td>{{ r.source_health_summary.UNKNOWN }}</td>
+      <td>{{ r.source_health_summary.total }}</td>
+    </tr>
+  </table>
+</div>
+
+{% if r.notes %}
+<div class="section-title">NOTES</div>
+<div class="card">
+  <ul class="notes">
+    {% for n in r.notes %}<li>&#9888; {{ n }}</li>{% endfor %}
+  </ul>
+</div>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,68 @@
+{
+  "_comment": "Phase 7 — Delivery Orchestrator 設定檔。門檻/白名單/cooldown 分鐘數全部集中於此，不寫死在 Python（沿用 Phase 6 operational_rules.json 的設計原則）。",
+  "schema_version": 1,
+
+  "urgency_rank": {
+    "IMMEDIATE": 0,
+    "PROMPT": 1,
+    "BRIEF": 2,
+    "DASHBOARD_ONLY": 3,
+    "SUPPRESSED": 4
+  },
+
+  "immediate": {
+    "priorities": ["P1"],
+    "notification_states": ["NEW", "MATERIAL_UPDATE"],
+    "confidence_levels": ["HIGH", "MEDIUM"]
+  },
+
+  "prompt": {
+    "priorities": ["P1", "P2"],
+    "notification_states": ["MATERIAL_UPDATE", "RESOLVED_UPDATE"]
+  },
+
+  "brief": {
+    "priorities": ["P1", "P2", "P3"],
+    "notification_states": ["NEW", "RESOLVED_UPDATE", "MATERIAL_UPDATE"]
+  },
+
+  "dashboard_only": {
+    "priorities": ["P3", "P4"]
+  },
+
+  "_note_dual_axis": "Operational Axis 永遠只能讓 urgency 變得『更急』（rank 數字變小），不會因為曝險降低就把一個原本 Event Axis 判定的 urgency 往下壓——降低曝險的通知本身是用 exposure_cleared 規則另外處理，不是拿掉既有通知。",
+  "exposure_escalated_min_urgency": "PROMPT",
+  "exposure_cleared_from_levels": ["DIRECT", "HIGH"],
+  "exposure_cleared_min_urgency": "BRIEF",
+
+  "own_fleet_floor": {
+    "P1": "IMMEDIATE",
+    "P2": "PROMPT"
+  },
+
+  "cooldown_minutes": {
+    "P1": 30,
+    "P2": 120,
+    "operational_escalation": 120,
+    "default": 240
+  },
+  "cooldown_bypass_notification_states": ["MATERIAL_UPDATE", "RESOLVED_UPDATE"],
+  "cooldown_applies_to_channels": ["TEAMS"],
+
+  "teams": {
+    "enabled_env_var": "TEAMS_ENABLED",
+    "max_message_chars": 2200,
+    "max_events_per_message": 5,
+    "consolidate_same_run": true,
+    "consolidate_min_events": 3,
+    "own_fleet_p1_separate": true,
+    "max_retries": 3,
+    "retry_wait_seconds": 5,
+    "max_sources_shown": 2
+  },
+
+  "email": {
+    "alert_urgencies": ["IMMEDIATE"],
+    "brief_urgencies": ["IMMEDIATE", "PROMPT", "BRIEF"]
+  }
+}

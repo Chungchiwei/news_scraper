@@ -1,0 +1,90 @@
+{% extends "base.html" %}
+{% block title %}{{ e.headline }} — Maritime Intelligence Dashboard{% endblock %}
+{% block content %}
+<p><a href="/events">&larr; Back to Active Events</a></p>
+
+<div class="card">
+  <span class="badge" style="background:{{ e.management_priority|priority_color }}">EVENT PRIORITY: {{ e.management_priority }}</span>
+  &nbsp;
+  <span class="badge" style="background:{{ e.relevance_level|exposure_color }}">WHL EXPOSURE: {{ e.relevance_level|exposure_label(e.relevance_status) }}</span>
+  <h2 style="margin:12px 0 4px;">{{ e.management_headline or e.headline }}</h2>
+  <div class="muted">{{ e.headline }}</div>
+
+  <table style="margin-top:14px;">
+    <tr><th>Confidence</th><td>{{ e.confidence_level or '—' }}</td>
+        <th>Information Status</th><td>{{ e.information_status or '—' }}</td></tr>
+    <tr><th>Lifecycle</th><td>{{ e.event_status or '—' }}</td>
+        <th>Notification State</th><td>{{ e.notification_state or '—' }}</td></tr>
+    <tr><th>First Seen</th><td>{{ e.first_seen_utc|fmt_tpe }}</td>
+        <th>Last Updated</th><td>{{ e.last_seen_utc|fmt_tpe }}</td></tr>
+    <tr><th>Vessel</th><td>{{ e.vessel_name or '—' }}</td>
+        <th>Carrier</th><td>{{ e.carrier or '—' }}</td></tr>
+    <tr><th>Location</th><td>{{ e.location or '—' }}</td>
+        <th>Port</th><td>{{ e.port or '—' }}</td></tr>
+  </table>
+</div>
+
+<div class="section-title">EVENT INTELLIGENCE</div>
+<div class="card">
+  <p><b>Management Summary</b><br>{{ e.management_summary_zh or '—' }}</p>
+  <p><b>Why It Matters</b><br>{{ e.why_it_matters_zh or '—' }}</p>
+  {% if e.what_changed_zh %}
+  <p><b>What Changed</b></p>
+  <ul>{% for c in e.what_changed_zh %}<li>{{ c }}</li>{% endfor %}</ul>
+  {% endif %}
+</div>
+
+<div class="section-title">EVENT TIMELINE (Phase 3 History)</div>
+<div class="card">
+  {% if e.event_history %}
+  <table>
+    <tr><th>Time</th><th>Change Type</th><th>Reason</th><th>Material</th></tr>
+    {% for h in e.event_history %}
+    <tr>
+      <td>{{ h.timestamp_utc|fmt_tpe }}</td>
+      <td>{{ h.change_type }}</td>
+      <td>{{ h.change_reason or '—' }}</td>
+      <td>{{ 'Yes' if h.material else 'No' }}</td>
+    </tr>
+    {% endfor %}
+  </table>
+  {% else %}
+  <div class="muted">No history recorded yet.</div>
+  {% endif %}
+</div>
+
+<div class="section-title">OPERATIONAL EXPOSURE TIMELINE (Phase 6 History)</div>
+<div class="card">
+  {% if e.operational_snapshot %}
+  <table>
+    <tr><th>Relevance Level</th><td>{{ e.operational_snapshot.relevance_level or '—' }}</td></tr>
+    <tr><th>Relevance Status</th><td>{{ e.operational_snapshot.relevance_status or '—' }}</td></tr>
+    <tr><th>Affected Vessels</th><td>
+      {% for v in e.operational_snapshot.affected_vessels %}{{ v.vessel_name }}{% if v.hours_to_exposure %} (ETA {{ v.hours_to_exposure|fmt_hours }}){% endif %}{% if not loop.last %}, {% endif %}{% else %}—{% endfor %}
+    </td></tr>
+    <tr><th>Affected Ports</th><td>{{ e.operational_snapshot.affected_ports|join(', ') or '—' }}</td></tr>
+  </table>
+  {% else %}
+  <div class="muted">No operational relevance assessment recorded for this event yet.</div>
+  {% endif %}
+</div>
+
+<div class="section-title">SOURCES</div>
+<div class="card">
+  {% if e.articles %}
+  <table>
+    <tr><th>Source</th><th>Tier</th><th>Published</th><th>Link</th></tr>
+    {% for a in e.articles %}
+    <tr>
+      <td>{{ a.source_name }}</td>
+      <td>{{ a.source_tier or '—' }}</td>
+      <td>{{ a.published_at_utc|fmt_tpe }}</td>
+      <td><a href="{{ a.url }}" target="_blank" rel="noopener">Open Source &rsaquo;</a></td>
+    </tr>
+    {% endfor %}
+  </table>
+  {% else %}
+  <div class="muted">No source articles recorded.</div>
+  {% endif %}
+</div>
+{% endblock %}

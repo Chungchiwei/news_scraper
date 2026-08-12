@@ -1,0 +1,117 @@
+{
+  "_comment": "Phase 6 §十七〜十八 Port Normalization — 別名（英文/繁中/簡中/常見別名/UN-LOCODE）一律正規化為 UN/LOCODE。key 已預先做過小寫/去標點正規化的假設由 port_normalizer.py 的 normalize_key() 負責，這裡只需列出常見寫法。刻意不收錄如 'Portland' 這種在多國都有同名港口、缺乏國家/UNLOCODE 就無法唯一判定的地名 —— 見 §六十八 Ambiguous Port。",
+  "aliases": {
+    "singapore": "SGSIN",
+    "port of singapore": "SGSIN",
+    "singapore port": "SGSIN",
+    "psa singapore": "SGSIN",
+    "sgsin": "SGSIN",
+    "新加坡": "SGSIN",
+    "新加坡港": "SGSIN",
+
+    "kaohsiung": "TWKHH",
+    "kaohsiung port": "TWKHH",
+    "port of kaohsiung": "TWKHH",
+    "twkhh": "TWKHH",
+    "高雄": "TWKHH",
+    "高雄港": "TWKHH",
+
+    "keelung": "TWKEL",
+    "keelung port": "TWKEL",
+    "twkel": "TWKEL",
+    "基隆": "TWKEL",
+    "基隆港": "TWKEL",
+
+    "taipei port": "TWTXG",
+    "twtxg": "TWTXG",
+    "臺北港": "TWTXG",
+    "台北港": "TWTXG",
+
+    "hong kong": "HKHKG",
+    "port of hong kong": "HKHKG",
+    "hkhkg": "HKHKG",
+    "香港": "HKHKG",
+    "香港港": "HKHKG",
+
+    "shanghai": "CNSHA",
+    "port of shanghai": "CNSHA",
+    "cnsha": "CNSHA",
+    "上海": "CNSHA",
+    "上海港": "CNSHA",
+
+    "ningbo": "CNNGB",
+    "ningbo zhoushan": "CNNGB",
+    "cnngb": "CNNGB",
+    "寧波": "CNNGB",
+    "宁波": "CNNGB",
+    "寧波港": "CNNGB",
+
+    "shenzhen": "CNSZX",
+    "yantian": "CNSZX",
+    "cnszx": "CNSZX",
+    "深圳": "CNSZX",
+    "鹽田": "CNSZX",
+
+    "los angeles": "USLAX",
+    "port of los angeles": "USLAX",
+    "uslax": "USLAX",
+
+    "long beach": "USLGB",
+    "port of long beach": "USLGB",
+    "uslgb": "USLGB",
+
+    "oakland": "USOAK",
+    "port of oakland": "USOAK",
+    "usoak": "USOAK",
+
+    "rotterdam": "NLRTM",
+    "port of rotterdam": "NLRTM",
+    "nlrtm": "NLRTM",
+
+    "hamburg": "DEHAM",
+    "port of hamburg": "DEHAM",
+    "deham": "DEHAM",
+
+    "antwerp": "BEANR",
+    "port of antwerp": "BEANR",
+    "beanr": "BEANR",
+
+    "busan": "KRPUS",
+    "port of busan": "KRPUS",
+    "krpus": "KRPUS",
+    "釜山": "KRPUS",
+    "釜山港": "KRPUS",
+
+    "tokyo": "JPTYO",
+    "port of tokyo": "JPTYO",
+    "jptyo": "JPTYO",
+
+    "yokohama": "JPYOK",
+    "port of yokohama": "JPYOK",
+    "jpyok": "JPYOK",
+
+    "laem chabang": "THLCH",
+    "thlch": "THLCH",
+
+    "jakarta": "IDJKT",
+    "tanjung priok": "IDJKT",
+    "idjkt": "IDJKT",
+
+    "manila": "PHMNL",
+    "port of manila": "PHMNL",
+    "phmnl": "PHMNL",
+
+    "ho chi minh": "VNSGN",
+    "ho chi minh city": "VNSGN",
+    "saigon": "VNSGN",
+    "vnsgn": "VNSGN",
+
+    "colombo": "LKCMB",
+    "port of colombo": "LKCMB",
+    "lkcmb": "LKCMB",
+
+    "jebel ali": "AEJEA",
+    "port of jebel ali": "AEJEA",
+    "aejea": "AEJEA"
+  }
+}

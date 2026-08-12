@@ -1,0 +1,77 @@
+{
+  "_comment": "Phase 4 — Executive Maritime Intelligence Email 設定檔。Briefing Selector / Summary Builder / Renderer 的所有門檻與白名單集中於此，不寫死在 Python 程式碼。",
+  "schema_version": 1,
+
+  "daily_brief": {
+    "max_p1": 5,
+    "max_p2": 8,
+    "max_p3": 5,
+    "include_p4": false,
+    "include_resolved": true,
+    "max_resolved": 5
+  },
+
+  "alert": {
+    "enabled": true,
+    "priorities": ["P1"],
+    "consolidate": true,
+    "_consolidate_note": "同一次 run 有多個符合條件的事件時，預設合併成一封 Email，不逐一寄送，避免 alert fatigue（§七十五〜七十六）。"
+  },
+
+  "no_risk": {
+    "send": true,
+    "_note": "SEND_NO_RISK_BRIEF 環境變數可覆寫此設定（§四十三）。"
+  },
+
+  "industry_watch": {
+    "fleet_relevance_threshold": 15,
+    "always_include_event_types": ["REGULATORY", "OPERATIONS", "SECURITY"],
+    "competitor_keywords_en": [
+      "alliance", "blank sailing", "port omission", "capacity change",
+      "service launch", "new service", "route suspension", "fleet deployment",
+      "surcharge", "freight rate"
+    ],
+    "competitor_keywords_zh": [
+      "聯盟", "空班", "略港", "運力調整", "新開航線", "航線暫停", "船隊部署",
+      "附加費", "運價"
+    ]
+  },
+
+  "fleet_relevance_bands": {
+    "own_fleet_label": "OWN FLEET",
+    "bands": [
+      { "min": 20, "label": "DIRECT" },
+      { "min": 15, "label": "HIGH" },
+      { "min": 8,  "label": "MODERATE" },
+      { "min": 0,  "label": "LOW" }
+    ]
+  },
+
+  "impact_tags_display": {
+    "max_tags": 4,
+    "order": ["SECURITY", "NAVIGATION", "PORT", "SCHEDULE", "CREW", "CARGO",
+             "REGULATORY", "ENVIRONMENT", "MARKET", "TERMINAL"]
+  },
+
+  "headline": {
+    "zh_max_chars": 35,
+    "en_max_chars": 90
+  },
+
+  "management_summary": {
+    "zh_max_chars": 120
+  },
+
+  "subject": {
+    "prefix_alert": "Maritime Alert",
+    "prefix_update": "Maritime Update",
+    "prefix_brief": "Maritime Intelligence"
+  },
+
+  "company": {
+    "name": "WAN HAI LINES",
+    "brief_title": "MARITIME INTELLIGENCE BRIEF",
+    "brief_subtitle": "Fleet Safety · Security · Operations",
+    "own_fleet_carrier_key": "WAN_HAI"
+  }
+}

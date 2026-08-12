@@ -1,0 +1,140 @@
+[
+  {
+    "id": "fx01", "source_name": "TradeWinds", "source_category": "航運專業", "source_lang": "en",
+    "title": "Container ship fire breaks out off Sri Lanka",
+    "summary": "A container ship suffered a serious fire off the coast of Sri Lanka, crew evacuated safely.",
+    "minutes_ago": 45, "incident_cat": "CAT1", "matched": [["fire", "火災", "#dc2626"]]
+  },
+  {
+    "id": "fx02", "source_name": "gCaptain", "source_category": "航運專業", "source_lang": "en",
+    "title": "Bulk carrier collision reported near Rotterdam anchorage",
+    "summary": "Two vessels were involved in a collision near the Rotterdam anchorage on Tuesday morning.",
+    "minutes_ago": 90, "incident_cat": "CAT2", "matched": [["collision", "碰撞觸礁", "#b45309"]]
+  },
+  {
+    "id": "fx03", "source_name": "Reuters", "source_category": "國際媒體", "source_lang": "en",
+    "title": "Tanker hijacked off Gulf of Guinea, crew held hostage",
+    "summary": "Pirates hijacked a tanker off the Gulf of Guinea and are holding the crew hostage, officials said.",
+    "minutes_ago": 30, "incident_cat": "CAT4", "matched": [["hijacking", "海盜攻擊", "#7c3aed"]]
+  },
+  {
+    "id": "fx04a", "source_name": "Reuters", "source_category": "國際媒體", "source_lang": "en",
+    "title": "MSC container vessel attacked by missile in Red Sea",
+    "summary": "An MSC container vessel was attacked by a missile while transiting the Red Sea, the operator confirmed.",
+    "minutes_ago": 20, "incident_cat": "CAT4", "matched": [["missile attack", "海盜攻擊", "#7c3aed"]]
+  },
+  {
+    "id": "fx04b", "source_name": "TradeWinds", "source_category": "航運專業", "source_lang": "en",
+    "title": "MSC boxship hit by missile strike in the Red Sea",
+    "summary": "An MSC boxship was struck in a missile strike while sailing through the Red Sea, sources say.",
+    "minutes_ago": 35, "incident_cat": "CAT4", "matched": [["missile attack", "海盜攻擊", "#7c3aed"]]
+  },
+  {
+    "id": "fx04c", "source_name": "gCaptain", "source_category": "航運專業", "source_lang": "en",
+    "title": "Red Sea: MSC container vessel attacked by missile, no casualties reported",
+    "summary": "MSC container vessel attacked by missile in the Red Sea; owner reports no casualties, vessel proceeding under own power.",
+    "minutes_ago": 55, "incident_cat": "CAT4", "matched": [["missile attack", "海盜攻擊", "#7c3aed"]]
+  },
+  {
+    "id": "fx05", "source_name": "Splash247", "source_category": "航運專業", "source_lang": "en",
+    "title": "Major port closure hits Gulf coast operations",
+    "summary": "A major port closure has disrupted operations along the Gulf coast following severe weather.",
+    "minutes_ago": 60, "incident_cat": "OTHER", "matched": [["port closure", "其他", "#475569"]]
+  },
+  {
+    "id": "fx06", "source_name": "Safety4Sea", "source_category": "航運專業", "source_lang": "en",
+    "title": "IMO adopts new SOLAS cargo safety requirement",
+    "summary": "The IMO has adopted a new SOLAS amendment introducing additional cargo safety requirements for container ships.",
+    "minutes_ago": 500, "incident_cat": "OTHER", "matched": [["imo", "其他", "#475569"]]
+  },
+  {
+    "id": "fx07", "source_name": "Maersk News", "source_category": "航商動態", "source_lang": "en",
+    "title": "Maersk launches new container service connecting Asia and Europe",
+    "summary": "Maersk today announced a new container service connecting major ports in Asia and Europe.",
+    "minutes_ago": 120, "incident_cat": "CAT6", "matched": [["carrier news", "航商動態", "#0891b2"]]
+  },
+  {
+    "id": "fx08", "source_name": "Maersk News", "source_category": "航商動態", "source_lang": "en",
+    "title": "Maersk wins sustainability award for green shipping initiative",
+    "summary": "Maersk has been recognized with a sustainability award for its green shipping initiative at an industry conference.",
+    "minutes_ago": 150, "incident_cat": "OTHER", "matched": [["carrier news", "航商動態", "#0891b2"]]
+  },
+  {
+    "id": "fx09", "source_name": "CMA CGM News", "source_category": "航商動態", "source_lang": "en",
+    "title": "CMA CGM celebrates employee anniversary at headquarters event",
+    "summary": "CMA CGM celebrated a staff anniversary milestone with an employee event at its headquarters.",
+    "minutes_ago": 200, "incident_cat": "OTHER", "matched": [["carrier news", "航商動態", "#0891b2"]]
+  },
+  {
+    "id": "fx10", "source_name": "Freightwaves", "source_category": "航運專業", "source_lang": "en",
+    "title": "Freight rate index climbs on strong container demand",
+    "summary": "The freight rate index climbed this week amid strong container demand and tightening capacity.",
+    "minutes_ago": 300, "incident_cat": "OTHER", "matched": [["freight rate", "其他", "#475569"]]
+  },
+  {
+    "id": "fx11", "source_name": "Reddit r/maritime", "source_category": "航運專業", "source_lang": "en",
+    "title": "Possible explosion heard near tanker in Red Sea, unconfirmed",
+    "summary": "Unconfirmed reports on this sub of a possible explosion heard near a tanker in the Red Sea. No official source yet.",
+    "minutes_ago": 15, "incident_cat": "OTHER", "matched": [["explosion", "其他", "#475569"]]
+  },
+  {
+    "id": "fx12", "source_name": "萬海航運新聞", "source_category": "航商動態", "source_lang": "zh-TW",
+    "title": "萬海貨櫃船發生嚴重火災事故",
+    "summary": "萬海航運一艘貨櫃船傳出嚴重火災事故，船公司表示正在調查起火原因。",
+    "minutes_ago": 25, "incident_cat": "CAT1", "matched": [["火災", "火災", "#dc2626"]]
+  },
+  {
+    "id": "fx13", "source_name": "Hellenic Ship", "source_category": "航運專業", "source_lang": "en",
+    "title": "Bunker spill reported after tanker collision near port",
+    "summary": "A bunker spill was reported following a minor tanker collision near the port entrance, cleanup underway.",
+    "minutes_ago": 400, "incident_cat": "OTHER", "matched": [["oil spill", "其他", "#475569"]]
+  },
+  {
+    "id": "fx14", "source_name": "Maritime Exec", "source_category": "航運專業", "source_lang": "en",
+    "title": "Crew member goes overboard during rough weather transit",
+    "summary": "A crew member went overboard during a rough weather transit; search and rescue operations are ongoing.",
+    "minutes_ago": 10, "incident_cat": "CAT5", "matched": [["man overboard", "船員傷亡", "#0369a1"]]
+  },
+  {
+    "id": "fx15a", "source_name": "Reuters", "source_category": "國際媒體", "source_lang": "en",
+    "title": "MSC vessel collision near Singapore",
+    "summary": "An MSC vessel was involved in a collision near Singapore on Wednesday, no injuries reported.",
+    "minutes_ago": 12, "incident_cat": "CAT2", "matched": [["collision", "碰撞觸礁", "#b45309"]]
+  },
+  {
+    "id": "fx15b", "source_name": "TradeWinds", "source_category": "航運專業", "source_lang": "en",
+    "title": "Maersk vessel grounding near Singapore",
+    "summary": "A Maersk vessel ran aground near Singapore, tugs have been dispatched to assist.",
+    "minutes_ago": 22, "incident_cat": "CAT2", "matched": [["grounding", "碰撞觸礁", "#b45309"]]
+  },
+  {
+    "id": "fx16", "source_name": "自由時報", "source_category": "中文媒體", "source_lang": "zh-TW",
+    "title": "台股航運股走勢分析：貨櫃三雄本週表現",
+    "summary": "本週台股航運類股表現分析，貨櫃三雄股價漲跌互見，法人看法分歧。",
+    "minutes_ago": 600, "incident_cat": "OTHER", "matched": [["航運股", "其他", "#475569"]]
+  },
+  {
+    "id": "fx17", "source_name": "NewsBase", "source_category": "航運專業", "source_lang": "en",
+    "title": "Suez Canal Authority announces new transit fee structure",
+    "summary": "The Suez Canal Authority announced a revised transit fee structure effective next quarter.",
+    "minutes_ago": 700, "incident_cat": "OTHER", "matched": [["suez canal", "其他", "#475569"]]
+  },
+  {
+    "id": "fx18", "source_name": "HMM News", "source_category": "航商動態", "source_lang": "en",
+    "title": "HMM deploys new capacity on transpacific route amid blank sailing adjustments",
+    "summary": "HMM announced capacity deployment changes and blank sailing adjustments on its transpacific service.",
+    "minutes_ago": 250, "incident_cat": "CAT6", "matched": [["carrier news", "航商動態", "#0891b2"]]
+  },
+  {
+    "id": "fx19", "source_name": "Lloyd's List", "source_category": "航運專業", "source_lang": "en",
+    "title": "VLCC suffers loss of propulsion in Strait of Hormuz",
+    "summary": "A VLCC tanker reported loss of propulsion while transiting the Strait of Hormuz, currently under tow.",
+    "minutes_ago": 8, "incident_cat": "CAT2", "matched": [["loss of propulsion", "碰撞觸礁", "#b45309"]]
+  },
+  {
+    "id": "fx20", "source_name": "AMZ123", "source_category": "中文媒體", "source_lang": "zh-CN",
+    "title": "跨境电商物流成本上升 卖家寻求替代方案",
+    "summary": "跨境电商物流成本持续上升，多家卖家开始寻求替代运输方案以降低成本。",
+    "minutes_ago": 800, "incident_cat": "OTHER", "matched": [["物流", "其他", "#475569"]]
+  }
+]

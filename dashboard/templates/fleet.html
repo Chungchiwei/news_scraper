@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block title %}Fleet Exposure — Maritime Intelligence Dashboard{% endblock %}
+{% block content %}
+<div class="section-title">RISK-RELEVANT FLEET VIEW</div>
+<p class="muted">Only vessels currently carrying an Operational Relevance assessment are shown — this is not an AIS fleet tracker.</p>
+<div class="card">
+  {% if vessels %}
+  <table>
+    <tr><th>Vessel</th><th>Service</th><th>Next Port</th><th>Active Risk Events</th><th>Highest Exposure</th><th>Closest Risk Window</th></tr>
+    {% for v in vessels %}
+    <tr>
+      <td>{{ v.vessel_name }}</td>
+      <td>{{ v.service_code or '—' }}</td>
+      <td>{{ v.next_port or '—' }}</td>
+      <td>
+        {% for ev in v.active_risk_events %}
+          <a href="/events/{{ ev.event_id }}">{{ ev.priority }} — {{ ev.headline }}</a>{% if not loop.last %}<br>{% endif %}
+        {% endfor %}
+      </td>
+      <td><span class="badge" style="background:{{ v.highest_exposure|exposure_color }}">{{ v.highest_exposure }}</span></td>
+      <td>{{ v.closest_risk_window_hours|fmt_hours }}</td>
+    </tr>
+    {% endfor %}
+  </table>
+  {% else %}
+  <div class="muted">No fleet vessels currently carry an operational relevance assessment.</div>
+  {% endif %}
+</div>
+{% endblock %}

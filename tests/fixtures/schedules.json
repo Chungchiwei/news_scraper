@@ -1,0 +1,52 @@
+{
+  "_comment": "Phase 6 測試用 fixture — 不是 runtime config/schedules_config.json。刻意包含一筆 eta_utc 格式錯誤、一筆 etd_utc 早於 eta_utc 的壞資料，用來測試 ConfigScheduleProvider 逐筆略過壞資料、不整批 crash 的行為（§六十七）。",
+  "generated_at_utc": "2026-08-11T00:00:00Z",
+  "port_calls": [
+    {
+      "vessel_id": "WH503",
+      "vessel_name": "WAN HAI 503",
+      "service_code": "AEX1",
+      "port_code": "SGSIN",
+      "port_name": "Singapore",
+      "country": "SG",
+      "eta_utc": "2026-08-11T18:00:00Z",
+      "etd_utc": "2026-08-11T22:00:00Z",
+      "terminal": "PSA",
+      "status": "SCHEDULED"
+    },
+    {
+      "vessel_id": "WH510",
+      "vessel_name": "WAN HAI 510",
+      "service_code": "AEX1",
+      "port_code": "TWKHH",
+      "port_name": "Kaohsiung",
+      "country": "TW",
+      "eta_utc": "2026-08-15T00:00:00Z",
+      "etd_utc": "2026-08-15T06:00:00Z",
+      "terminal": null,
+      "status": "SCHEDULED"
+    },
+    {
+      "vessel_id": "WH999",
+      "vessel_name": "WAN HAI 999",
+      "service_code": "AEX1",
+      "port_code": "NLRTM",
+      "port_name": "Rotterdam",
+      "country": "NL",
+      "eta_utc": "NOT_A_DATE",
+      "etd_utc": "2026-08-20T00:00:00Z",
+      "status": "SCHEDULED"
+    },
+    {
+      "vessel_id": "WH888",
+      "vessel_name": "WAN HAI 888",
+      "service_code": "AEX1",
+      "port_code": "SGSIN",
+      "port_name": "Singapore",
+      "country": "SG",
+      "eta_utc": "2026-08-12T00:00:00Z",
+      "etd_utc": "2026-08-11T23:00:00Z",
+      "status": "SCHEDULED"
+    }
+  ]
+}

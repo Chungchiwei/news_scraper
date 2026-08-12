@@ -1,11 +1,14 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-email_sender.py  v2.2
+email_sender.py  v2.3
 海事航運新聞監控系統 — Email 發送模組
 職責：HTML 渲染 + SMTP 發送
+v2.3 更新：
+  - ★ 安全性修正：Email 帳密改回環境變數讀取（不再硬編碼於原始碼）
+  - ★ 可靠性修正：SMTP 發送加入重試機制（預設 3 次，遞增等待）
+  - ★ 可靠性修正：send() 明確區分「無新聞跳過」與「真正發送失敗」
 v2.2 更新：
-  - Email 設定改為內建硬寫（無需 .env）
   - 移除「11大航商」來源群組
   - 移除 carrier_summary_row / carrier_note
   - 簡化 render_hit_rows
@@ -15,6 +18,7 @@ v2.2 更新：
 
 import os
 import re
+import time
 import smtplib
 import logging
 import traceback
@@ -25,22 +29,38 @@ from email.mime.multipart import MIMEMultipart
 logger = logging.getLogger(__name__)
 
 
+class EmailConfigError(RuntimeError):
+    """Email 設定缺漏或不完整時拋出，訊息明確指出缺少哪個環境變數。"""
+    pass
+
+
+class EmailSendError(RuntimeError):
+    """SMTP 發送在所有重試後仍失敗時拋出，讓呼叫端可以正確 exit(1)。"""
+    pass
+
+
 # ══════════════════════════════════════════════════════════════
 # Email 設定
 # ══════════════════════════════════════════════════════════════
 class EmailConfig:
     """
     所有 Email 相關設定集中於此。
-    ★ v2.2：改為內建硬寫，無需 .env 或環境變數。
+    ★ v2.3：帳密／收件人一律從環境變數讀取（.env 或 GitHub Secrets），
+      不得寫死在原始碼。缺少必要變數時，NewsEmailSender 會在初始化時
+      立即拋出 EmailConfigError，訊息會明確指出是哪一個變數沒有設定。
     """
-    # ── SMTP 設定 ──────────────────────────────────────────────
-    SMTP_SERVER: str = "smtp.gmail.com"
-    SMTP_PORT:   int = 587
+    # ── SMTP 設定（可用環境變數覆寫，否則採用 Gmail 預設）───────
+    SMTP_SERVER: str = os.environ.get("MAIL_SMTP_SERVER", "smtp.gmail.com")
+    SMTP_PORT:   int = int(os.environ.get("MAIL_SMTP_PORT", "587"))
 
-    # ── 帳號設定（★ 請填入實際資訊）─────────────────────────
-    MAIL_USER:    str = "your_email@gmail.com"      # ← 寄件 Gmail 帳號
-    MAIL_PASS:    str = "your_app_password"          # ← Gmail App 密碼（16碼）
-    TARGET_EMAIL: str = "recipient@example.com"      # ← 收件人（多人用逗號分隔）
+    # ── 帳號設定（必填，從環境變數 / .env 讀取）──────────────────
+    MAIL_USER:    str = os.environ.get("MAIL_USER", "")
+    MAIL_PASS:    str = os.environ.get("MAIL_PASSWORD", "")
+    TARGET_EMAIL: str = os.environ.get("TARGET_EMAIL", "")
+
+    # ── SMTP 重試設定 ─────────────────────────────────────────
+    SEND_MAX_ATTEMPTS:   int = int(os.environ.get("MAIL_SEND_MAX_ATTEMPTS", "3"))
+    SEND_RETRY_WAIT_SEC: int = int(os.environ.get("MAIL_SEND_RETRY_WAIT_SEC", "15"))
 
     # ── 郵件外觀設定 ──────────────────────────────────────────
     SENDER_NAME:    str = "海事航運監控系統"
@@ -83,6 +103,17 @@ class EmailConfig:
 # ══════════════════════════════════════════════════════════════
 class EmailRenderer:
     """
+    ⚠ DEPRECATED（Phase 4）：這是 Phase 1-3 的舊版「新聞列表」渲染器，
+    以 category/article 為單位排版，不含 Priority / Risk Scoring /
+    Event Clustering / Management Summary。
+
+    Phase 4 起，主管日常 Email 一律改用 executive_email_renderer.py 的
+    ExecutiveEmailRenderer（Event-based、Rule-Based Management Summary、
+    Overall Risk）。本類別保留但不再是 production 預設路徑 —— 只在需要
+    還原/比對舊版行為，或 Executive Email pipeline 尚未完全驗證前的
+    備援路徑時才會用到。不得刪除（§Phase4 執行原則：不完全取代前不可
+    刪除舊版 Renderer）。
+
     負責將 news_data dict 渲染成完整 HTML 字串。
     所有視覺樣式集中在此，修改版面只需動這個類別。
     """
@@ -662,72 +693,137 @@ class EmailRenderer:
 # ══════════════════════════════════════════════════════════════
 class NewsEmailSender:
     """
-    負責 SMTP 連線與發送。
-    HTML 渲染委派給 EmailRenderer。
+    Phase 4 起，本類別的職責收斂為「純 SMTP 傳輸」：
+      - send_html(subject, html_body)  ← Phase 4 Executive Email 走這條路徑，
+        HTML 由 executive_email_renderer.py 產生，本類別不知道、也不需要
+        知道任何 Priority / Event / Management Summary 的存在。
+      - send(news_data, run_time)      ← Phase 1-3 舊版路徑，⚠ DEPRECATED，
+        內部仍委派給 EmailRenderer 產生 HTML，保留供備援/比對用，不刪除。
+
+    兩條路徑共用同一個 _deliver() SMTP 重試邏輯，確保 retry/timeout/
+    exit code 語意在新舊路徑下完全一致。
     """
 
-    def __init__(self, incident_categories: dict,
-                 rss_sources: list, cnyes_sources: list):
+    def __init__(self, incident_categories: dict | None = None,
+                 rss_sources: list | None = None,
+                 cnyes_sources: list | None = None):
         cfg = EmailConfig
         self.mail_user    = cfg.MAIL_USER
         self.mail_pass    = cfg.MAIL_PASS
         self.target_email = cfg.TARGET_EMAIL
         self.smtp_server  = cfg.SMTP_SERVER
         self.smtp_port    = cfg.SMTP_PORT
-        self.enabled      = all([self.mail_user, self.mail_pass,
-                                  self.target_email])
 
-        self.renderer = EmailRenderer(
-            incident_categories=incident_categories,
-            rss_sources=rss_sources,
-            cnyes_sources=cnyes_sources,
-        )
-
-        if not self.enabled:
-            logger.error(
-                "❌ Email 設定未填寫："
-                "請在 EmailConfig 填入 MAIL_USER / MAIL_PASS / TARGET_EMAIL"
+        missing = [name for name, val in (
+            ("MAIL_USER", self.mail_user),
+            ("MAIL_PASSWORD", self.mail_pass),
+            ("TARGET_EMAIL", self.target_email),
+        ) if not val]
+        if missing:
+            raise EmailConfigError(
+                "❌ Email 設定不完整，缺少環境變數："
+                f"{', '.join(missing)}。"
+                "請在 .env（本機）或 GitHub Secrets（CI）設定後再執行。"
             )
-        else:
-            logger.info(f"✅ Email → {self.target_email}")
 
+        # ⚠ DEPRECATED：僅供舊版 send() 使用。Phase 4 send_html() 不依賴
+        # 這個 renderer，呼叫端可以完全不傳 incident_categories 等參數。
+        self.renderer = None
+        if incident_categories is not None:
+            self.renderer = EmailRenderer(
+                incident_categories=incident_categories,
+                rss_sources=rss_sources or [],
+                cnyes_sources=cnyes_sources or [],
+            )
+        logger.info(f"✅ Email → {self.target_email}")
+
+    # ── 共用：SMTP 連線 + 重試（新舊路徑都走這裡）─────────────────
+    def _deliver(self, msg: MIMEMultipart) -> bool:
+        cfg = EmailConfig
+        max_attempts = max(1, cfg.SEND_MAX_ATTEMPTS)
+        last_error: Exception | None = None
+
+        for attempt in range(1, max_attempts + 1):
+            try:
+                with smtplib.SMTP(self.smtp_server, self.smtp_port,
+                                  timeout=30) as server:
+                    server.starttls()
+                    server.login(self.mail_user, self.mail_pass)
+                    server.send_message(msg)
+
+                logger.info(f"✅ Email 發送成功（第 {attempt} 次嘗試）")
+                return True
+
+            except smtplib.SMTPAuthenticationError as e:
+                # 認證錯誤重試也不會成功，直接中止不必要的等待
+                logger.error("❌ Gmail 認證失敗，請確認 App Password 是否正確")
+                raise EmailSendError(f"SMTP 認證失敗: {e}") from e
+
+            except Exception as e:
+                last_error = e
+                logger.warning(
+                    f"⚠️  Email 發送失敗（第 {attempt}/{max_attempts} 次）: {e}"
+                )
+                if attempt < max_attempts:
+                    wait = cfg.SEND_RETRY_WAIT_SEC * attempt
+                    logger.info(f"    ⏳ {wait} 秒後重試...")
+                    time.sleep(wait)
+
+        traceback.print_exc()
+        raise EmailSendError(
+            f"❌ Email 發送失敗，已重試 {max_attempts} 次: {last_error}"
+        ) from last_error
+
+    # ── Phase 4：純 SMTP 傳輸（HTML 由呼叫端傳入，本方法不生成任何內容）──
+    def send_html(self, subject: str, html_body: str) -> bool:
+        """
+        送出已經渲染完成的 HTML（Executive Email）。
+        本方法不做任何 Priority/Event 判斷，也不生成文字 —— 純粹是
+        『把這個 subject + html 送到 target_email』的 SMTP 傳輸層。
+        失敗時拋出 EmailSendError（供呼叫端 exit(1)），不會安靜吞掉錯誤。
+        """
+        cfg = EmailConfig
+        msg            = MIMEMultipart('alternative')
+        msg['Subject'] = subject
+        msg['From']    = f"{cfg.SENDER_NAME} <{self.mail_user}>"
+        msg['To']      = self.target_email
+        msg.attach(MIMEText(html_body, 'html', 'utf-8'))
+        return self._deliver(msg)
+
+    # ── ⚠ DEPRECATED（Phase 1-3 舊版路徑，保留備援用）───────────────
     def send(self, news_data: dict, run_time: datetime) -> bool:
-        if not self.enabled:
-            return False
+        """
+        回傳值語意：
+          True  → 成功發送
+          False → 本次無新聞，「刻意跳過」發送（非錯誤）
+        若所有重試後仍發送失敗，拋出 EmailSendError（由呼叫端決定是否 exit(1)）。
+        """
+        if self.renderer is None:
+            raise EmailConfigError(
+                "❌ 舊版 send() 需要 incident_categories/rss_sources/"
+                "cnyes_sources，請改用 send_html() 或建構時提供這些參數。"
+            )
+
         if not news_data.get('all'):
             logger.info("ℹ️  無相關新聞，跳過發送")
             return False
-        try:
-            cfg      = EmailConfig
-            tpe_time = run_time.astimezone(
-                timezone(timedelta(hours=cfg.DISPLAY_TZ_OFFSET)))
 
-            subject = (
-                f"{cfg.SUBJECT_PREFIX} "
-                f"({tpe_time.strftime('%m/%d %H:%M')}) "
-                f"— {len(news_data['all'])} 則"
-            )
+        cfg      = EmailConfig
+        tpe_time = run_time.astimezone(
+            timezone(timedelta(hours=cfg.DISPLAY_TZ_OFFSET)))
 
-            html_body = self.renderer.render_full_html(news_data, run_time)
+        subject = (
+            f"{cfg.SUBJECT_PREFIX} "
+            f"({tpe_time.strftime('%m/%d %H:%M')}) "
+            f"— {len(news_data['all'])} 則"
+        )
 
-            msg            = MIMEMultipart('alternative')
-            msg['Subject'] = subject
-            msg['From']    = f"{cfg.SENDER_NAME} <{self.mail_user}>"
-            msg['To']      = self.target_email
-            msg.attach(MIMEText(html_body, 'html', 'utf-8'))
+        html_body = self.renderer.render_full_html(news_data, run_time)
 
-            with smtplib.SMTP(self.smtp_server, self.smtp_port,
-                              timeout=30) as server:
-                server.starttls()
-                server.login(self.mail_user, self.mail_pass)
-                server.send_message(msg)
+        msg            = MIMEMultipart('alternative')
+        msg['Subject'] = subject
+        msg['From']    = f"{cfg.SENDER_NAME} <{self.mail_user}>"
+        msg['To']      = self.target_email
+        msg.attach(MIMEText(html_body, 'html', 'utf-8'))
 
-            logger.info("✅ Email 發送成功")
-            return True
-
-        except smtplib.SMTPAuthenticationError:
-            logger.error("❌ Gmail 認證失敗，請確認 App Password 是否正確")
-        except Exception as e:
-            logger.error(f"❌ Email 發送失敗: {e}")
-            traceback.print_exc()
-        return False
+        return self._deliver(msg)

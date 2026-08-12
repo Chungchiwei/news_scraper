@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% block title %}Overview — Maritime Intelligence Dashboard{% endblock %}
+{% block content %}
+<div class="card">
+  <div class="section-title">OVERALL SITUATION</div>
+  <span class="badge" style="background:{{ data.overall_situation|situation_color }};font-size:16px;padding:6px 14px;">
+    {{ data.overall_situation }}
+  </span>
+  <div class="muted" style="margin-top:10px;">Data Last Updated: {{ data.generated_at|fmt_tpe }}</div>
+</div>
+
+<div class="kpi-grid">
+  <div class="kpi"><div class="value" style="color:{{ '#dc2626' }}">{{ data.active_p1 }}</div><div class="label">Active P1</div></div>
+  <div class="kpi"><div class="value" style="color:{{ '#c2410c' }}">{{ data.active_p2 }}</div><div class="label">Active P2</div></div>
+  <div class="kpi"><div class="value" style="color:#7f1d1d">{{ data.direct_exposure }}</div><div class="label">Direct Fleet Exposure</div></div>
+  <div class="kpi"><div class="value" style="color:#c2410c">{{ data.high_exposure }}</div><div class="label">High Fleet Exposure</div></div>
+  <div class="kpi"><div class="value">{{ data.affected_vessel_count }}</div><div class="label">Affected Vessels</div></div>
+  <div class="kpi"><div class="value">{{ data.affected_port_count }}</div><div class="label">Affected Ports</div></div>
+  <div class="kpi"><div class="value">{{ data.new_events }}</div><div class="label">New Events</div></div>
+  <div class="kpi"><div class="value">{{ data.material_updates }}</div><div class="label">Material Updates</div></div>
+  <div class="kpi"><div class="value" style="color:#15803d">{{ data.resolved_recent }}</div><div class="label">Resolved (7d)</div></div>
+</div>
+
+<div class="section-title">TOP MANAGEMENT ATTENTION</div>
+<div class="card">
+  {% if data.top_attention %}
+  <table>
+    <tr>
+      <th>Event Priority</th><th>WHL Exposure</th><th>Headline</th><th>Location</th><th>Last Updated</th>
+    </tr>
+    {% for e in data.top_attention %}
+    <tr onclick="window.location='/events/{{ e.event_id }}'" style="cursor:pointer;">
+      <td><span class="badge" style="background:{{ e.management_priority|priority_color }}">{{ e.management_priority }}</span></td>
+      <td><span class="badge" style="background:{{ e.relevance_level|exposure_color }}">{{ e.relevance_level|exposure_label(e.relevance_status) }}</span></td>
+      <td>{{ e.headline }}</td>
+      <td>{{ e.location or e.port or '—' }}</td>
+      <td>{{ (e.last_material_update_utc or e.last_seen_utc)|fmt_tpe }}</td>
+    </tr>
+    {% endfor %}
+  </table>
+  {% else %}
+  <div class="muted">No significant fleet risk events identified during this monitoring period.</div>
+  {% endif %}
+</div>
+{% endblock %}

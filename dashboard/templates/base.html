@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>{% block title %}Maritime Intelligence Dashboard{% endblock %}</title>
+<link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+<header class="topbar">
+  <div class="brand">WAN HAI LINES &nbsp;·&nbsp; MARITIME INTELLIGENCE DASHBOARD</div>
+  <nav class="tabs">
+    <a href="/" class="{{ 'active' if page == 'overview' else '' }}">Overview</a>
+    <a href="/events" class="{{ 'active' if page == 'events' else '' }}">Events</a>
+    <a href="/fleet" class="{{ 'active' if page == 'fleet' else '' }}">Fleet Exposure</a>
+    <a href="/ports" class="{{ 'active' if page == 'ports' else '' }}">Port Exposure</a>
+    <a href="/resolved" class="{{ 'active' if page == 'resolved' else '' }}">Resolved</a>
+    <a href="/health" class="{{ 'active' if page == 'health' else '' }}">System Health</a>
+  </nav>
+</header>
+<main>
+{% block content %}{% endblock %}
+</main>
+<footer class="disclaimer">
+  For internal operational risk monitoring only. &nbsp;·&nbsp; Version {{ app_version }}
+</footer>
+</body>
+</html>

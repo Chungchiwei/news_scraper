@@ -1,0 +1,5 @@
+{
+  "_comment": "Phase 6 §十三、十五 Local Config Schedule Provider（第一版資料來源，Port Call 資料）。實際使用前請以真實船期資料取代 port_calls 陣列，並更新 generated_at_utc。時間一律 UTC ISO-8601。",
+  "generated_at_utc": "2026-08-11T00:00:00Z",
+  "port_calls": []
+}

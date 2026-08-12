@@ -1,0 +1,5 @@
+{
+  "_comment": "Phase 6 §十三〜十四 Local Config Fleet Provider（第一版資料來源）。實際使用前請以真實船隊資料取代 vessels 陣列，並更新 generated_at_utc。欄位缺漏一律以 null 表示，不得猜測。未來要接公司內部系統/API，只需寫一個新的 FleetDataProvider 實作，operational_relevance.py 完全不需要修改。",
+  "generated_at_utc": "2026-08-11T00:00:00Z",
+  "vessels": []
+}

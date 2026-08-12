@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block title %}Resolved — Maritime Intelligence Dashboard{% endblock %}
+{% block content %}
+<div class="section-title">RESOLVED / IMPROVED (LAST {{ days }} DAYS)</div>
+<div class="card">
+  {% if events %}
+  <table>
+    <tr><th>Priority</th><th>Headline</th><th>Resolved</th><th>WHL Exposure</th></tr>
+    {% for e in events %}
+    <tr onclick="window.location='/events/{{ e.event_id }}'" style="cursor:pointer;">
+      <td><span class="badge" style="background:#15803d">{{ e.management_priority }}</span></td>
+      <td>{{ e.headline }}</td>
+      <td>{{ e.last_seen_utc|fmt_tpe }}</td>
+      <td><span class="badge" style="background:{{ e.relevance_level|exposure_color }}">{{ e.relevance_level|exposure_label(e.relevance_status) }}</span></td>
+    </tr>
+    {% endfor %}
+  </table>
+  {% else %}
+  <div class="muted">No events resolved in the last {{ days }} days.</div>
+  {% endif %}
+</div>
+{% endblock %}
