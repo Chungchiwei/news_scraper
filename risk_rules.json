@@ -1,0 +1,373 @@
+{
+  "_comment": "Phase 2 Intelligence Core — risk scoring / clustering / extraction 規則設定。Threshold、Weight、Tier 一律 config-driven，避免散落在 Python 程式碼中。",
+  "_version": "1.0",
+
+  "priority_thresholds": {
+    "P1": 80,
+    "P2": 60,
+    "P3": 40,
+    "P4": 0
+  },
+
+  "critical_override": {
+    "_comment": "即使 deterministic score 未達 P1 門檻，符合以下條件仍強制升級為 P1。",
+    "min_score_to_consider": 55,
+    "own_fleet_keywords": ["wan hai", "萬海", "万海", "whl"],
+    "own_fleet_min_severity": 15,
+    "event_type_triggers": {
+      "SECURITY": ["missile attack", "attacked by missile", "missile strike", "struck by missile", "hit by missile", "drone attack", "attacked by drone", "drone strike", "struck by drone", "hit by drone", "vessel attacked", "ship attacked", "vessel seizure", "hijacking", "armed attack", "飛彈攻擊", "遭飛彈攻擊", "無人機攻擊", "劫持", "遭攻擊"],
+      "SAFETY": ["total loss", "vessel sinking", "sinking", "capsized", "capsizing", "多人死亡", "全損", "沉沒", "翻覆"]
+    },
+    "location_closure_keywords": ["canal closure", "strait closure", "canal blocked", "strait blocked", "運河關閉", "海峽封鎖", "運河封閉"]
+  },
+
+  "severity_score_tiers": [
+    {
+      "score": 30,
+      "keywords_en": ["sinking", "sunk", "capsized", "capsizing", "total loss", "multiple fatalities", "major explosion", "missile attack", "attacked by missile", "missile strike", "struck by missile", "hit by missile", "drone attack", "attacked by drone", "drone strike", "struck by drone", "major canal closure", "major strait closure", "major collision", "major fire", "massive fire", "major vessel fire", "major ship fire", "major container ship fire"],
+      "keywords_zh": ["沉沒", "翻覆", "全損", "多人死亡", "重大爆炸", "飛彈攻擊", "遭飛彈攻擊", "無人機攻擊", "遭無人機攻擊", "運河封閉", "海峽封鎖", "重大碰撞", "重大火災", "船舶重大火災"]
+    },
+    {
+      "score": 25,
+      "keywords_en": ["vessel fire", "ship fire", "container ship fire", "fire", "severe grounding", "hijacking", "hijacked", "vessel seizure", "seized vessel", "serious collision", "fatal", "fatality", "major pollution", "major oil spill"],
+      "keywords_zh": ["船舶火災", "火災", "嚴重擱淺", "劫持", "扣押船舶", "嚴重碰撞", "死亡", "重大污染", "重大漏油"]
+    },
+    {
+      "score": 20,
+      "keywords_en": ["grounding", "grounded", "loss of propulsion", "engine failure", "armed boarding", "boarded", "containers overboard", "container overboard", "major terminal disruption", "port closure", "port closed"],
+      "keywords_zh": ["擱淺", "失去推進", "主機故障", "武裝登船", "貨櫃落海", "碼頭中斷", "港口關閉"]
+    },
+    {
+      "score": 15,
+      "keywords_en": ["mechanical failure", "port congestion", "schedule disruption", "cargo safety", "crew injury", "injured", "blackout", "power failure", "structural failure", "steering failure"],
+      "keywords_zh": ["機械故障", "港口壅塞", "船期延誤", "貨物安全", "船員受傷", "停電", "電力故障", "結構失效", "操舵故障"]
+    },
+    {
+      "score": 10,
+      "keywords_en": ["regulatory change", "new regulation", "sanction", "sanctions", "service change", "route change", "capacity change"],
+      "keywords_zh": ["法規變更", "新規定", "制裁", "航線調整", "運力調整"]
+    },
+    {
+      "score": 5,
+      "keywords_en": ["freight rate", "market information", "commercial announcement", "new service", "earnings", "financial results"],
+      "keywords_zh": ["運價", "市場資訊", "商業公告", "新航線", "財報", "業績"]
+    }
+  ],
+  "severity_default_by_event_type": {
+    "SAFETY": 15,
+    "SECURITY": 15,
+    "CREW": 15,
+    "ENVIRONMENT": 15,
+    "OPERATIONS": 10,
+    "REGULATORY": 10,
+    "MARKET": 5,
+    "COMPETITOR": 5,
+    "OTHER": 5
+  },
+
+  "fleet_relevance": {
+    "own_fleet_score": 25,
+    "major_liner_route_score": 20,
+    "major_carrier_or_area_score": 15,
+    "general_merchant_score": 10,
+    "indirect_market_score": 5,
+    "no_relevance_score": 0,
+    "own_fleet_keywords": ["wan hai", "萬海", "万海", "whl"],
+    "general_merchant_keywords_en": ["vessel", "ship", "tanker", "cargo ship", "merchant vessel"],
+    "general_merchant_keywords_zh": ["船舶", "貨輪", "商船"],
+    "indirect_market_keywords_en": ["freight rate", "container market", "shipping market", "charter rate"],
+    "indirect_market_keywords_zh": ["運價", "貨櫃市場", "航運市場", "租金"]
+  },
+
+  "immediacy_score_rules": {
+    "hours_thresholds": [
+      {"max_hours": 6,   "score": 20},
+      {"max_hours": 12,  "score": 18},
+      {"max_hours": 24,  "score": 15},
+      {"max_hours": 48,  "score": 10},
+      {"max_hours": 72,  "score": 5},
+      {"max_hours": null, "score": 2}
+    ],
+    "unknown_time_score": 5,
+    "ongoing_bonus": 3,
+    "ongoing_keywords_en": ["ongoing", "breaking", "currently underway", "operations suspended", "vessel currently disabled", "rescue ongoing", "developing"],
+    "ongoing_keywords_zh": ["持續中", "即時", "正在進行", "營運暫停", "搜救中", "最新進展"],
+    "max_score": 20
+  },
+
+  "operational_impact_rules": {
+    "impact_tags": ["NAVIGATION", "PORT", "TERMINAL", "SCHEDULE", "SECURITY", "CREW", "CARGO", "ENVIRONMENT", "REGULATORY", "MARKET", "INSURANCE"],
+    "score_tiers": [
+      {
+        "score": 15,
+        "tags": ["NAVIGATION", "SECURITY"],
+        "keywords_en": ["shipping lane closure", "canal closure", "strait closure", "major port closure", "vessel attack", "ship attacked", "vessel attacked", "missile attack", "attacked by missile", "missile strike", "drone attack", "attacked by drone", "drone strike"],
+        "keywords_zh": ["航道封鎖", "運河關閉", "海峽封鎖", "港口關閉", "遭攻擊", "飛彈攻擊", "遭飛彈攻擊", "無人機攻擊"]
+      },
+      {
+        "score": 12,
+        "tags": ["NAVIGATION", "CARGO"],
+        "keywords_en": ["major container fire", "major vessel fire", "major collision", "major grounding", "vessel fire", "ship fire", "container ship fire", "fire"],
+        "keywords_zh": ["重大貨櫃船火災", "重大船舶火災", "重大碰撞", "重大擱淺", "船舶火災", "火災"]
+      },
+      {
+        "score": 10,
+        "tags": ["PORT", "TERMINAL", "SCHEDULE"],
+        "keywords_en": ["port congestion", "terminal disruption", "berth disruption", "port strike", "canal restriction"],
+        "keywords_zh": ["港口壅塞", "碼頭中斷", "泊位中斷", "港口罷工", "運河限制"]
+      },
+      {
+        "score": 7,
+        "tags": ["SCHEDULE", "MARKET"],
+        "keywords_en": ["carrier service change", "route change", "blank sailing", "port omission", "schedule change"],
+        "keywords_zh": ["航商服務調整", "航線調整", "跳港", "取消掛靠", "船期異動"]
+      },
+      {
+        "score": 4,
+        "tags": ["MARKET"],
+        "keywords_en": ["freight rate", "surcharge", "capacity"],
+        "keywords_zh": ["運價", "附加費", "運力"]
+      }
+    ],
+    "default_score": 0
+  },
+
+  "source_tiers": {
+    "_default": "C",
+
+    "自由時報": "C",
+    "聯合新聞網": "C",
+    "中央社": "C",
+    "Yahoo新聞": "C",
+    "風傳媒": "C",
+
+    "海事服務網 CNSS": "C",
+    "壹航運": "C",
+    "AMZ123": "C",
+    "信德海事網": "B",
+    "人民網 國際": "C",
+    "環球時報": "C",
+    "新華社 國際": "C",
+    "澎湃新聞 國際": "C",
+    "財新網 國際": "C",
+
+    "TradeWinds": "B",
+    "Splash247": "B",
+    "gCaptain": "B",
+    "Maritime Exec": "B",
+    "Hellenic Ship": "B",
+    "Hellenic — Piracy & Security": "B",
+    "Hellenic — International": "B",
+    "Hellenic — Port News": "B",
+    "Safety4Sea": "B",
+    "Container News": "C",
+    "Freightwaves": "B",
+    "Offshore Energy": "C",
+    "NewsBase": "C",
+    "Marine Insight": "C",
+    "Lloyd's List": "B",
+    "MarineLink": "C",
+
+    "Reddit r/Ships": "D",
+    "Reddit r/maritime": "D",
+    "Reddit r/shipping": "D",
+
+    "Maersk News": "A",
+    "CMA CGM News": "A",
+    "Hapag-Lloyd News": "A",
+    "長榮海運新聞": "A",
+    "陽明海運新聞": "A",
+    "萬海航運新聞": "A",
+    "ONE News": "A",
+    "HMM News": "A",
+    "PIL News": "A",
+    "COSCO Shipping News": "A",
+    "OOCL News": "A",
+    "MSC News (via Splash247)": "B",
+
+    "Reuters": "B",
+    "BBC News": "B",
+    "Al Jazeera": "B",
+    "The Guardian": "B",
+    "AP News": "B",
+
+    "鉅亨網 頭條": "C",
+    "鉅亨網 國際政經": "C",
+    "鉅亨網 能源": "C"
+  },
+
+  "major_shipping_areas": [
+    {"key": "RED_SEA",        "display": "紅海 / Red Sea",         "region_group": "RED_SEA_CORRIDOR", "aliases_en": ["red sea", "hodeidah", "hudaydah"],          "aliases_zh": ["紅海", "红海", "荷台達", "荷台达"]},
+    {"key": "GULF_OF_ADEN",   "display": "亞丁灣 / Gulf of Aden",   "region_group": "RED_SEA_CORRIDOR", "aliases_en": ["gulf of aden"],                             "aliases_zh": ["亞丁灣", "亚丁湾"]},
+    {"key": "BAB_EL_MANDEB",  "display": "曼德海峽 / Bab el-Mandeb","region_group": "RED_SEA_CORRIDOR", "aliases_en": ["bab el-mandeb", "bab-el-mandeb"],           "aliases_zh": ["曼德海峽", "曼德海峡"]},
+    {"key": "HORMUZ",         "display": "荷莫茲海峽 / Strait of Hormuz", "region_group": "GULF_CORRIDOR", "aliases_en": ["strait of hormuz", "hormuz"],         "aliases_zh": ["荷莫茲海峽", "霍尔木兹海峡", "荷姆茲海峽"]},
+    {"key": "PERSIAN_GULF",   "display": "波斯灣 / Persian Gulf",   "region_group": "GULF_CORRIDOR", "aliases_en": ["persian gulf", "arabian gulf"],             "aliases_zh": ["波斯灣", "波斯湾"]},
+    {"key": "GULF_OF_OMAN",   "display": "阿曼灣 / Gulf of Oman",   "region_group": "GULF_CORRIDOR", "aliases_en": ["gulf of oman"],                             "aliases_zh": ["阿曼灣", "阿曼湾"]},
+    {"key": "SUEZ_CANAL",     "display": "蘇伊士運河 / Suez Canal", "region_group": "SUEZ_CORRIDOR", "aliases_en": ["suez canal", "suez"],                       "aliases_zh": ["蘇伊士運河", "苏伊士运河"]},
+    {"key": "PANAMA_CANAL",   "display": "巴拿馬運河 / Panama Canal","region_group": "PANAMA_CORRIDOR", "aliases_en": ["panama canal", "panama"],                  "aliases_zh": ["巴拿馬運河", "巴拿马运河"]},
+    {"key": "MALACCA_STRAIT", "display": "麻六甲海峽 / Malacca Strait", "region_group": "SINGAPORE_CORRIDOR", "aliases_en": ["malacca strait", "strait of malacca"], "aliases_zh": ["麻六甲海峽", "马六甲海峡"]},
+    {"key": "SINGAPORE_STRAIT","display": "新加坡海峽 / Singapore Strait", "region_group": "SINGAPORE_CORRIDOR", "aliases_en": ["singapore strait"],                 "aliases_zh": ["新加坡海峽", "新加坡海峡"]},
+    {"key": "SOUTH_CHINA_SEA","display": "南海 / South China Sea",  "region_group": "SINGAPORE_CORRIDOR", "aliases_en": ["south china sea"],                          "aliases_zh": ["南海"]}
+  ],
+
+  "major_carriers": [
+    {"key": "WAN_HAI",    "display": "萬海 / Wan Hai",        "aliases": ["wan hai", "萬海", "万海", "whl"], "is_own_fleet": true},
+    {"key": "MSC",        "display": "MSC",                    "aliases": ["msc", "地中海航運"]},
+    {"key": "MAERSK",     "display": "Maersk",                 "aliases": ["maersk", "馬士基", "马士基"]},
+    {"key": "CMA_CGM",    "display": "CMA CGM",                "aliases": ["cma cgm", "達飛", "达飞"]},
+    {"key": "COSCO",      "display": "COSCO",                  "aliases": ["cosco", "中遠海運", "中远海运"]},
+    {"key": "EVERGREEN",  "display": "長榮 / Evergreen",       "aliases": ["evergreen marine", "evergreen line", "長榮", "长荣"],
+     "_comment": "★ Phase 2.1 alias audit：'evergreen' 單獨是常見英文詞（evergreen fund/strategy/tree），改為只用不含中文歧義的『evergreen marine / evergreen line』片語與無歧義中文別名比對，不再用裸字 'evergreen'。",
+     "ambiguous_common_word": true,
+     "context_words": ["marine", "line", "container", "vessel", "shipping", "carrier"]},
+    {"key": "ONE",        "display": "ONE",                    "aliases": ["ocean network express"],
+     "_comment": "★ Phase 2.1 alias audit：裸字 'one' 是一般英文單字（數字/代名詞），不可用一般 substring 比對，見 event_extractor.py 的 ONE 專用規則（全大寫 ONE 或緊鄰 shipping context word 才算命中）。",
+     "ambiguous_common_word": true,
+     "special_matching": "ONE_CARRIER_RULE",
+     "context_words": ["line", "container", "vessel", "shipping", "news"]},
+    {"key": "YANG_MING",  "display": "陽明 / Yang Ming",       "aliases": ["yang ming", "陽明", "阳明"]},
+    {"key": "HAPAG_LLOYD","display": "Hapag-Lloyd",            "aliases": ["hapag-lloyd", "hapag lloyd"]},
+    {"key": "HMM",        "display": "HMM",                    "aliases": ["hmm", "現代商船", "现代商船"]},
+    {"key": "PIL",        "display": "PIL",                    "aliases": ["pil", "太平船務", "太平船务"]},
+    {"key": "OOCL",       "display": "OOCL",                   "aliases": ["oocl", "東方海外", "东方海外"]}
+  ],
+
+  "vessel_types": [
+    {"key": "CONTAINER_SHIP",  "display": "貨櫃船 / Container Ship",  "aliases": ["container ship", "containership", "container vessel", "boxship", "貨櫃船", "集装箱船"]},
+    {"key": "BULK_CARRIER",    "display": "散裝船 / Bulk Carrier",    "aliases": ["bulk carrier", "bulker", "散裝船", "散装船"]},
+    {"key": "TANKER",          "display": "油輪 / Tanker",            "aliases": ["tanker", "oil tanker", "油輪", "油轮"]},
+    {"key": "VLCC",            "display": "VLCC",                      "aliases": ["vlcc", "very large crude carrier"]},
+    {"key": "LNG_CARRIER",     "display": "LNG船 / LNG Carrier",      "aliases": ["lng carrier", "lng tanker", "液化天然氣船"]},
+    {"key": "LPG_CARRIER",     "display": "LPG船 / LPG Carrier",      "aliases": ["lpg carrier", "lpg tanker", "液化石油氣船"]},
+    {"key": "RORO",            "display": "RoRo船 / RoRo",             "aliases": ["ro-ro", "roro", "ro/ro"]},
+    {"key": "PCTC",            "display": "汽車船 / PCTC",             "aliases": ["pctc", "car carrier", "vehicle carrier", "汽車船", "汽车船"]},
+    {"key": "GENERAL_CARGO",   "display": "雜貨船 / General Cargo",   "aliases": ["general cargo ship", "general cargo vessel", "雜貨船", "杂货船"]},
+    {"key": "PASSENGER_SHIP",  "display": "客船 / Passenger Ship",    "aliases": ["passenger ship", "cruise ship", "客船", "郵輪", "邮轮"]}
+  ],
+
+  "event_type_keywords": {
+    "SAFETY": {
+      "en": ["fire", "explosion", "collision", "allision", "grounding", "stranding", "capsizing", "capsized", "sinking", "sunk", "flooding", "blackout", "loss of propulsion", "steering failure", "structural failure", "containers overboard", "container overboard"],
+      "zh": ["火災", "爆炸", "碰撞", "撞橋", "擱淺", "觸礁", "翻覆", "沉沒", "進水", "停電", "失去推進", "操舵故障", "結構失效", "貨櫃落海"]
+    },
+    "SECURITY": {
+      "en": ["piracy", "armed robbery", "hijacking", "hijacked", "armed boarding", "boarded", "missile attack", "drone attack", "vessel seizure", "seized", "stowaway", "drug smuggling", "maritime security threat", "attacked"],
+      "zh": ["海盜", "武裝搶劫", "劫持", "武裝登船", "飛彈攻擊", "無人機攻擊", "扣押船舶", "偷渡", "毒品走私", "海事安全威脅", "遭攻擊"]
+    },
+    "CREW": {
+      "en": ["man overboard", "crew injury", "crew injured", "fatality", "fatalities", "missing crew", "medevac", "search and rescue", "abandon ship", "abandoned ship"],
+      "zh": ["落海", "船員受傷", "船員傷亡", "死亡", "失蹤船員", "醫療後送", "搜救", "棄船"]
+    },
+    "OPERATIONS": {
+      "en": ["port closure", "port closed", "terminal closure", "port congestion", "canal restriction", "shipping lane disruption", "berth disruption", "strike", "schedule disruption"],
+      "zh": ["港口關閉", "碼頭關閉", "港口壅塞", "運河限制", "航道中斷", "泊位中斷", "罷工", "船期延誤"]
+    },
+    "REGULATORY": {
+      "en": ["imo", "solas", "marpol", "port state control", "psc detention", "sanction", "sanctions", "emission regulation", "cargo regulation"],
+      "zh": ["國際海事組織", "海上人命安全公約", "防污染公約", "港口國管制", "扣船", "制裁", "排放法規", "貨物法規"]
+    },
+    "ENVIRONMENT": {
+      "en": ["oil spill", "bunker spill", "chemical spill", "marine pollution"],
+      "zh": ["漏油", "燃油外洩", "化學品外洩", "海洋污染"]
+    },
+    "MARKET": {
+      "en": ["freight rate", "capacity deployment", "blank sailing", "port omission", "alliance", "container shortage", "schedule reliability"],
+      "zh": ["運價", "運力部署", "跳港", "取消掛靠", "聯盟", "貨櫃短缺", "準班率"]
+    },
+    "COMPETITOR": {
+      "en": ["new service", "new container service", "route change", "capacity change", "fleet development", "new vessel order", "newbuilding"],
+      "zh": ["新航線", "新服務", "航線調整", "運力調整", "船隊發展", "新船訂單"]
+    }
+  },
+  "event_type_priority_order": ["SAFETY", "SECURITY", "CREW", "ENVIRONMENT", "OPERATIONS", "REGULATORY", "MARKET", "COMPETITOR", "OTHER"],
+
+  "incident_subtype_keywords": {
+    "_comment": "Phase 2.1 §三/四：比 event_type 更細的『具體事故類型』，用來當 clustering 的強訊號——同 subtype 才是真的可能是同一事件，subtype 衝突（例如 collision vs grounding）是很強的『不可合併』訊號。VESSEL_ATTACK 刻意把 attacked/explosion/projectile/missile/drone 等詞併成同一桶，因為第一手戰時報導經常在『攻擊』與『爆炸』兩種說法之間搖擺，實務上是同一件事的不同描述方式，不應被當成兩種不同事故。",
+    "VESSEL_ATTACK":   {"en": ["missile attack", "attacked by missile", "missile strike", "struck by missile", "hit by missile", "drone attack", "attacked by drone", "drone strike", "struck by drone", "hit by drone", "attacked", "attack", "struck by a projectile", "hit by a projectile", "projectile", "explosion", "major explosion"], "zh": ["飛彈攻擊", "遭飛彈攻擊", "無人機攻擊", "遭攻擊", "攻擊", "爆炸", "重大爆炸"]},
+    "EXPLOSION":       {"en": ["explosion", "major explosion"], "zh": ["爆炸", "重大爆炸"], "_comment": "與 VESSEL_ATTACK 重疊是刻意的：戰時第一手報導常在『攻擊』與『爆炸』間搖擺，VESSEL_ATTACK 優先權較高，兩者都命中時一律歸為 VESSEL_ATTACK，避免同一起事件因用詞不同被誤判成不同子類型（見 Phase 2.1 CASE 2.1-A）。"},
+    "FIRE":            {"en": ["fire", "vessel fire", "ship fire", "container ship fire"], "zh": ["火災", "船舶火災"]},
+    "SINKING":         {"en": ["sinking", "sunk", "capsizing", "capsized", "total loss"], "zh": ["沉沒", "翻覆", "全損"]},
+    "COLLISION":       {"en": ["collision"], "zh": ["碰撞"]},
+    "ALLISION":        {"en": ["allision"], "zh": ["撞橋"]},
+    "GROUNDING":        {"en": ["grounding", "grounded", "stranding"], "zh": ["擱淺", "觸礁"]},
+    "LOSS_OF_PROPULSION": {"en": ["loss of propulsion", "engine failure", "blackout"], "zh": ["失去推進", "主機故障", "停電"]},
+    "HIJACKING":       {"en": ["hijacking", "hijacked", "piracy", "armed robbery", "vessel seizure", "seized vessel", "armed boarding"], "zh": ["劫持", "海盜", "武裝搶劫", "扣押船舶", "武裝登船"]},
+    "STOWAWAY_DRUGS":  {"en": ["stowaway", "drug smuggling"], "zh": ["偷渡", "毒品走私"]},
+    "CREW_CASUALTY":   {"en": ["man overboard", "crew injury", "crew injured", "fatality", "fatalities", "missing crew", "medevac", "abandon ship"], "zh": ["落海", "船員受傷", "船員傷亡", "死亡", "失蹤船員", "醫療後送", "棄船"]},
+    "PORT_DISRUPTION": {"en": ["port closure", "port closed", "terminal closure", "port congestion", "canal restriction", "canal closure", "strait closure"], "zh": ["港口關閉", "碼頭關閉", "港口壅塞", "運河限制", "運河關閉", "海峽封鎖"]},
+    "POLLUTION":       {"en": ["oil spill", "bunker spill", "chemical spill", "marine pollution"], "zh": ["漏油", "燃油外洩", "化學品外洩", "海洋污染"]}
+  },
+  "incident_subtype_priority_order": ["VESSEL_ATTACK", "SINKING", "HIJACKING", "EXPLOSION", "FIRE", "GROUNDING", "ALLISION", "LOSS_OF_PROPULSION", "STOWAWAY_DRUGS", "CREW_CASUALTY", "POLLUTION", "PORT_DISRUPTION", "COLLISION"],
+
+  "source_family_patterns": {
+    "_comment": "Phase 2.1 §十四：deterministic 轉載偵測。不做 NLP，只比對『according to X / X reported / via X / reported by X』這類固定句型，用來把『同一手消息的多次轉載』收斂成 1 個 independent source。",
+    "REUTERS":   {"aliases": ["reuters"],   "repost_patterns": ["according to reuters", "reuters reported", "via reuters", "reported by reuters", "reuters news agency reported"]},
+    "AP":        {"aliases": ["ap", "associated press"], "repost_patterns": ["according to ap", "the associated press reported", "via ap", "reported by the associated press", "ap reported"]},
+    "AFP":       {"aliases": ["afp", "agence france-presse"], "repost_patterns": ["according to afp", "afp reported", "via afp", "reported by afp"]},
+    "BLOOMBERG": {"aliases": ["bloomberg"], "repost_patterns": ["according to bloomberg", "bloomberg reported", "via bloomberg", "reported by bloomberg"]},
+    "XINHUA":    {"aliases": ["xinhua", "新華社", "新华社"], "repost_patterns": ["according to xinhua", "xinhua reported", "新華社報導", "新华社报道"]}
+  },
+
+  "ssl": {
+    "_comment": "Phase 2.1 §十八〜二十一：預設一律驗證憑證。只有在個別來源的 sources config 明確加上 verify_ssl:false 時才關閉，且必須記錄 WARNING log，不可全域關閉。",
+    "default_verify": true
+  },
+
+  "legacy_category_to_event_type": {
+    "CAT1": "SAFETY",
+    "CAT2": "SAFETY",
+    "CAT3": "SAFETY",
+    "CAT4": "SECURITY",
+    "CAT5": "CREW",
+    "CAT6": "COMPETITOR",
+    "OTHER": "OTHER"
+  },
+
+  "carrier_pr_filter": {
+    "_comment": "只套用在 source_category == 航商動態 或 event_type == COMPETITOR 的文章。keep 命中 → 保留（視為 operational news）；沒 keep 但命中 exclude → 直接濾除；兩者都沒命中（不確定）→ 保留但降級（不自動升高 priority）。",
+    "keep_keywords_en": ["new service", "new container service", "launches new service", "service suspension", "route change", "port omission", "blank sailing", "capacity deployment", "new vessel deployment", "alliance change", "schedule change", "surcharge", "freight rate", "container shortage", "terminal change", "canal diversion", "war risk", "port congestion", "acquisition", "merger", "fleet investment", "newbuilding order"],
+    "keep_keywords_zh": ["新航線", "服務暫停", "航線調整", "跳港", "取消掛靠", "運力部署", "新船投入", "聯盟調整", "船期異動", "附加費", "運價", "貨櫃短缺", "碼頭異動", "運河改道", "戰爭險", "港口壅塞", "併購", "收購", "船隊投資", "新船訂單"],
+    "exclude_keywords_en": ["award", "wins award", "esg", "sustainability award", "corporate event", "sponsorship", "sponsors", "csr", "employee", "staff story", "brand campaign", "conference", "interview", "celebrates", "anniversary", "partnership announcement"],
+    "exclude_keywords_zh": ["獲獎", "得獎", "永續獎", "企業社會責任", "贊助", "員工", "品牌活動", "研討會", "專訪", "週年", "夥伴關係宣布", "慶祝"]
+  },
+
+  "clustering": {
+    "_comment": "Phase 2.1 §三/四：加入 negative/conflict signals，不再只累加 positive score。Strong Identifier 優先順序：vessel_name > IMO(未來) > carrier+event_type+location > time proximity > title similarity > summary similarity。",
+    "time_window_hours": 48,
+    "cluster_score_threshold": 50,
+    "title_similarity_high_cutoff": 0.75,
+    "summary_similarity_high_cutoff": 0.5,
+    "hard_reject_score": -9999,
+    "weights": {
+      "same_vessel_name": 50,
+      "same_carrier": 15,
+      "same_event_type": 15,
+      "different_event_type": -10,
+      "same_incident_subtype": 30,
+      "different_incident_subtype": -35,
+      "different_vessel_type": -70,
+      "same_location": 15,
+      "same_major_sea_area": 10,
+      "related_region_group": 12,
+      "title_similarity_high": 20,
+      "summary_similarity_high": 15,
+      "time_proximity_close_bonus": 10,
+      "time_proximity_close_hours": 6
+    }
+  },
+
+  "confidence_level_rules": {
+    "high_requires": "tier_a_present OR 2_plus_independent_tier_b",
+    "medium_requires": "1_tier_b OR 2_plus_tier_c",
+    "low_fallback": "tier_d_only_or_no_cross_validation",
+    "_note": "以上全部改用 independent_source_tiers（已排除轉載）計算，不是 raw article 計數，見 §十二/十五。"
+  },
+
+  "information_status_rules": {
+    "_comment": "Phase 2.1 §六：與 management_priority 完全獨立計算，用 independent_source_tiers 判斷。",
+    "confirmed_requires": "tier_a_present",
+    "corroborated_requires": "2_plus_independent_tier_b",
+    "unconfirmed_requires": "1_tier_b_or_tier_c",
+    "early_signal_fallback": "tier_d_only"
+  }
+}

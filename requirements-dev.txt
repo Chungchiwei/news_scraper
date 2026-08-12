@@ -1,0 +1,19 @@
+# ══════════════════════════════════════════════════════════════════
+# WHL Maritime Intelligence System — Development / Test Dependencies
+# 更新日期：2026-08-12（Phase 9 — GitHub Actions Deployment Packaging）
+#
+# 執行 maritime_news.py 或 dashboard/app.py 本身「不需要」這個檔案。
+# 只有在需要跑測試（pytest）或修改程式碼時才需要安裝。
+#
+# 安裝：pip install -r requirements.txt -r requirements-dev.txt
+# （requirements.txt 需先安裝，本檔案僅補充開發/測試專用套件）
+# ══════════════════════════════════════════════════════════════════
+
+pytest>=8.0.0
+httpx>=0.27.0
+
+# Phase 9 — tests/test_github_packaging.py 與 scripts/build_github_package.py /
+# scripts/github_actions_smoke_test.py 用來驗證 .github/workflows/*.yml 語法。
+# CI/Production workflow 本身不需要（GitHub Actions runner 不會執行這個檔案，
+# YAML 是被 GitHub 平台本身解析，不是被本專案程式碼解析）。
+pyyaml>=6.0

@@ -1,0 +1,69 @@
+{
+  "_comment": "Phase 6 — Operational Relevance Engine 設定檔。門檻/權重/時間窗集中於此，不寫死在 Python。",
+  "schema_version": 1,
+
+  "relevance_thresholds": {
+    "DIRECT": 80,
+    "HIGH": 60,
+    "MODERATE": 35,
+    "LOW": 15
+  },
+
+  "eta_windows_hours": {
+    "immediate": 24,
+    "high": 48,
+    "moderate": 72,
+    "watch": 120
+  },
+
+  "weights": {
+    "_note": "own_fleet 精確比對（IMO/船名）永遠視為 DIRECT（分數高低不影響這個類別判定，見 operational_relevance.py 的 categorical override）。其餘分數依 relevance_thresholds 對照 DIRECT/HIGH/MODERATE/LOW/NONE。數值經過調整，讓單一訊號（例如僅有 24h 內 Port Call，沒有其他佐證）就能落在合理的 Level，而不需要多重訊號疊加才會被標為 HIGH——這是刻意的保守設計：寧可對單一強訊號提早示警，也不要讓主管誤以為『分數不夠高』代表『不重要』。",
+    "own_fleet_imo_match": 90,
+    "own_fleet_vessel_name_match": 90,
+    "own_fleet_carrier_only": 30,
+    "port_call_immediate": 68,
+    "port_call_high": 62,
+    "port_call_moderate": 45,
+    "port_call_watch": 38,
+    "port_call_low": 15,
+    "route_direct_lane": 45,
+    "route_adjacent": 20,
+    "route_same_region": 15,
+    "service_relevance_bonus": 5,
+    "global_fleet_regulatory": 60
+  },
+
+  "data_freshness": {
+    "schedule_stale_after_hours": 12,
+    "fleet_stale_after_hours": 12
+  },
+
+  "port_call_relevance_event_types": [
+    "OPERATIONS", "SAFETY", "SECURITY", "ENVIRONMENT"
+  ],
+  "own_fleet_carrier_context_event_types": [
+    "OPERATIONS", "SAFETY", "SECURITY", "ENVIRONMENT", "CREW"
+  ],
+  "port_call_relevant_subtypes": [
+    "PORT_DISRUPTION", "GROUNDING", "COLLISION", "ALLISION", "POLLUTION"
+  ],
+
+  "route_relevant_event_types": [
+    "SECURITY", "SAFETY", "OPERATIONS", "ENVIRONMENT"
+  ],
+
+  "global_fleet_regulatory_keywords": [
+    "SOLAS", "MARPOL", "IMO", "PSC", "port state control", "flag state",
+    "container weight", "safety management system", "ISM Code",
+    "ballast water", "sulphur cap", "EEXI", "CII", "emission control area"
+  ],
+
+  "market_relevant_event_keywords": [
+    "blank sailing", "service suspension", "port omission", "空班", "航線暫停", "略港"
+  ],
+
+  "email_display": {
+    "max_affected_vessels_shown": 5,
+    "show_exposure_for_priorities": ["P1", "P2", "P3", "P4"]
+  }
+}

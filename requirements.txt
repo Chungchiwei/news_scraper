@@ -1,9 +1,35 @@
-# 海事航運新聞監控系統 — 依賴套件
-# 更新日期：2026-04-17
+# ══════════════════════════════════════════════════════════════════
+# WHL Maritime Intelligence System — Production Dependencies
+# 更新日期：2026-08-12（Phase 8 — Finalization）
+#
+# 只列出 maritime_news.py / dashboard/app.py 實際執行需要的套件。
+# 開發／測試專用套件（pytest、httpx 等）已移至 requirements-dev.txt，
+# production 環境不需要安裝（見 Phase 8 §十二〜十三）。
+#
+# 安裝：pip install -r requirements.txt
+# ══════════════════════════════════════════════════════════════════
 
+# ── Collection：RSS/HTML 爬蟲 ─────────────────────────────────────
 feedparser>=6.0.11
 requests>=2.31.0
 urllib3>=2.0.0
 python-dotenv>=1.0.0
 beautifulsoup4>=4.12.0
 lxml>=5.0.0
+
+# ── Presentation：Management Dashboard（FastAPI + Jinja2）─────────
+#
+# ★ Starlette 版本鎖定原因（真實發生過的 production bug，非假設性
+#   風險）：Starlette 0.29.0 開始允許 TemplateResponse(request, name,
+#   context) 新式呼叫並對舊式 TemplateResponse(name, context) 發出
+#   Deprecation Warning；Starlette 1.0.0 起「完全移除」舊式呼叫支援
+#   （PR Kludex/starlette#2191）。本專案 dashboard/app.py 在 Phase 7
+#   曾因套件版本落差撞上這個不相容問題，已全面改用新式呼叫並修正。
+#   下方版本下限＝目前已實測通過（見 PYTHON_VERSION.md／
+#   PHASE_8_FINAL_COMPLETION_REPORT.md）的組合，避免未來環境不小心
+#   裝到只支援舊式呼叫的更舊版本。
+fastapi>=0.110.0
+starlette>=1.0.0
+uvicorn>=0.29.0
+jinja2>=3.1.0
+python-multipart>=0.0.9
