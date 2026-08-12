@@ -1,154 +1,764 @@
-name: 🚢 海事航運新聞監控
+name: 🚢 WHL Maritime Intelligence
 
 on:
-  # ── 排程：每天執行兩次（UTC 時間）──────────────────────
-  # cron 格式：分 時 日 月 星期
-  # 台灣時間 TPE = UTC+8
-  #   00:00 UTC = 08:00 TPE（早班）
-  #   12:00 UTC = 20:00 TPE（晚班）
+  # ─────────────────────────────────────────────
+  # 排程：每日 08:05 / 20:05 台北時間
+  #
+  # 使用 Asia/Taipei，無需自行換算 UTC。
+  # 刻意避開整點，降低 GitHub Actions 尖峰排程延遲機率。
+  # 若一定要 08:00 / 20:00，可把 5 改為 0。
+  # ─────────────────────────────────────────────
   schedule:
-    - cron: '0 0 * * *'
-    - cron: '0 12 * * *'
+    - cron: '5 8,20 * * *'
+      timezone: 'Asia/Taipei'
 
-  # ── 允許手動從 GitHub 網頁觸發 ──────────────────────────────
+  # ─────────────────────────────────────────────
+  # 手動執行
+  # ─────────────────────────────────────────────
   workflow_dispatch:
     inputs:
       hours_back:
-        description: '抓取幾小時內的新聞（預設 12）'
+        description: '抓取幾小時內的新聞'
         required: false
         default: '12'
-      dry_run:
-        description: '僅抓取，不發送 Email（true / false）'
-        required: false
-        default: 'false'
+        type: string
 
-# ── 同一時間只允許一個 workflow 執行，避免重複發信 ──────────────
+      dry_run:
+        description: 'Dry Run：建立情報與 State，但不發送正式 Email'
+        required: false
+        default: false
+        type: boolean
+
+
+# ─────────────────────────────────────────────
+# 同時間僅允許一個 Production Run
+#
+# 不取消正在執行的舊 Run，
+# 避免 SQLite State 寫入中途遭中止。
+# ─────────────────────────────────────────────
 concurrency:
-  group: maritime-news-monitor
-  cancel-in-progress: false    # 不取消進行中的任務，等待完成
+  group: whl-maritime-intelligence-production
+  cancel-in-progress: false
+
+
+# ─────────────────────────────────────────────
+# 最小 GitHub Token 權限
+#
+# actions:read：
+# 用於尋找 / 下載上一輪 Runtime State Artifact
+# ─────────────────────────────────────────────
+permissions:
+  contents: read
+  actions: read
+
 
 jobs:
-  fetch-and-send:
-    name: 🔍 抓取海事新聞並發送 Email
+  maritime-intelligence:
+    name: 🚢 Maritime Intelligence Cycle
+
     runs-on: ubuntu-latest
-    timeout-minutes: 20        # ★ 從 15 調整為 20 分鐘（多一個腳本）
+
+    # Phase 1~8 已比原始 scraper 複雜，
+    # 30 分鐘比原本 20 分鐘保守。
+    timeout-minutes: 30
+
+    # ───────────────────────────────────────────
+    # Production Environment
+    #
+    # Secret 一律來自 GitHub Secrets。
+    # 非敏感開關可使用 Repository Variables。
+    # ───────────────────────────────────────────
+    env:
+      PYTHONUNBUFFERED: '1'
+      TZ: Asia/Taipei
+
+      # ── Email ────────────────────────────────
+      MAIL_USER: ${{ secrets.MAIL_USER }}
+      MAIL_PASSWORD: ${{ secrets.MAIL_PASSWORD }}
+      TARGET_EMAIL: ${{ secrets.TARGET_EMAIL }}
+
+      # SMTP
+      # 保留 MAIL_SMTP_* 名稱，
+      # 同時提供 MAIL_SERVER / MAIL_PORT compatibility alias。
+      MAIL_SMTP_SERVER: ${{ vars.MAIL_SMTP_SERVER || 'smtp.gmail.com' }}
+      MAIL_SMTP_PORT: ${{ vars.MAIL_SMTP_PORT || '587' }}
+
+      MAIL_SERVER: ${{ vars.MAIL_SMTP_SERVER || 'smtp.gmail.com' }}
+      MAIL_PORT: ${{ vars.MAIL_SMTP_PORT || '587' }}
+
+      # 若目前 EmailConfig 使用 MAIL_HOST，也兼容
+      MAIL_HOST: ${{ vars.MAIL_SMTP_SERVER || 'smtp.gmail.com' }}
+
+      # ── News ─────────────────────────────────
+      NEWS_HOURS_BACK: ${{ inputs.hours_back || vars.NEWS_HOURS_BACK || '12' }}
+
+      # ── Email Policy ─────────────────────────
+      SEND_NO_RISK_BRIEF: ${{ vars.SEND_NO_RISK_BRIEF || 'true' }}
+
+      # ── Teams ────────────────────────────────
+      TEAMS_MANAGEMENT_WEBHOOK_URL: ${{ secrets.TEAMS_MANAGEMENT_WEBHOOK_URL }}
+      TEAMS_SYSTEM_WEBHOOK_URL: ${{ secrets.TEAMS_SYSTEM_WEBHOOK_URL }}
+
+      # ── Optional LLM ─────────────────────────
+      LLM_ENABLED: ${{ vars.LLM_ENABLED || 'false' }}
+      LLM_PROVIDER: ${{ vars.LLM_PROVIDER || 'disabled' }}
+      LLM_MODEL: ${{ vars.LLM_MODEL || '' }}
+
+      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+      ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+
+      # Phase 6 Privacy Guardrail
+      LLM_ALLOW_INTERNAL_OPERATIONAL_DATA: 'false'
+
 
     steps:
 
-      # ── Step 1：取得程式碼 ────────────────────────────────
-      - name: 📥 Checkout 程式碼
-        uses: actions/checkout@v4
+      # ==================================================
+      # STEP 1
+      # Checkout
+      # ==================================================
+      - name: 📥 Checkout repository
+        uses: actions/checkout@v6
 
-      # ── Step 2：設定 Python 環境 ──────────────────────────
-      - name: 🐍 設定 Python 3.11
-        uses: actions/setup-python@v5
+
+      # ==================================================
+      # STEP 2
+      # Python
+      # ==================================================
+      - name: 🐍 Setup Python
+        uses: actions/setup-python@v7
         with:
+          # 若 PYTHON_VERSION.md / Phase 8 Audit
+          # 最終確認不是 3.11，請讓 Claude 改成實際驗證版本。
           python-version: '3.11'
-          cache: 'pip'          # 快取 pip 套件，加速後續執行
 
-      # ── Step 3：安裝依賴套件 ──────────────────────────────
-      - name: 📦 安裝依賴套件
+          cache: pip
+          cache-dependency-path: |
+            requirements.txt
+            requirements-dev.txt
+
+
+      # ==================================================
+      # STEP 3
+      # Dependencies
+      # ==================================================
+      - name: 📦 Install dependencies
         run: |
           python -m pip install --upgrade pip
+
           pip install -r requirements.txt
 
-      # ── Step 4：確認關鍵檔案存在 ─────────────────────────
-      - name: 🔎 確認必要檔案
+          echo "✅ Production dependencies installed"
+
+
+      # ==================================================
+      # STEP 4
+      # Repository / Package Validation
+      # ==================================================
+      - name: 🔎 Validate repository structure
         run: |
-          echo "── 檢查必要檔案 ──"
-          for f in maritime_news.py email_sender.py keywords_config.json requirements.txt; do
-            if [ -f "$f" ]; then
-              echo "  ✅ $f"
+          echo "============================================"
+          echo " WHL Maritime Intelligence"
+          echo " Repository Validation"
+          echo "============================================"
+
+          REQUIRED_FILES=(
+            "maritime_news.py"
+            "email_sender.py"
+            "requirements.txt"
+            "VERSION"
+            ".env.example"
+            "scripts/health_check.py"
+          )
+
+          for file in "${REQUIRED_FILES[@]}"; do
+
+            if [ -f "$file" ]; then
+              echo "✅ $file"
+
             else
-              echo "  ❌ 缺少：$f"
+              echo "::error::Required file missing: $file"
               exit 1
+
             fi
+
           done
-          # ★ news_scraper.py 為選填，缺少時警告但不中止
-          if [ -f "news_scraper.py" ]; then
-            echo "  ✅ news_scraper.py"
-          else
-            echo "  ⚠️  news_scraper.py 不存在，Step 6 將略過"
-          fi
 
-      # ── Step 5：執行主新聞爬取與發送（maritime_news.py）──
-      - name: 🚀 執行主新聞爬取與發送
-        env:
-          MAIL_USER:        ${{ secrets.MAIL_USER }}
-          MAIL_PASSWORD:    ${{ secrets.MAIL_PASSWORD }}
-          TARGET_EMAIL:     ${{ secrets.TARGET_EMAIL }}
-          MAIL_SMTP_SERVER: ${{ secrets.MAIL_SMTP_SERVER }}
-          MAIL_SMTP_PORT:   ${{ secrets.MAIL_SMTP_PORT }}
-          NEWS_HOURS_BACK:  ${{ github.event.inputs.hours_back || '12' }}
-          DRY_RUN:          ${{ github.event.inputs.dry_run || 'false' }}
-        run: python maritime_news.py
+          echo ""
+          echo "Version:"
+          cat VERSION
 
-      # ── Step 6：執行霍爾木茲海峽專項爬取（news_scraper.py）
-      # ★ 新增：maritime_news.py 完成後才執行
-      # ★ 使用 if: always() 確保即使 Step 5 失敗仍嘗試執行
-      # ★ 若 news_scraper.py 不存在則自動略過，不影響整體流程
-      - name: 🌊 執行霍爾木茲海峽新聞爬取
-        if: always()
-        env:
-          MAIL_USER:        ${{ secrets.MAIL_USER }}
-          MAIL_PASSWORD:    ${{ secrets.MAIL_PASSWORD }}
-          TARGET_EMAIL:     ${{ secrets.TARGET_EMAIL }}
-          MAIL_SMTP_SERVER: ${{ secrets.MAIL_SMTP_SERVER }}
-          MAIL_SMTP_PORT:   ${{ secrets.MAIL_SMTP_PORT }}
-          NEWS_HOURS_BACK:  ${{ github.event.inputs.hours_back || '12' }}
-          DRY_RUN:          ${{ github.event.inputs.dry_run || 'false' }}
+          echo ""
+          echo "✅ Repository validation passed"
+
+
+      # ==================================================
+      # STEP 5
+      # Prepare Runtime Directories
+      # ==================================================
+      - name: 📁 Prepare runtime directories
         run: |
-          if [ -f "news_scraper.py" ]; then
-            echo "▶️  開始執行 news_scraper.py"
-            python news_scraper.py
-            echo "✅  news_scraper.py 執行完畢"
+          mkdir -p data
+          mkdir -p logs
+          mkdir -p runtime_state
+          mkdir -p runtime_state_out
+
+
+      # ==================================================
+      # STEP 6
+      # Find latest Runtime State Artifact
+      #
+      # Phase 3 / 6 / 7 的 Persistent Memory
+      # 不可以每次 GitHub Runner 重置。
+      # ==================================================
+      - name: 🔍 Find previous runtime state
+        id: find_state
+        env:
+          GH_TOKEN: ${{ github.token }}
+
+        run: |
+          echo "Searching previous runtime state..."
+
+          RESPONSE=$(curl \
+            --fail \
+            --silent \
+            --show-error \
+            -L \
+            -H "Accept: application/vnd.github+json" \
+            -H "Authorization: Bearer ${GH_TOKEN}" \
+            -H "X-GitHub-Api-Version: 2026-03-10" \
+            "https://api.github.com/repos/${GITHUB_REPOSITORY}/actions/artifacts?name=maritime-runtime-state&per_page=100"
+          )
+
+          RUN_ID=$(echo "$RESPONSE" | jq -r '
+            [
+              .artifacts[]
+              | select(.expired == false)
+            ]
+            | sort_by(.created_at)
+            | reverse
+            | .[0].workflow_run.id // empty
+          ')
+
+          if [ -z "$RUN_ID" ]; then
+
+            echo "ℹ️ No previous runtime state found."
+            echo "ℹ️ This will be treated as FIRST GITHUB RUN."
+
+            echo "run_id=" >> "$GITHUB_OUTPUT"
+            echo "first_run=true" >> "$GITHUB_OUTPUT"
+
           else
-            echo "⚠️  news_scraper.py 不存在，略過此步驟"
+
+            echo "✅ Previous runtime state found."
+            echo "Previous workflow run: $RUN_ID"
+
+            echo "run_id=$RUN_ID" >> "$GITHUB_OUTPUT"
+            echo "first_run=false" >> "$GITHUB_OUTPUT"
+
           fi
 
-      # ── Step 7：上傳執行 log（方便除錯）─────────────────
-      - name: 📄 上傳執行 log
-        if: always()            # 無論成功或失敗都上傳
-        uses: actions/upload-artifact@v4
+
+      # ==================================================
+      # STEP 7
+      # Download Previous State
+      # ==================================================
+      - name: 📥 Restore previous runtime state artifact
+        if: steps.find_state.outputs.run_id != ''
+
+        uses: actions/download-artifact@v8
+
         with:
-          name: maritime-news-log-${{ github.run_number }}
+          name: maritime-runtime-state
+          path: runtime_state
+
+          github-token: ${{ github.token }}
+
+          run-id: ${{ steps.find_state.outputs.run_id }}
+
+
+      # ==================================================
+      # STEP 8
+      # Validate + Restore SQLite
+      #
+      # 不直接 copy 未驗證 DB。
+      # ==================================================
+      - name: 🗄️ Validate and restore SQLite state
+        id: restore_state
+
+        run: |
+          python <<'PY'
+          import shutil
+          import sqlite3
+          import sys
+
+          from pathlib import Path
+
+
+          state_dir = Path("runtime_state")
+          data_dir = Path("data")
+
+          data_dir.mkdir(parents=True, exist_ok=True)
+
+
+          db_files = list(state_dir.glob("*.db"))
+
+
+          if not db_files:
+              print("ℹ️ No previous SQLite state to restore.")
+              print("FIRST RUN MODE")
+
+              Path("/tmp/state_status").write_text(
+                  "FIRST_RUN",
+                  encoding="utf-8",
+              )
+
+              sys.exit(0)
+
+
+          restored = 0
+
+
+          for source in db_files:
+
+              print(f"Checking: {source.name}")
+
+              try:
+                  conn = sqlite3.connect(
+                      f"file:{source}?mode=ro",
+                      uri=True,
+                  )
+
+                  result = conn.execute(
+                      "PRAGMA integrity_check"
+                  ).fetchone()[0]
+
+                  conn.close()
+
+              except Exception as exc:
+                  print(
+                      f"❌ Unable to validate "
+                      f"{source.name}: {exc}"
+                  )
+
+                  sys.exit(1)
+
+
+              if result.lower() != "ok":
+
+                  print(
+                      f"❌ SQLite integrity check failed: "
+                      f"{source.name}"
+                  )
+
+                  sys.exit(1)
+
+
+              destination = data_dir / source.name
+
+              shutil.copy2(
+                  source,
+                  destination,
+              )
+
+              print(
+                  f"✅ Restored {source.name}"
+              )
+
+              restored += 1
+
+
+          print(
+              f"✅ Runtime state restored: "
+              f"{restored} database(s)"
+          )
+
+          Path("/tmp/state_status").write_text(
+              "RESTORED",
+              encoding="utf-8",
+          )
+          PY
+
+          STATE_STATUS=$(cat /tmp/state_status)
+
+          echo "status=$STATE_STATUS" >> "$GITHUB_OUTPUT"
+
+          echo "Runtime State: $STATE_STATUS"
+
+
+      # ==================================================
+      # STEP 9
+      # Decide Runtime Mode
+      #
+      # First GitHub Run：
+      #   Email DRY_RUN = true
+      #   Teams = false
+      #
+      # 目的：
+      # 建立 baseline / SQLite state，
+      # 避免第一次搬上 GitHub 時大量 NEW EVENT 通知。
+      # ==================================================
+      - name: ⚙️ Determine runtime mode
+        id: runtime_mode
+
+        run: |
+          FIRST_RUN="${{ steps.find_state.outputs.first_run }}"
+          MANUAL_DRY="${{ inputs.dry_run }}"
+
+          if [ "$FIRST_RUN" = "true" ]; then
+
+            echo "ℹ️ First GitHub run detected."
+            echo "Baseline safety mode enabled."
+
+            EFFECTIVE_DRY_RUN="true"
+            EFFECTIVE_TEAMS="false"
+
+          elif [ "$MANUAL_DRY" = "true" ]; then
+
+            echo "ℹ️ Manual Dry Run enabled."
+
+            EFFECTIVE_DRY_RUN="true"
+            EFFECTIVE_TEAMS="false"
+
+          else
+
+            EFFECTIVE_DRY_RUN="false"
+            EFFECTIVE_TEAMS="${{ vars.TEAMS_ENABLED || 'false' }}"
+
+          fi
+
+          echo "effective_dry_run=$EFFECTIVE_DRY_RUN" \
+            >> "$GITHUB_OUTPUT"
+
+          echo "effective_teams=$EFFECTIVE_TEAMS" \
+            >> "$GITHUB_OUTPUT"
+
+          echo ""
+          echo "Dry Run : $EFFECTIVE_DRY_RUN"
+          echo "Teams   : $EFFECTIVE_TEAMS"
+
+
+      # ==================================================
+      # STEP 10
+      # System Health Check
+      #
+      # Phase 8 已建立
+      # scripts/health_check.py
+      # ==================================================
+      - name: 🩺 Pre-flight health check
+        env:
+          DRY_RUN: ${{ steps.runtime_mode.outputs.effective_dry_run }}
+          TEAMS_ENABLED: ${{ steps.runtime_mode.outputs.effective_teams }}
+
+        run: |
+          python scripts/health_check.py
+
+
+      # ==================================================
+      # STEP 11
+      # MAIN PRODUCTION PIPELINE
+      #
+      # 唯一 Production Entry Point：
+      #
+      # maritime_news.py
+      #
+      # 不再執行：
+      # news_scraper.py
+      # ==================================================
+      - name: 🚀 Run Maritime Intelligence
+        id: intelligence
+
+        env:
+          DRY_RUN: ${{ steps.runtime_mode.outputs.effective_dry_run }}
+
+          TEAMS_ENABLED: ${{ steps.runtime_mode.outputs.effective_teams }}
+
+        run: |
+          echo "============================================"
+          echo " WHL MARITIME INTELLIGENCE"
+          echo " Production Cycle"
+          echo "============================================"
+          echo ""
+
+          echo "Run ID:"
+          echo "${GITHUB_RUN_ID}"
+
+          echo ""
+          echo "Hours Back:"
+          echo "${NEWS_HOURS_BACK}"
+
+          echo ""
+          echo "Dry Run:"
+          echo "${DRY_RUN}"
+
+          echo ""
+
+          python maritime_news.py
+
+
+      # ==================================================
+      # STEP 12
+      # Create Safe SQLite Snapshot
+      #
+      # 無論 Email / Teams 成功與否，
+      # 都嘗試保存已更新的 Event Memory。
+      #
+      # SQLite Backup API 避免直接複製 DB/WAL。
+      # ==================================================
+      - name: 💾 Create validated runtime state snapshot
+        id: snapshot_state
+
+        if: always()
+
+        run: |
+          python <<'PY'
+          import sqlite3
+          import sys
+
+          from pathlib import Path
+
+
+          data_dir = Path("data")
+          output_dir = Path("runtime_state_out")
+
+          output_dir.mkdir(
+              parents=True,
+              exist_ok=True,
+          )
+
+
+          db_files = list(
+              data_dir.glob("*.db")
+          )
+
+
+          if not db_files:
+
+              print(
+                  "❌ No runtime SQLite databases "
+                  "found in data/"
+              )
+
+              sys.exit(1)
+
+
+          saved = 0
+
+
+          for source in db_files:
+
+              print(
+                  f"Snapshotting: {source.name}"
+              )
+
+              destination = (
+                  output_dir / source.name
+              )
+
+
+              try:
+                  source_db = sqlite3.connect(
+                      str(source)
+                  )
+
+                  check = source_db.execute(
+                      "PRAGMA integrity_check"
+                  ).fetchone()[0]
+
+
+                  if check.lower() != "ok":
+
+                      print(
+                          f"❌ Source DB integrity "
+                          f"failed: {source.name}"
+                      )
+
+                      source_db.close()
+
+                      sys.exit(1)
+
+
+                  destination_db = (
+                      sqlite3.connect(
+                          str(destination)
+                      )
+                  )
+
+
+                  source_db.backup(
+                      destination_db
+                  )
+
+
+                  destination_check = (
+                      destination_db.execute(
+                          "PRAGMA integrity_check"
+                      ).fetchone()[0]
+                  )
+
+
+                  destination_db.close()
+                  source_db.close()
+
+
+                  if (
+                      destination_check.lower()
+                      != "ok"
+                  ):
+
+                      print(
+                          f"❌ Snapshot integrity "
+                          f"failed: {source.name}"
+                      )
+
+                      sys.exit(1)
+
+
+              except Exception as exc:
+
+                  print(
+                      f"❌ Snapshot failed "
+                      f"{source.name}: {exc}"
+                  )
+
+                  sys.exit(1)
+
+
+              print(
+                  f"✅ Snapshot ready: "
+                  f"{destination.name}"
+              )
+
+              saved += 1
+
+
+          print(
+              f"✅ Runtime state snapshot: "
+              f"{saved} database(s)"
+          )
+          PY
+
+
+      # ==================================================
+      # STEP 13
+      # Persist Runtime State Between GitHub Runs
+      # ==================================================
+      - name: ☁️ Save runtime state
+        if: always() && steps.snapshot_state.outcome == 'success'
+
+        uses: actions/upload-artifact@v7
+
+        with:
+          name: maritime-runtime-state
+
+          path: runtime_state_out/*.db
+
+          retention-days: 30
+
+          if-no-files-found: error
+
+
+      # ==================================================
+      # STEP 14
+      # Upload Failure Logs Only
+      #
+      # 正常成功時不額外保存 log artifact。
+      # ==================================================
+      - name: 📄 Upload diagnostic logs
+        if: failure()
+
+        uses: actions/upload-artifact@v7
+
+        with:
+          name: maritime-intelligence-error-${{ github.run_id }}
+
           path: |
-            *.log
-          retention-days: 7     # log 保留 7 天後自動刪除
+            logs/*.log
+
+          retention-days: 7
+
           if-no-files-found: ignore
 
-      # ── Step 8：執行失敗時顯示提示 ───────────────────────
-      - name: ❌ 失敗診斷提示
-        if: failure()
+
+      # ==================================================
+      # STEP 15
+      # GitHub Actions Job Summary
+      # ==================================================
+      - name: 📊 Write GitHub job summary
+        if: always()
+
         run: |
-          echo "::error::海事新聞監控執行失敗，請依下方清單排查"
+          STATE_STATUS="${{ steps.restore_state.outputs.status }}"
+
+          if [ -z "$STATE_STATUS" ]; then
+            STATE_STATUS="UNKNOWN"
+          fi
+
+          {
+            echo "# 🚢 WHL Maritime Intelligence"
+            echo ""
+            echo "**Version:** $(cat VERSION)"
+            echo ""
+            echo "| Item | Status |"
+            echo "|---|---|"
+            echo "| Workflow Run | \`${GITHUB_RUN_ID}\` |"
+            echo "| Trigger | \`${GITHUB_EVENT_NAME}\` |"
+            echo "| Runtime State | **${STATE_STATUS}** |"
+            echo "| Dry Run | \`${{ steps.runtime_mode.outputs.effective_dry_run }}\` |"
+            echo "| Teams | \`${{ steps.runtime_mode.outputs.effective_teams }}\` |"
+            echo "| Intelligence Pipeline | **${{ steps.intelligence.outcome }}** |"
+            echo "| State Snapshot | **${{ steps.snapshot_state.outcome }}** |"
+            echo ""
+            echo "### Runtime"
+            echo ""
+            echo "- Hours Back: \`${NEWS_HOURS_BACK}\`"
+            echo "- Timezone: \`Asia/Taipei\`"
+            echo "- Python: \`$(python --version)\`"
+            echo ""
+            echo "### Persistent Memory"
+            echo ""
+            echo "Runtime state is restored before execution and saved after execution."
+            echo ""
+            echo "> GitHub Actions runs the scheduled intelligence cycle only."
+            echo "> FastAPI Dashboard is not hosted by this workflow."
+          } >> "$GITHUB_STEP_SUMMARY"
+
+
+      # ==================================================
+      # STEP 16
+      # Failure Diagnostics
+      # ==================================================
+      - name: ❌ Failure diagnostics
+        if: failure()
+
+        run: |
           echo ""
-          echo "═══════════════════════════════════════"
-          echo "  📋 常見問題排查清單"
-          echo "═══════════════════════════════════════"
+          echo "============================================"
+          echo " WHL Maritime Intelligence"
+          echo " EXECUTION FAILED"
+          echo "============================================"
           echo ""
-          echo "  1️⃣  GitHub Secrets 是否已設定？"
-          echo "      必填項目："
-          echo "        - MAIL_USER        Gmail 帳號"
-          echo "        - MAIL_PASSWORD    Gmail App Password"
-          echo "        - TARGET_EMAIL     收件人 Email"
-          echo "      選填項目（有預設值）："
-          echo "        - MAIL_SMTP_SERVER 預設 smtp.gmail.com"
-          echo "        - MAIL_SMTP_PORT   預設 587"
+          echo "請依序檢查："
           echo ""
-          echo "  2️⃣  必要檔案是否存在於 repo 根目錄？"
-          echo "        - maritime_news.py"
-          echo "        - email_sender.py"
-          echo "        - keywords_config.json"
-          echo "        - requirements.txt"
-          echo "      選填檔案："
-          echo "        - news_scraper.py  （霍爾木茲專項爬取）"
+          echo "1. GitHub Secrets"
+          echo "   MAIL_USER"
+          echo "   MAIL_PASSWORD"
+          echo "   TARGET_EMAIL"
           echo ""
-          echo "  3️⃣  keywords_config.json 格式是否正確？"
-          echo "      可用以下指令本地驗證："
-          echo "        python -c \"import json; json.load(open('keywords_config.json'))\""
+          echo "2. Runtime State"
+          echo "   SQLite artifact restore / integrity"
           echo ""
-          echo "  4️⃣  Gmail App Password 是否為 16 碼（非帳號密碼）？"
-          echo "      申請路徑：Google 帳戶 → 安全性 → 兩步驟驗證 → 應用程式密碼"
+          echo "3. Configuration"
+          echo "   config/*.json"
+          echo "   .env.example"
           echo ""
-          echo "═══════════════════════════════════════"
+          echo "4. System Health"
+          echo "   python scripts/health_check.py"
+          echo ""
+          echo "5. Logs"
+          echo "   本次 failure log 已嘗試上傳為 Artifact"
+          echo ""
+          echo "6. Optional Features"
+          echo "   Teams / LLM failure 不應破壞核心流程"
+          echo ""
+          echo "============================================"
