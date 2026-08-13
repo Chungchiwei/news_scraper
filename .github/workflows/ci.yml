@@ -1,0 +1,79 @@
+name: CI
+
+# ══════════════════════════════════════════════════════════════════
+# WHL Maritime Intelligence System — CI
+#
+# 用途：Push / Pull Request 時做「完全 OFFLINE / MOCK-BASED」驗證
+# （pytest + py_compile）。絕對不連 SMTP / Teams / LLM / 真實 RSS，
+# 也絕對不接觸任何 GitHub Secret（見 GITHUB_ACTIONS_PACKAGING_REPORT.md
+# §Fork/PR Safety）。Production 執行邏輯在另一個 workflow
+# （maritime-intelligence.yml），本檔案完全不觸碰。
+# ══════════════════════════════════════════════════════════════════
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+    branches: ["**"]
+
+# 最小權限：CI 只需要讀取原始碼。
+permissions:
+  contents: read
+
+# 同一分支重複 push 時，取消舊的 CI run（CI 是可重跑的驗證，不像
+# Production Run 需要保護 SQLite 狀態，取消沒有風險）。
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: pytest + py_compile
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      # Python 版本固定為實測通過的確切版本（見 PYTHON_VERSION.md），
+      # 刻意不用浮動的 "3.x"，避免未來 Python 次要版本更新後在使用者
+      # 不知情的情況下悄悄改變 CI 的執行環境。
+      - name: Set up Python 3.11.9 (per PYTHON_VERSION.md)
+        uses: actions/setup-python@v7
+        with:
+          python-version: "3.11.9"
+          cache: "pip"
+          cache-dependency-path: |
+            requirements.txt
+            requirements-dev.txt
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt -r requirements-dev.txt
+
+      - name: Compile check (py_compile all production modules)
+        run: |
+          python -m py_compile $(git ls-files '*.py' | grep -v '^tests/' | grep -v '^scripts/production_smoke_test.py')
+          echo "py_compile: OK"
+
+      - name: Run test suite (pytest, offline/mock only)
+        env:
+          # 明確不注入任何 secret；未設定的 Email/Teams/LLM 變數對測試
+          # 沒有影響，因為 tests/ 全部使用 mock/fixture，不連真實網路。
+          INTELLIGENCE_DEBUG: "false"
+        run: |
+          python -m pytest -q
+
+      - name: CI Summary
+        if: always()
+        run: |
+          {
+            echo "### CI Result"
+            echo ""
+            echo "- Python: 3.11.9"
+            echo "- py_compile: see step above"
+            echo "- pytest: see step above"
+            echo ""
+            echo "_No secrets were used in this workflow. No live network calls to SMTP/Teams/LLM/RSS sources were made._"
+          } >> "$GITHUB_STEP_SUMMARY"

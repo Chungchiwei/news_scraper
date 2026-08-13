@@ -1,0 +1,441 @@
+name: Maritime Intelligence
+
+# ══════════════════════════════════════════════════════════════════
+# WHL Maritime Intelligence System — Production Scheduled Execution
+#
+# 用途：實際執行 `python maritime_news.py`（新聞抓取 → 事件情報 →
+# 風險評分 → Persistent Memory → Operational Exposure → Email/Teams）。
+#
+# 這個 workflow「只負責」排程執行（Scheduled Execution），不負責
+# Dashboard Hosting（FastAPI Dashboard 需要常駐主機，見
+# GITHUB_ACTIONS_SETUP.md §Dashboard Hosting 限制）。
+#
+# Trigger 刻意只有 workflow_dispatch + schedule，不使用 `on: push`，
+# 避免改一行 README 就寄出主管 Email（見 GITHUB_ACTIONS_PACKAGING_REPORT.md
+# §Production Workflow Trigger Restriction）。
+# ══════════════════════════════════════════════════════════════════
+
+on:
+  workflow_dispatch: {}
+  schedule:
+    # ★ GitHub Actions cron 一律 UTC。專案內找不到既有正式排程時間
+    #   （IT_DEPLOYMENT_GUIDE.md 只建議「每 N 小時」，未指定 N/分鐘），
+    #   因此依 Phase 9 Packaging 規格採預設「每 6 小時一次」，並刻意
+    #   不使用整點 00 分（避免大量 GitHub Actions workflow 在整點集中
+    #   排程）。
+    #
+    #   UTC 17 分, 每 6 小時 → 對應 Asia/Taipei（UTC+8）大約執行時間：
+    #     00:17 UTC → 08:17 TPE
+    #     06:17 UTC → 14:17 TPE
+    #     12:17 UTC → 20:17 TPE
+    #     18:17 UTC → 02:17 TPE
+    #
+    #   若貴公司已有明確正式排程需求，請直接修改下方 cron 表達式
+    #   （不需要改任何程式碼，NEWS_HOURS_BACK 建議與排程間隔一致，見
+    #   GITHUB_ACTIONS_SETUP.md）。
+    - cron: "17 */6 * * *"
+
+# 最小權限原則：
+#  - contents: read   → checkout 原始碼
+#  - actions: read    → 查詢/下載「前一次成功 Run」留下的 Runtime State
+#                        Artifact（跨 Run 還原，見下方 Restore State
+#                        step）。不需要 actions: write（upload-artifact
+#                        上傳新 artifact 使用的是 Actions 內建的
+#                        Artifact Runtime Token，與這裡的 permissions
+#                        區塊無關，不需額外授權）。
+# 刻意不使用 permissions: write-all，也不使用 Personal Access Token
+# ——GITHUB_TOKEN 搭配 actions: read 已足以完成 Restore（見
+# GITHUB_ACTIONS_PACKAGING_REPORT.md §GitHub Token Permission）。
+permissions:
+  contents: read
+  actions: read
+
+# 同一時間最多一個 Production Run，避免兩個 Run 同時寫 SQLite State。
+# 上一個 Run 還沒完成時，新的 Run 會排隊等待，而不是取消正在執行、
+# 可能造成 State 半寫的舊 Run（cancel-in-progress: false）。
+concurrency:
+  group: maritime-intelligence-production
+  cancel-in-progress: false
+
+jobs:
+  run-intelligence:
+    name: Run Maritime Intelligence Cycle
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      # ── 1. CHECKOUT ────────────────────────────────────────────
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      # ── 2. SETUP PYTHON ────────────────────────────────────────
+      - name: Set up Python 3.11.9 (per PYTHON_VERSION.md)
+        uses: actions/setup-python@v7
+        with:
+          python-version: "3.11.9"
+          cache: "pip"
+          cache-dependency-path: requirements.txt
+
+      # ── 3. INSTALL DEPENDENCIES ────────────────────────────────
+      # Production 執行只需要 requirements.txt（不含 pytest/httpx，
+      # 見 requirements-dev.txt 的說明與 PHASE_8_FINAL_COMPLETION_REPORT.md）。
+      - name: Install production dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Prepare runtime directories
+        run: mkdir -p data logs
+
+      # ── 4. RESTORE PREVIOUS RUNTIME STATE ──────────────────────
+      # 依 workflow run / artifact 建立時間找「最近一個未過期的」
+      # maritime-runtime-state-* artifact，不依檔名字母排序猜測。
+      - name: Find latest runtime-state artifact
+        id: find_state
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -e
+          LATEST=$(gh api "repos/${{ github.repository }}/actions/artifacts" --paginate \
+            -q '.artifacts[] | select(.name | startswith("maritime-runtime-state-")) | select(.expired == false) | [.created_at, .id, .name, .workflow_run.id] | @tsv' \
+            | sort -r | head -n1 || true)
+
+          if [ -z "$LATEST" ]; then
+            echo "found=false" >> "$GITHUB_OUTPUT"
+            echo "ℹ️  No previous runtime-state artifact found (or all expired) — this is a FIRST RUN (or first run since retention expiry). Not an error."
+          else
+            ARTIFACT_ID=$(printf '%s' "$LATEST" | cut -f2)
+            ARTIFACT_NAME=$(printf '%s' "$LATEST" | cut -f3)
+            SOURCE_RUN_ID=$(printf '%s' "$LATEST" | cut -f4)
+            echo "found=true" >> "$GITHUB_OUTPUT"
+            echo "artifact_id=$ARTIFACT_ID" >> "$GITHUB_OUTPUT"
+            echo "artifact_name=$ARTIFACT_NAME" >> "$GITHUB_OUTPUT"
+            echo "source_run_id=$SOURCE_RUN_ID" >> "$GITHUB_OUTPUT"
+            echo "✅ Will restore from: $ARTIFACT_NAME (artifact id=$ARTIFACT_ID, uploaded by run $SOURCE_RUN_ID)"
+          fi
+
+      # ★ 修正過的 Bug（曾在 2026-08 實際遠端執行時發生）：download-artifact
+      #   的 `run-id` 輸入若不指定，預設值是「目前這次 Run 自己」
+      #   （${{ github.run_id }}），不是 artifact 真正上傳所在的那次 Run。
+      #   只給 `artifact-ids` 而不給 `run-id`，action 會去「目前這次 Run」
+      #   底下找，永遠找不到（因為 artifact 是上一次 Run 上傳的），报錯
+      #   「None of the provided artifact IDs were found」。必須明確帶上
+      #   `run-id: <artifact 實際來源 run 的 id>`（上一步從
+      #   `.workflow_run.id` 取得），這是同一個 repo 內跨 run 還原
+      #   artifact 的必要條件（見官方文件「Download Artifacts from other
+      #   Workflow Runs」）。
+      - name: Restore runtime state
+        id: restore_state
+        if: steps.find_state.outputs.found == 'true'
+        uses: actions/download-artifact@v8
+        with:
+          artifact-ids: ${{ steps.find_state.outputs.artifact_id }}
+          run-id: ${{ steps.find_state.outputs.source_run_id }}
+          repository: ${{ github.repository }}
+          path: data/
+          github-token: ${{ github.token }}
+
+      # 還原後先做 SQLite integrity check，並決定本次 MEMORY_BASELINE_MODE。
+      # 規則（見 GITHUB_ACTIONS_PACKAGING_REPORT.md §First-Run / §Artifact
+      # Corruption Test）：
+      #   - 找不到前次 state（FIRST RUN）→ 不是錯誤，MEMORY_BASELINE_MODE
+      #     強制設為 silent（避免第一次執行把所有既有新聞當 NEW 通知）。
+      #   - Required DB（event_store / delivery_history）還原後 integrity
+      #     check 失敗 → Fatal，直接讓這個 job 失敗，且「不」繼續執行
+      #     主程式、也「不」上傳新的 state artifact（保留上一個有效
+      #     artifact，不被覆蓋）。
+      #   - Optional DB（ai_cache / operational_history / source_health）
+      #     corrupt → 刪除該檔讓程式從空白重建，記警告，不視為 Fatal。
+      - name: Verify restored state integrity
+        id: verify_restore
+        run: |
+          python3 - "${{ steps.find_state.outputs.found }}" <<'PY'
+          import sqlite3, sys, os
+
+          found = sys.argv[1] == "true"
+          required = ["data/maritime_intelligence.db", "data/delivery_history.db"]
+          optional = ["data/ai_analysis.db", "data/operational_relevance.db", "data/source_health.db"]
+
+          def integrity_ok(path):
+              try:
+                  conn = sqlite3.connect(path)
+                  row = conn.execute("PRAGMA integrity_check;").fetchone()
+                  conn.close()
+                  return row is not None and row[0] == "ok"
+              except Exception as e:
+                  print(f"  ⚠️  {path}: exception during integrity check: {e}")
+                  return False
+
+          if not found:
+              print("ℹ️  FIRST RUN — no restored state to verify.")
+          else:
+              fatal = False
+              for path in required:
+                  if os.path.exists(path):
+                      ok = integrity_ok(path)
+                      print(f"  {'✅' if ok else '❌'} {path}: {'ok' if ok else 'INTEGRITY CHECK FAILED'}")
+                      if not ok:
+                          fatal = True
+                  else:
+                      # required 檔案在「有 state 可還原」的情況下缺席，視為異常
+                      print(f"  ❌ {path}: expected but missing after restore")
+                      fatal = True
+              for path in optional:
+                  if os.path.exists(path):
+                      ok = integrity_ok(path)
+                      print(f"  {'✅' if ok else '⚠️ '} {path}: {'ok' if ok else 'corrupt — removing, will rebuild fresh'}")
+                      if not ok:
+                          os.remove(path)
+                  else:
+                      print(f"  ℹ️  {path}: not present in restored state (ok, optional)")
+              if fatal:
+                  print("")
+                  print("❌ RESTORED STATE CORRUPTED (required DB failed integrity check).")
+                  print("   Refusing to run the main program against a corrupted event/delivery")
+                  print("   history — this would risk silently resetting the notification")
+                  print("   baseline. The previous valid state artifact is preserved untouched")
+                  print("   because this run will not upload a replacement.")
+                  sys.exit(1)
+          PY
+
+      # First Run → MEMORY_BASELINE_MODE=silent（沿用既有 Phase 3 機制，
+      # 不是另外發明一套 Event Memory）。有成功還原 state → 交給
+      # memory_rules.json 的既有預設（notify）。
+      - name: Set baseline mode for this run
+        run: |
+          if [ "${{ steps.find_state.outputs.found }}" = "true" ]; then
+            echo "MEMORY_BASELINE_MODE=" >> "$GITHUB_ENV"
+            echo "ℹ️  Previous state restored — using configured baseline_mode (memory_rules.json default: notify)."
+          else
+            echo "MEMORY_BASELINE_MODE=silent" >> "$GITHUB_ENV"
+            echo "ℹ️  FIRST RUN — MEMORY_BASELINE_MODE=silent (baseline import, no notification storm)."
+          fi
+
+      # ── 5. VALIDATE CONFIG (Preflight) ─────────────────────────
+      # 使用既有 scripts/health_check.py（Phase 8），不重新發明。
+      # Critical（Email 設定缺失、Event DB 打不開等）→ 直接 fail，
+      # Optional（LLM/Teams disabled、Fleet Provider 無資料）→ 只警告。
+      - name: Preflight health check
+        env:
+          MAIL_USER: ${{ secrets.MAIL_USER }}
+          MAIL_PASSWORD: ${{ secrets.MAIL_PASSWORD }}
+          TARGET_EMAIL: ${{ secrets.TARGET_EMAIL }}
+          TEAMS_ENABLED: ${{ vars.TEAMS_ENABLED || 'false' }}
+          LLM_ENABLED: ${{ vars.LLM_ENABLED || 'false' }}
+        run: python scripts/health_check.py
+
+      # ── 6. RUN MARITIME INTELLIGENCE ───────────────────────────
+      # exit code 保留，不用 `|| true` 吞掉；continue-on-error 讓後續
+      # 「保存 state / 寫 Job Summary」仍然執行，但整個 job 最終
+      # Pass/Fail 由最後一個 step 依這裡的真實結果決定（見 §9）。
+      - name: Run maritime_news.py
+        id: run_main
+        continue-on-error: true
+        env:
+          MAIL_SMTP_SERVER: ${{ vars.MAIL_SMTP_SERVER || 'smtp.gmail.com' }}
+          MAIL_SMTP_PORT: ${{ vars.MAIL_SMTP_PORT || '587' }}
+          MAIL_USER: ${{ secrets.MAIL_USER }}
+          MAIL_PASSWORD: ${{ secrets.MAIL_PASSWORD }}
+          TARGET_EMAIL: ${{ secrets.TARGET_EMAIL }}
+          MAIL_SEND_MAX_ATTEMPTS: ${{ vars.MAIL_SEND_MAX_ATTEMPTS || '3' }}
+          MAIL_SEND_RETRY_WAIT_SEC: ${{ vars.MAIL_SEND_RETRY_WAIT_SEC || '15' }}
+          SEND_NO_RISK_BRIEF: ${{ vars.SEND_NO_RISK_BRIEF || 'true' }}
+          TEAMS_ENABLED: ${{ vars.TEAMS_ENABLED || 'false' }}
+          TEAMS_MANAGEMENT_WEBHOOK_URL: ${{ secrets.TEAMS_MANAGEMENT_WEBHOOK_URL }}
+          TEAMS_SYSTEM_WEBHOOK_URL: ${{ secrets.TEAMS_SYSTEM_WEBHOOK_URL }}
+          LLM_ENABLED: ${{ vars.LLM_ENABLED || 'false' }}
+          LLM_PROVIDER: ${{ vars.LLM_PROVIDER || 'disabled' }}
+          LLM_MODEL: ${{ vars.LLM_MODEL }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          LLM_ALLOW_INTERNAL_OPERATIONAL_DATA: ${{ vars.LLM_ALLOW_INTERNAL_OPERATIONAL_DATA || 'false' }}
+          NEWS_HOURS_BACK: ${{ vars.NEWS_HOURS_BACK || '6' }}
+          SSL_VERIFY: ${{ vars.SSL_VERIFY || 'true' }}
+          INTELLIGENCE_DEBUG: ${{ vars.INTELLIGENCE_DEBUG || 'false' }}
+        run: python maritime_news.py 2>&1 | tee run_output.log
+
+      # ── 7. SAVE UPDATED RUNTIME STATE ──────────────────────────
+      # 無論 Email/Teams 成功與否，只要 SQLite state 本身有效就保存
+      # （例如：事件已寫入 DB 但 SMTP 逾時 — 不能整包丟掉，否則下次
+      # 又會被當成 NEW）。上傳前先做 integrity check，壞掉就不上傳，
+      # 保留上一個有效 artifact。
+      - name: Verify freshly-produced state before save
+        id: verify_save
+        if: always()
+        run: |
+          python3 - <<'PY'
+          import sqlite3, os
+
+          required = ["data/maritime_intelligence.db", "data/delivery_history.db"]
+          optional = ["data/ai_analysis.db", "data/operational_relevance.db", "data/source_health.db"]
+
+          def integrity_ok(path):
+              try:
+                  conn = sqlite3.connect(path)
+                  row = conn.execute("PRAGMA integrity_check;").fetchone()
+                  conn.close()
+                  return row is not None and row[0] == "ok"
+              except Exception as e:
+                  print(f"  ⚠️  {path}: exception during integrity check: {e}")
+                  return False
+
+          valid_files = []
+          state_valid = True
+          for path in required:
+              if not os.path.exists(path):
+                  print(f"  ❌ {path}: missing — cannot save state this run")
+                  state_valid = False
+                  continue
+              ok = integrity_ok(path)
+              print(f"  {'✅' if ok else '❌'} {path}: {'ok' if ok else 'INTEGRITY CHECK FAILED — will not upload'}")
+              if ok:
+                  valid_files.append(path)
+              else:
+                  state_valid = False
+          for path in optional:
+              if os.path.exists(path) and integrity_ok(path):
+                  print(f"  ✅ {path}: ok (optional)")
+                  valid_files.append(path)
+              elif os.path.exists(path):
+                  print(f"  ⚠️  {path}: corrupt optional DB — excluded from state upload")
+
+          gh_output = os.environ.get("GITHUB_OUTPUT")
+          with open(gh_output, "a") as f:
+              f.write(f"state_valid={'true' if state_valid else 'false'}\n")
+          PY
+
+      # ★ 不能用天真的 `cp`：event_store.py 等模組用 PRAGMA
+      #   journal_mode=WAL，已提交的資料可能還留在 data/*.db-wal，還沒
+      #   checkpoint 回主檔案。純檔案複製可能複製到一個「缺少最新資料」
+      #   的不完整快照，導致下次 Run 誤判成 UNCHANGED 甚至遺漏事件更新
+      #   （此問題已在 scripts/github_actions_smoke_test.py 的 Runner
+      #   A/B 模擬中重現並確認修正——見 GITHUB_ACTIONS_PACKAGING_REPORT.md
+      #   §Runtime State Persistence）。改用跟 scripts/backup_data.py
+      #   相同的 SQLite Online Backup API，保證快照完整一致。
+      - name: Stage state files for upload
+        if: always() && steps.verify_save.outputs.state_valid == 'true'
+        run: |
+          mkdir -p state_upload
+          python3 - <<'PY'
+          import sqlite3, os
+
+          files = ["maritime_intelligence.db", "ai_analysis.db",
+                    "operational_relevance.db", "delivery_history.db",
+                    "source_health.db"]
+          for f in files:
+              src = os.path.join("data", f)
+              if not os.path.exists(src):
+                  continue
+              dst = os.path.join("state_upload", f)
+              src_conn = sqlite3.connect(src)
+              dst_conn = sqlite3.connect(dst)
+              try:
+                  src_conn.backup(dst_conn)
+                  print(f"  ✅ staged (online backup): {f}")
+              finally:
+                  dst_conn.close()
+                  src_conn.close()
+          PY
+          ls -la state_upload/
+
+      - name: Save runtime state artifact
+        if: always() && steps.verify_save.outputs.state_valid == 'true'
+        uses: actions/upload-artifact@v7
+        with:
+          name: maritime-runtime-state-${{ github.run_id }}
+          path: state_upload/
+          retention-days: 30
+          if-no-files-found: error
+
+      # ── 8. UPLOAD LOG / DIAGNOSTIC ON FAILURE ──────────────────
+      # 成功時不上傳大量 log（GitHub Actions console 已足夠）。失敗時
+      # 上傳 logs/ 供除錯，但先做 secret 遮罩（不能只信任程式沒印出
+      # 密碼，這裡再做一層防護）。
+      - name: Redact secrets from logs before upload
+        if: steps.run_main.outcome == 'failure'
+        run: |
+          mkdir -p redacted_logs
+          for f in run_output.log $(find logs -type f 2>/dev/null); do
+            [ -f "$f" ] || continue
+            out="redacted_logs/$(basename "$f")"
+            cp "$f" "$out"
+            for secret in "${{ secrets.MAIL_PASSWORD }}" "${{ secrets.TEAMS_MANAGEMENT_WEBHOOK_URL }}" "${{ secrets.TEAMS_SYSTEM_WEBHOOK_URL }}" "${{ secrets.ANTHROPIC_API_KEY }}" "${{ secrets.OPENAI_API_KEY }}"; do
+              if [ -n "$secret" ]; then
+                sed -i "s|$(printf '%s' "$secret" | sed -e 's/[\/&]/\\&/g')|[REDACTED]|g" "$out"
+              fi
+            done
+          done
+
+      - name: Upload failure diagnostics
+        if: steps.run_main.outcome == 'failure'
+        uses: actions/upload-artifact@v7
+        with:
+          name: maritime-intelligence-failure-logs-${{ github.run_id }}
+          path: redacted_logs/
+          retention-days: 7
+
+      # ── 9. GITHUB JOB SUMMARY ───────────────────────────────────
+      # 只從既有 CLI 輸出（maritime_news.py 的 RUN COMPLETE / RUN FAILED
+      # 固定格式，見 Phase 8 §_print_cli_summary/_print_run_failed）
+      # 擷取數字，不印出任何 secret，不印大量 traceback。
+      - name: Write Job Summary
+        if: always()
+        run: |
+          {
+            echo "## WHL Maritime Intelligence — Run Summary"
+            echo ""
+            echo "| Field | Value |"
+            echo "|---|---|"
+            if grep -q "^RUN COMPLETE$" run_output.log 2>/dev/null; then
+              awk -F':' '/^Articles collected:/{a=$2} /^Events identified:/{e=$2} /^New:/{n=$2} /^P1:/{p1=$2} /^P2:/{p2=$2} /^Email:/{em=$2} /^Teams:/{tm=$2} /^Dashboard Data:/{db=$2} /^Result:/{getline r; print "|Result|" r "|"}' run_output.log > /tmp/awk_out.txt || true
+              echo "| Articles collected | $(grep '^Articles collected:' run_output.log | awk -F: '{print $2}' | xargs) |"
+              echo "| Events identified | $(grep '^Events identified:' run_output.log | awk -F: '{print $2}' | xargs) |"
+              echo "| New | $(grep '^New:' run_output.log | awk -F: '{print $2}' | xargs) |"
+              echo "| Material Updates | $(grep '^Material Updates:' run_output.log | awk -F: '{print $2}' | xargs) |"
+              echo "| P1 | $(grep '^P1:' run_output.log | awk -F: '{print $2}' | xargs) |"
+              echo "| P2 | $(grep '^P2:' run_output.log | awk -F: '{print $2}' | xargs) |"
+              echo "| WHL Direct Exposure | $(grep '^WHL Direct Exposure:' run_output.log | awk -F: '{print $2}' | xargs) |"
+              echo "| WHL High Exposure | $(grep '^WHL High Exposure:' run_output.log | awk -F: '{print $2}' | xargs) |"
+              echo "| Email | $(grep '^Email:' run_output.log | awk -F: '{print $2}' | xargs) |"
+              echo "| Teams | $(grep '^Teams:' run_output.log | awk -F: '{print $2}' | xargs) |"
+              echo "| Dashboard Data | $(grep '^Dashboard Data:' run_output.log | awk -F: '{print $2}' | xargs) |"
+              echo "| Run Result | $(grep -A1 '^Result:' run_output.log | tail -1 | xargs) |"
+            elif grep -q "^RUN FAILED$" run_output.log 2>/dev/null; then
+              echo "| Run Result | FAILED |"
+              echo "| Failed Component | $(grep -A1 '^Critical Component:' run_output.log | tail -1 | xargs) |"
+              echo "| Error | $(grep -A1 '^Error:' run_output.log | tail -1 | xargs) |"
+              echo "| Recommended | $(grep -A1 '^Recommended:' run_output.log | tail -1 | xargs) |"
+            else
+              # run_output.log 不存在或內容不含固定格式，代表
+              # `Run maritime_news.py` 這個 step 本身被跳過（上游某個
+              # 前置 step 失敗），不是主程式自己吐出未知格式。指出最可能
+              # 的失敗點，不要只寫 UNKNOWN 讓人猜。
+              if [ "${{ steps.restore_state.outcome }}" = "failure" ]; then
+                echo "| Run Result | SKIPPED — 'Restore runtime state' step failed upstream |"
+              elif [ "${{ steps.verify_restore.outcome }}" = "failure" ]; then
+                echo "| Run Result | SKIPPED — restored state failed SQLite integrity check |"
+              else
+                echo "| Run Result | UNKNOWN — see console log (an earlier step likely failed) |"
+              fi
+            fi
+            if [ "${{ steps.find_state.outputs.found }}" != "true" ]; then
+              STATE_LABEL="FIRST RUN (none to restore)"
+            elif [ "${{ steps.restore_state.outcome }}" = "success" ]; then
+              STATE_LABEL="RESTORED"
+            else
+              STATE_LABEL="RESTORE FAILED (artifact was found but download failed — see 'Restore runtime state' step log)"
+            fi
+            echo "| Runtime State Restored | $STATE_LABEL |"
+            echo "| Runtime State Saved | ${{ steps.verify_save.outputs.state_valid == 'true' && 'SAVED' || 'NOT SAVED (invalid — previous state preserved)' }} |"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      # ── FINAL PASS/FAIL GATE ────────────────────────────────────
+      # State 已經盡力保存、Summary 已經寫完，最後才反映真實結果，
+      # 讓 GitHub Actions 的 ✅/❌ 準確代表這次執行是否成功。
+      - name: Reflect real pass/fail
+        if: always()
+        run: |
+          if [ "${{ steps.run_main.outcome }}" != "success" ]; then
+            echo "❌ maritime_news.py did not complete successfully — failing this job."
+            exit 1
+          fi
+          echo "✅ maritime_news.py completed successfully."
