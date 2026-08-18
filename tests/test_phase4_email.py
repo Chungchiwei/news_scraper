@@ -246,7 +246,9 @@ def test_subject_p1_alert(selector, summary_builder):
                     notification_state=NotificationState.NEW)
     sel = selector.select([e])
     vm = build_alert_view_model(sel, summary_builder=summary_builder)
-    assert "Maritime Alert" in vm.subject
+    # 品牌前綴統一為 GITHUB_Maritime Intel News Alert（2026-08，見
+    # email_rules.json §subject._note）——不再是舊的 "Maritime Alert"。
+    assert "GITHUB_Maritime Intel News Alert" in vm.subject
     assert "P1" in vm.subject
 
 

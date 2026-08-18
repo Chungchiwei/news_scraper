@@ -66,9 +66,8 @@ ROOT_PY_FILES = [
     "maritime_news.py", "material_change_detector.py", "memory_config.py",
     "memory_pipeline.py", "models.py", "notification_policy.py",
     "operational_config.py", "operational_history.py", "operational_models.py",
-    "operational_relevance.py", "persistent_matcher.py", "phase3_simulation.py",
-    "phase6_simulation.py", "phase7_simulation.py", "port_normalizer.py",
-    "port_relevance.py", "preview_email.py", "preview_teams.py", "risk_config.py",
+    "operational_relevance.py", "persistent_matcher.py", "port_normalizer.py",
+    "port_relevance.py", "risk_config.py",
     "risk_scorer.py", "route_provider.py", "route_relevance.py",
     "schedule_provider.py", "source_grounding.py", "source_health.py",
     "source_provenance.py", "status_extractor.py", "system_health.py",
@@ -92,23 +91,22 @@ ROOT_DOC_FILES = [
     "README.md", "SYSTEM_ARCHITECTURE.md", "DATA_FLOW.md",
     "CONFIGURATION_REFERENCE.md", "OPERATIONS_RUNBOOK.md",
     "IT_DEPLOYMENT_GUIDE.md", "PYTHON_VERSION.md", "DEPRECATED.md",
-    "FUTURE_ROADMAP.md", "FINAL_ARCHITECTURE_AUDIT.md",
-    "FINAL_ACCEPTANCE_CHECKLIST.md", "PHASE_8_FINAL_COMPLETION_REPORT.md",
-    "GITHUB_PACKAGING_AUDIT.md", "GITHUB_PACKAGE_MANIFEST.md",
-    "GITHUB_ACTIONS_SETUP.md", "GITHUB_ACTIONS_PACKAGING_REPORT.md",
-    "claude.md", "PHASE2_REPORT.md", "PHASE_2.1_COMPLETION_REPORT.md",
-    "PHASE_3_COMPLETION_REPORT.md", "PHASE_4_COMPLETION_REPORT.md",
-    "PHASE_5_COMPLETION_REPORT.md", "PHASE_6_COMPLETION_REPORT.md",
-    "PHASE_7_COMPLETION_REPORT.md",
+    "FUTURE_ROADMAP.md", "GITHUB_PACKAGE_MANIFEST.md",
+    "GITHUB_ACTIONS_SETUP.md", "claude.md",
 ]
 
 ROOT_FILE_ALLOWLIST = set(
     ROOT_PY_FILES + ROOT_JSON_FILES + ROOT_META_FILES + ROOT_BAT_FILES + ROOT_DOC_FILES
 )
 
-# 整個目錄照抄（但仍逐檔案經過 fail-closed 檢查 + 排除 __pycache__ 等）
+# 整個目錄照抄（但仍逐檔案經過 fail-closed 檢查 + 排除 __pycache__ 等）。
+# Phase 9 清理（見 GITHUB_PACKAGE_MANIFEST.md）：
+#   - docs/history/ — 歷史 PHASE 報告與一次性 Audit/Report（點狀時間快照，
+#     只保留供參考，不是持續維護的文件）
+#   - dev_tools/    — 一次性開發用 simulation/preview 腳本，不是
+#     maritime_news.py 的 Dependency Closure 一部分
 INCLUDE_DIRS = ["config", "dashboard", "scripts", "tests", "prompts",
-                 ".github", "legacy"]
+                 ".github", "legacy", "docs", "dev_tools"]
 
 # 目錄內一律跳過的名稱 / 副檔名
 EXCLUDE_DIR_NAMES = {"__pycache__", ".pytest_cache", "venv", ".venv",

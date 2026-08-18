@@ -18,6 +18,14 @@ ROOT = Path(__file__).resolve().parent.parent
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
+# Phase 9 清理：一次性開發用 simulation/preview 腳本已移至 dev_tools/
+# （不影響 production 模組，見 GITHUB_PACKAGE_MANIFEST.md）。測試裡仍用
+# 裸露的 `import preview_email` 之類寫法，這裡把 dev_tools/ 一併加進
+# sys.path，讓那些 import 不用逐一改寫。
+DEV_TOOLS = ROOT / "dev_tools"
+if str(DEV_TOOLS) not in sys.path:
+    sys.path.insert(0, str(DEV_TOOLS))
+
 from models import NewsArticle                      # noqa: E402
 from risk_config import load_risk_rules              # noqa: E402
 from event_extractor import EventExtractor           # noqa: E402
