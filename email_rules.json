@@ -63,10 +63,10 @@
   },
 
   "subject": {
-    "_note": "統一品牌前綴（2026-08）：Daily Brief / Immediate Alert / Update 三種信件過去各用不同前綴文字（Maritime Intelligence / Maritime Alert / Maritime Update），使用者反映信箱裡看起來像兩種不同系統在寄信。三個 key 統一設成同一個字串，讓所有信件標題前綴一致。",
-    "prefix_alert": "GITHUB_Maritime Intel News Alert",
-    "prefix_update": "GITHUB_Maritime Intel News Alert",
-    "prefix_brief": "GITHUB_Maritime Intel News Alert"
+    "_note": "統一品牌前綴（2026-08）：Daily Brief / Immediate Alert / Update 三種信件過去各用不同前綴文字（Maritime Intelligence / Maritime Alert / Maritime Update），使用者反映信箱裡看起來像兩種不同系統在寄信。三個 key 統一設成同一個字串，讓所有信件標題前綴一致。★ 2026-08-18 修正：這裡曾一度誤設為 'GITHUB_Maritime Intel News Alert'——那其實是 legacy/news_scraper_2024.04.16.py（已標記 Do Not Use、無任何程式引用）專門追蹤美伊/波斯灣衝突時用的舊標題，不是這個統一系統的名字。現在 maritime_news.py 已經把波斯灣/荷姆茲/紅海/胡塞武裝等關鍵字整合進統一分類與風險評分，涵蓋範圍是全球海運新聞（含區域衝突），所以改用原本就存在於 email_sender.py EmailConfig.SUBJECT_PREFIX 的 'Maritime News Alert'，才是這個系統真正的品牌名稱。",
+    "prefix_alert": "Maritime News Alert",
+    "prefix_update": "Maritime News Alert",
+    "prefix_brief": "Maritime News Alert"
   },
 
   "company": {

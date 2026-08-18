@@ -382,6 +382,53 @@ RSS_SOURCES = [
      "backup_url": "https://www.marinelink.com/news/rss?take=20",
      "extra_urls": [], "lang": "en", "category": "航運專業", "need_clean": True},
 
+    # ── 2026-08 新增：擴大來源覆蓋（Source Maintenance，見
+    # CONFIGURATION_REFERENCE.md / claude.md §來源維護）。新增前已用
+    # WebSearch/WebFetch 逐一確認為目前仍在運作、有公開 RSS 的媒體，
+    # 非隨意加入；個別來源若之後失效，靠既有 source_health.py 的
+    # per-source 健康追蹤與 backup_url/extra_urls fallback 機制自然
+    # 降級，不影響其餘來源（見 NewsRssScraper 既有設計）。
+    {"name": "The Loadstar", "icon": "📦",
+     "url": "https://theloadstar.com/feed/",
+     "backup_url": None, "extra_urls": [],
+     "lang": "en", "category": "航運專業", "need_clean": True},
+    {"name": "Journal of Commerce", "icon": "📰",
+     "url": "https://feeds.feedburner.com/joc/aajm",
+     "backup_url": None, "extra_urls": [],
+     "lang": "en", "category": "航運專業", "need_clean": True},
+    {"name": "Global Maritime Hub", "icon": "🌐",
+     "url": "https://globalmaritimehub.com/feed",
+     "backup_url": None, "extra_urls": [],
+     "lang": "en", "category": "航運專業", "need_clean": True},
+    {"name": "Shipping and Freight Resource", "icon": "📋",
+     "url": "https://shippingandfreightresource.com/feed/",
+     "backup_url": None, "extra_urls": [],
+     "lang": "en", "category": "航運專業", "need_clean": True},
+    {"name": "Xeneta", "icon": "📈",
+     "url": "https://www.xeneta.com/blog/rss.xml",
+     "backup_url": None, "extra_urls": [],
+     "lang": "en", "category": "航運專業", "need_clean": True},
+    # ── 海事安全／區域衝突（2026-08 新增）：CIMSEC / Defence Blog /
+    # USNI News 是軍事·安全政策媒體，非傳統航運貿易媒體，但持續報導
+    # 荷姆茲海峽／波斯灣／紅海／曼德海峽的護航、攻擊、扣船等事件，
+    # 與 HIGH_CONFIDENCE_TERMS（houthi/irgc/strait of hormuz/...）
+    # 高度對應，補足純航運媒體較少即時報導的軍事/安全視角──不是新開
+    # 一個獨立報告，仍併入現有統一分類與風險評分（見本次與使用者的
+    # 討論：GITHUB_Maritime Intel News Alert 那個獨立 Iran-Gulf 報告
+    # 已在 Phase 1-8 併入本系統，legacy/ 下的舊腳本不再復活）。
+    {"name": "CIMSEC", "icon": "🛡️",
+     "url": "https://cimsec.org/feed/",
+     "backup_url": None, "extra_urls": [],
+     "lang": "en", "category": "航運專業", "need_clean": True},
+    {"name": "Defence Blog — Navy", "icon": "⚔️",
+     "url": "https://defence-blog.com/category/navy/feed/",
+     "backup_url": None, "extra_urls": [],
+     "lang": "en", "category": "航運專業", "need_clean": True},
+    {"name": "USNI News", "icon": "🎖️",
+     "url": "https://news.usni.org/feed",
+     "backup_url": None, "extra_urls": [],
+     "lang": "en", "category": "航運專業", "need_clean": True},
+
     # ── Reddit 航運社群（標記為 _reddit_scraper）────────────
     {"name": "Reddit r/Ships",    "url": "__reddit_ships__",
      "backup_url": None, "extra_urls": [],
@@ -467,6 +514,21 @@ RSS_SOURCES = [
      "backup_url": "https://rsshub.rssforever.com/apnews/topics/world-news",
      "extra_urls": [], "lang": "en", "icon": "📡",
      "category": "國際媒體", "need_clean": True},
+
+    # ── 2026-08 新增：Google News RSS 關鍵字搜尋（非單一媒體，而是
+    # 跨多家媒體的即時關鍵字聚合）。用來補足「單一媒體 RSS 剛好沒報導」
+    # 的漏網之魚，尤其是波斯灣/紅海衝突這種突發、多家媒體同時搶快的
+    # 新聞——單一 site RSS 常常來不及涵蓋全部角度。Google News RSS
+    # search 端點本身穩定運作多年，非第三方 proxy（不像 rsshub 那樣
+    # 依賴第三方服務可用性）。
+    {"name": "Google News — Gulf/Red Sea Shipping",
+     "url": "https://news.google.com/rss/search?q=%22strait+of+hormuz%22+OR+%22persian+gulf%22+OR+houthi+OR+%22red+sea%22+tanker+OR+vessel+OR+ship+attack&hl=en-US&gl=US&ceid=US:en",
+     "backup_url": None, "extra_urls": [],
+     "lang": "en", "icon": "🔎", "category": "國際媒體", "need_clean": True},
+    {"name": "Google News — Vessel Casualty",
+     "url": "https://news.google.com/rss/search?q=(vessel+OR+ship+OR+tanker+OR+%22container+ship%22)+(fire+OR+collision+OR+grounding+OR+sinking+OR+%22man+overboard%22)&hl=en-US&gl=US&ceid=US:en",
+     "backup_url": None, "extra_urls": [],
+     "lang": "en", "icon": "🔎", "category": "國際媒體", "need_clean": True},
 ]
 
 CNYES_SOURCES = [
