@@ -246,9 +246,11 @@ def test_subject_p1_alert(selector, summary_builder):
                     notification_state=NotificationState.NEW)
     sel = selector.select([e])
     vm = build_alert_view_model(sel, summary_builder=summary_builder)
-    # 品牌前綴統一為 GITHUB_Maritime Intel News Alert（2026-08，見
-    # email_rules.json §subject._note）——不再是舊的 "Maritime Alert"。
-    assert "GITHUB_Maritime Intel News Alert" in vm.subject
+    # 品牌前綴統一為 Maritime News Alert（2026-08-18 修正，見
+    # email_rules.json §subject._note）——不是舊的 "Maritime Alert"，
+    # 也不是曾經誤設的 "GITHUB_Maritime Intel News Alert"（那是
+    # legacy/news_scraper_2024.04.16.py 的舊標題，非本系統）。
+    assert "Maritime News Alert" in vm.subject
     assert "P1" in vm.subject
 
 
