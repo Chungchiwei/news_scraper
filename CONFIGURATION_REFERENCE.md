@@ -75,7 +75,7 @@
 - `config/services_config.json` — 航線／Service 資料
 - `config/ports_config.json` — 港口別名對照表
 
-三個資料來源目前皆為空陣列佔位（見 `FUTURE_ROADMAP.md`／`PHASE_8_FINAL_COMPLETION_REPORT.md` 的 Known Limitations）；正式使用前請以實際資料取代 `vessels`/`port_calls`/`services` 陣列。
+三個資料來源目前皆為空陣列佔位（見 `FUTURE_ROADMAP.md`／`docs/history/PHASE_8_FINAL_COMPLETION_REPORT.md` 的 Known Limitations）；正式使用前請以實際資料取代 `vessels`/`port_calls`/`services` 陣列。
 
 ## Logging
 

@@ -529,7 +529,10 @@ def build_daily_brief_subject(p1_count: int, p2_count: int, is_no_risk: bool,
     if is_no_risk:
         return f"[{prefix_brief}] No Major Fleet Risk | {date_str}"
     if p1_count > 0:
-        return f"[🔴 Maritime Alert] Daily Brief | {date_str} | P1:{p1_count} P2:{p2_count}"
+        # ★ 改成讀 prefix_brief（email_rules.json → subject.prefix_brief），
+        #   不要再把品牌前綴寫死在這裡——寫死過一次就是這次要修的問題：
+        #   哪天品牌前綴又要改，這裡會忘記跟著改，變回兩個不同標題。
+        return f"[{prefix_brief}] Daily Brief | {date_str} | P1:{p1_count} P2:{p2_count}"
     return f"[{prefix_brief}] Daily Brief | {date_str} | P1:{p1_count} P2:{p2_count}"
 
 

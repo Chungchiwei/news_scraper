@@ -1,6 +1,6 @@
 # Future Roadmap
 
-本文件只列出**尚未實作**、經確認有實際營運需求時才會評估的未來項目。Phase 8 完成後，本專案進入 **Feature Freeze**（見 `PHASE_8_FINAL_COMPLETION_REPORT.md`）——以下項目在 v1.1/v2.0 才會重新評估，本輪不實作。
+本文件只列出**尚未實作**、經確認有實際營運需求時才會評估的未來項目。Phase 8 完成後，本專案進入 **Feature Freeze**（見 `docs/history/PHASE_8_FINAL_COMPLETION_REPORT.md`）——以下項目在 v1.1/v2.0 才會重新評估，本輪不實作。
 
 - **Weather Integration** — 天氣資料整合，用於評估航線天氣風險。
 - **AIS Integration** — 即時船位資料整合，取代目前依賴新聞文字判斷船舶位置。

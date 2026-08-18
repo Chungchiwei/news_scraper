@@ -77,4 +77,4 @@
 
 ## Optional 子系統的失敗如何影響流程
 
-見 `OPERATIONS_RUNBOOK.md` 與 `PHASE_8_FINAL_COMPLETION_REPORT.md` 的 Graceful Degradation Table——簡而言之：LLM/Teams/Operational Provider 失敗只影響對應區塊的顯示內容，絕不會讓 Email 發不出去；只有 Event Database 打不開、或 SMTP 重試後仍失敗，才會讓整次執行以非零 exit code 結束。
+見 `OPERATIONS_RUNBOOK.md` 與 `docs/history/PHASE_8_FINAL_COMPLETION_REPORT.md` 的 Graceful Degradation Table——簡而言之：LLM/Teams/Operational Provider 失敗只影響對應區塊的顯示內容，絕不會讓 Email 發不出去；只有 Event Database 打不開、或 SMTP 重試後仍失敗，才會讓整次執行以非零 exit code 結束。

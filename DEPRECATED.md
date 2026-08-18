@@ -8,7 +8,7 @@
 
 - **狀態**：Do Not Use — 已搬移至 `legacy/`
 - **原因**：Phase 1 之前的獨立單檔爬蟲＋SMTP 寄送實作，自帶 `smtplib`/`MIMEText` 邏輯，完全不依賴 Phase 2 以後建立的任何模組（`event_extractor.py`、`risk_scorer.py`、`memory_pipeline.py`、`executive_email_renderer.py` 等）。
-- **確認安全搬移的依據**：`grep -rn "import news_scraper\|from news_scraper"` 全專案（排除 `venv/`）結果為零筆，僅 `claude.md`／`PHASE2_REPORT.md` 有敘述性文字提及，非程式碼引用。
+- **確認安全搬移的依據**：`grep -rn "import news_scraper\|from news_scraper"` 全專案（排除 `venv/`）結果為零筆，僅 `claude.md`／`docs/history/PHASE2_REPORT.md` 有敘述性文字提及，非程式碼引用。
 - **替代方案**：`maritime_news.py`（唯一 production entry point）。
 
 ## 2. `legacy/news_scraper_2024.04.16.py`（原路徑：`SPARE/news_scraper_2024.04.16.py`）
@@ -25,11 +25,12 @@
 - **正確用法**：新開發一律使用 `send_html()` + `ExecutiveEmailRenderer`；`send()`／`EmailRenderer` 僅供緊急備援，不建議在新程式中呼叫。
 - **後續規劃**：延後至 v1.1 再評估是否移除，記錄於 `FUTURE_ROADMAP.md`。
 
-## 4. `news_scraper.log`（專案根目錄）
+## 4. `news_scraper.log`（原專案根目錄，已刪除）
 
-- **狀態**：過期產物，非本輪清除對象
-- **原因**：`news_scraper.py`（舊版）時代產生的執行紀錄，與現行 `maritime_news.py` 的 log 輸出（`logs/maritime_intelligence.log`）無關。
-- **處理**：保留現況，`.gitignore` 已排除所有 `*.log`。
+- **狀態**：已刪除（Phase 9 專案整理）
+- **原因**：`news_scraper.py`（舊版）時代產生的執行紀錄，與現行 `maritime_news.py` 的 log 輸出（`logs/maritime_intelligence.log`）無關；內容含舊版執行時期的真實內部信箱等過期資訊，已無保留價值。
+- **確認安全刪除的依據**：`grep -rn` 全專案（排除 `venv/`）確認沒有任何 `.py`／測試／config／文件把它列為必要元件；`.gitignore` 原本就已排除所有 `*.log`，代表它從未被視為需要版控保存的檔案。
+- **後續**：若需要查詢現行系統的執行紀錄，改看 `logs/maritime_intelligence.log`（`OPERATIONS_RUNBOOK.md` 有說明）。
 
 ---
 

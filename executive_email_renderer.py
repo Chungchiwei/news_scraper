@@ -87,7 +87,7 @@ class ExecutiveEmailRenderer:
 
         if vm.immediate:
             has_content = True
-            parts.append(self._section_title("IMMEDIATE ATTENTION", "#dc2626"))
+            parts.append(self._section_title("🚨 IMMEDIATE ATTENTION", "#dc2626"))
             for e in vm.immediate:
                 parts.append(self._event_card(e))
             if vm.overflow.get("P1"):
@@ -96,7 +96,7 @@ class ExecutiveEmailRenderer:
         if mode == "daily_brief":
             if vm.watch:
                 has_content = True
-                parts.append(self._section_title("MANAGEMENT WATCH", "#c2410c"))
+                parts.append(self._section_title("⚠️ MANAGEMENT WATCH", "#c2410c"))
                 for e in vm.watch:
                     parts.append(self._event_card(e))
                 if vm.overflow.get("P2"):
@@ -104,7 +104,7 @@ class ExecutiveEmailRenderer:
 
             if vm.industry:
                 has_content = True
-                parts.append(self._section_title("OPERATIONAL & INDUSTRY WATCH", "#b45309"))
+                parts.append(self._section_title("🔎 OPERATIONAL & INDUSTRY WATCH", "#b45309"))
                 for e in vm.industry:
                     parts.append(self._event_card(e))
                 if vm.overflow.get("P3"):
@@ -112,7 +112,7 @@ class ExecutiveEmailRenderer:
 
             if vm.resolved:
                 has_content = True
-                parts.append(self._section_title("RESOLVED / IMPROVED", self.GREEN))
+                parts.append(self._section_title("✅ RESOLVED / IMPROVED", self.GREEN))
                 for e in vm.resolved:
                     parts.append(self._event_card(e, resolved=True))
 
@@ -148,19 +148,48 @@ class ExecutiveEmailRenderer:
 </body>
 </html>"""
 
+    # ── 品牌列（2026-08 視覺改版）─────────────────────────────────
+    # ★ 只改「怎麼呈現」：Header 底色從純深藍改成白/淺灰＋🚢 圖示，
+    #   加回使用者慣用的 "Present by Marine Technology Division_FRM"
+    #   品牌行；風險等級與 P1/P2/P3/Resolved 數字則改用參考信裡那種
+    #   彩色統計方塊（見 _risk_banner/_stat_tile）。所有原本存在的
+    #   欄位（company/title/subtitle/generated_at/risk/counts）都還在，
+    #   沒有任何內容被拿掉——純視覺重排，內容架構不變。
+    BRAND_LINE = "Present by Marine Technology Division_FRM"
+
     def _header(self, vm: ExecutiveBriefViewModel) -> str:
         company = self.esc(vm.company_name)
         title = self.esc(vm.brief_title)
         subtitle = self.esc(vm.brief_subtitle)
         generated = self.esc(vm.generated_at_display)
-        return f"""<tr><td style="background-color:{self.NAVY};padding:22px 28px;">
-<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
-<tr><td style="font:bold 13px/1.4 Arial,Helvetica,sans-serif;color:#93c5fd;letter-spacing:1px;">{company}</td></tr>
-<tr><td style="font:bold 22px/1.4 Arial,Helvetica,sans-serif;color:{self.WHITE};padding-top:4px;">{title}</td></tr>
-<tr><td style="font:13px/1.4 Arial,Helvetica,sans-serif;color:#cbd5e1;padding-top:2px;">{subtitle}</td></tr>
-<tr><td style="font:11px/1.4 Arial,Helvetica,sans-serif;color:#94a3b8;padding-top:10px;">Updated: {generated}</td></tr>
-</table>
+        total = vm.p1_count + vm.p2_count + vm.monitored_count + len(vm.resolved)
+        return f"""<tr><td style="background-color:#f8fafc;padding:22px 28px;border-bottom:1px solid {self.BORDER};">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"><tr>
+<td valign="top">
+<div style="font:bold 13px/1.4 Arial,Helvetica,sans-serif;color:{self.NAVY};letter-spacing:1px;">{company}</div>
+<div style="font:bold 21px/1.4 'Microsoft JhengHei',Arial,sans-serif;color:{self.TEXT};padding-top:4px;">&#128674;&nbsp;{title}</div>
+<div style="font:13px/1.4 Arial,Helvetica,sans-serif;color:{self.MUTED};padding-top:2px;">{subtitle}</div>
+<div style="font:bold 12px/1.4 Arial,Helvetica,sans-serif;color:#c2410c;padding-top:8px;">{self.esc(self.BRAND_LINE)}</div>
+</td>
+<td align="right" valign="top">
+<div style="font:12px Arial,Helvetica,sans-serif;color:{self.MUTED};">最後更新: {generated}</div>
+<div style="padding-top:10px;">
+<span style="display:inline-block;background-color:{self.BORDER};color:{self.TEXT};font:bold 11px Arial,Helvetica,sans-serif;padding:6px 12px;border-radius:3px;">涵蓋事件&nbsp;{total}&nbsp;則</span>
+</div>
+</td>
+</tr></table>
 </td></tr>"""
+
+    # ── 彩色統計方塊（單一 tile，供 _risk_banner 組成整排）──────────
+    def _stat_tile(self, icon: str, label: str, count: int, color: str) -> str:
+        if count > 0:
+            bg, num_color, label_color = color, "#ffffff", "#ffffff"
+        else:
+            bg, num_color, label_color = "#f8fafc", "#cbd5e1", "#94a3b8"
+        return f"""<td align="center" bgcolor="{bg}" style="padding:16px 4px;width:20%;border-right:1px solid #ffffff;">
+<div style="font:bold 24px Arial,Helvetica,sans-serif;color:{num_color};">{count}</div>
+<div style="font:11px Arial,Helvetica,sans-serif;color:{label_color};padding-top:4px;">{icon}&nbsp;{self.esc(label)}</div>
+</td>"""
 
     def _risk_banner(self, vm: ExecutiveBriefViewModel) -> str:
         color = vm.overall_risk_color
@@ -168,11 +197,27 @@ class ExecutiveEmailRenderer:
             "HIGH": "HIGH", "ELEVATED": "ELEVATED", "WATCH": "WATCH", "NORMAL": "NORMAL",
         }
         risk_label = label_map.get(vm.overall_risk, vm.overall_risk)
-        return f"""<tr><td style="padding:18px 28px;border-bottom:1px solid {self.BORDER};">
+        total = vm.p1_count + vm.p2_count + vm.monitored_count + len(vm.resolved)
+
+        tiles = "".join([
+            self._stat_tile("&#128680;", "P1 IMMEDIATE", vm.p1_count, "#dc2626"),
+            self._stat_tile("&#128992;", "P2 WATCH", vm.p2_count, "#c2410c"),
+            self._stat_tile("&#128337;", "P3 INDUSTRY", vm.monitored_count, "#0369a1"),
+            self._stat_tile("&#9989;", "RESOLVED", len(vm.resolved), self.GREEN),
+        ])
+
+        return f"""<tr><td style="padding:0;border-bottom:1px solid {self.BORDER};">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"><tr>
+<td align="center" bgcolor="{self.NAVY}" style="padding:16px 4px;width:20%;border-right:1px solid #ffffff;">
+<div style="font:bold 24px Arial,Helvetica,sans-serif;color:#ffffff;">{total}</div>
+<div style="font:11px Arial,Helvetica,sans-serif;color:#94a3b8;padding-top:4px;">&#128240;&nbsp;本次總計</div>
+</td>
+{tiles}
+</tr></table>
+</td></tr>
+<tr><td style="padding:14px 28px;border-bottom:1px solid {self.BORDER};">
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
-<tr>
-<td style="font:bold 11px Arial,Helvetica,sans-serif;color:{self.MUTED};letter-spacing:1px;">TODAY'S RISK LEVEL</td>
-</tr>
+<tr><td style="font:bold 11px Arial,Helvetica,sans-serif;color:{self.MUTED};letter-spacing:1px;">TODAY'S RISK LEVEL</td></tr>
 <tr><td style="padding-top:6px;">
 <span style="display:inline-block;background-color:{color};color:#fff;font:bold 15px Arial,Helvetica,sans-serif;padding:5px 14px;border-radius:3px;">{risk_label}</span>
 </td></tr>
@@ -190,7 +235,7 @@ Industry Watch: <b style="color:{self.TEXT};">{vm.monitored_count}</b>
         summary = self.esc(vm.executive_summary_zh)
         return f"""<tr><td style="padding:18px 28px;background-color:{self.LIGHT_GRAY};border-bottom:1px solid {self.BORDER};">
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
-<tr><td style="font:bold 11px Arial,Helvetica,sans-serif;color:{self.MUTED};letter-spacing:1px;">EXECUTIVE SUMMARY</td></tr>
+<tr><td style="font:bold 11px Arial,Helvetica,sans-serif;color:{self.MUTED};letter-spacing:1px;">&#128203;&nbsp;EXECUTIVE SUMMARY</td></tr>
 <tr><td style="padding-top:6px;font:14px/1.7 'Microsoft JhengHei',Arial,sans-serif;color:{self.TEXT};">{summary}</td></tr>
 </table>
 </td></tr>"""

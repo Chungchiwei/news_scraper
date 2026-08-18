@@ -23,7 +23,7 @@ Repository 根目錄應該直接看到 `maritime_news.py`、`requirements.txt`�
 `.github/` 等檔案，不能有多一層資料夾包起來。
 
 可以用 GitHub 網頁介面拖曳上傳，或用 `git init` + `git add` + `git commit`
-+ `git push`（本輪不會替你執行這步，見 GITHUB_ACTIONS_PACKAGING_REPORT.md
++ `git push`（本輪不會替你執行這步，見 docs/history/GITHUB_ACTIONS_PACKAGING_REPORT.md
 「完成後不要 Push」）。
 
 ## Step 3 — 到 Secrets and variables 設定頁
@@ -137,7 +137,7 @@ Actions 分頁 → 左側選 **Maritime Intelligence** → 右上 **Run workflow
 WHL Fleet Exposure History、Delivery History 等內部營運資訊。這是本
 Repository 選擇 **Private** 的原因之一；即使是 Private Repository，這些
 Artifact 也只由 workflow runtime 產生/還原，**絕對不會**被寫回 Git
-版控（見 GITHUB_ACTIONS_PACKAGING_REPORT.md §Runtime State Persistence）。
+版控（見 docs/history/GITHUB_ACTIONS_PACKAGING_REPORT.md §Runtime State Persistence）。
 
 ## GitHub Actions 的限制
 
@@ -149,7 +149,7 @@ Artifact 也只由 workflow runtime 產生/還原，**絕對不會**被寫回 Gi
   請參考 `IT_DEPLOYMENT_GUIDE.md` 部署到公司內部主機。
 - 如果貴公司的 SMTP 伺服器或 Fleet/Schedule Provider 只能透過公司內網
   存取，GitHub-hosted Runner（`ubuntu-latest`）**可能無法連線**——這件
-  事需要 IT 協助驗證，見 `GITHUB_ACTIONS_PACKAGING_REPORT.md` §SMTP
+  事需要 IT 協助驗證，見 `docs/history/GITHUB_ACTIONS_PACKAGING_REPORT.md` §SMTP
   Compatibility / §Internal Operational Data Compatibility。本次
   Packaging 不會、也不應該為了讓 GitHub Actions 連得到而把公司內網
   服務暴露到公開網路。

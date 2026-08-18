@@ -63,9 +63,10 @@
   },
 
   "subject": {
-    "prefix_alert": "Maritime Alert",
-    "prefix_update": "Maritime Update",
-    "prefix_brief": "Maritime Intelligence"
+    "_note": "統一品牌前綴（2026-08）：Daily Brief / Immediate Alert / Update 三種信件過去各用不同前綴文字（Maritime Intelligence / Maritime Alert / Maritime Update），使用者反映信箱裡看起來像兩種不同系統在寄信。三個 key 統一設成同一個字串，讓所有信件標題前綴一致。",
+    "prefix_alert": "GITHUB_Maritime Intel News Alert",
+    "prefix_update": "GITHUB_Maritime Intel News Alert",
+    "prefix_brief": "GITHUB_Maritime Intel News Alert"
   },
 
   "company": {

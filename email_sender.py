@@ -64,7 +64,7 @@ class EmailConfig:
 
     # ── 郵件外觀設定 ──────────────────────────────────────────
     SENDER_NAME:    str = "海事航運監控系統"
-    SUBJECT_PREFIX: str = "Maritime News Alert"
+    SUBJECT_PREFIX: str = "GITHUB_Maritime Intel News Alert"
 
     # ── 版面文字設定 ──────────────────────────────────────────
     EMAIL_TITLE:    str = "🚢 海事航運新聞監控快報"
@@ -739,20 +739,39 @@ class NewsEmailSender:
 
     # ── 共用：SMTP 連線 + 重試（新舊路徑都走這裡）─────────────────
     def _deliver(self, msg: MIMEMultipart) -> bool:
+        """
+        ★ 修正過的 Bug（曾在 2026-08 實際 production 執行時發生重複寄信）：
+          舊版用 `with smtplib.SMTP(...) as server:` 包住
+          starttls/login/send_message，`return True` 寫在 with 區塊
+          「外面」。問題是 `with` 的 __exit__ 會呼叫 server.quit()，而
+          quit() 本身仍算在同一個 try 範圍內 —— 如果 send_message() 已經
+          成功把信送給 Gmail（信已經真的寄出），但緊接著 quit() 因為
+          Gmail 主動斷線等原因拋出例外（常見的
+          smtplib.SMTPServerDisconnected），這個例外會被同一個
+          `except Exception` 接住，誤判成「這次嘗試失敗」而觸發重試 ——
+          於是同一封信被寄了兩次，主旨/內文完全相同（因為 msg 物件在
+          重試之間沒有變過）。
+
+          修正方式：把「訊息是否已送出」用 `sent` 旗標記錄下來，且只在
+          try 區塊內（starttls/login/send_message）失敗時才視為需要重試；
+          關閉連線（quit）永遠在 finally 裡做，quit()/close() 本身拋出的
+          例外一律吞掉、絕不影響 attempt 的成功/失敗判斷，也絕不會讓已經
+          送達的信被重寄。
+        """
         cfg = EmailConfig
         max_attempts = max(1, cfg.SEND_MAX_ATTEMPTS)
         last_error: Exception | None = None
 
         for attempt in range(1, max_attempts + 1):
+            server = None
+            sent = False
             try:
-                with smtplib.SMTP(self.smtp_server, self.smtp_port,
-                                  timeout=30) as server:
-                    server.starttls()
-                    server.login(self.mail_user, self.mail_pass)
-                    server.send_message(msg)
-
-                logger.info(f"✅ Email 發送成功（第 {attempt} 次嘗試）")
-                return True
+                server = smtplib.SMTP(self.smtp_server, self.smtp_port,
+                                       timeout=30)
+                server.starttls()
+                server.login(self.mail_user, self.mail_pass)
+                server.send_message(msg)
+                sent = True   # ← 從這一刻起，這封信已經被 SMTP Server 接受
 
             except smtplib.SMTPAuthenticationError as e:
                 # 認證錯誤重試也不會成功，直接中止不必要的等待
@@ -761,13 +780,31 @@ class NewsEmailSender:
 
             except Exception as e:
                 last_error = e
-                logger.warning(
-                    f"⚠️  Email 發送失敗（第 {attempt}/{max_attempts} 次）: {e}"
-                )
-                if attempt < max_attempts:
-                    wait = cfg.SEND_RETRY_WAIT_SEC * attempt
-                    logger.info(f"    ⏳ {wait} 秒後重試...")
-                    time.sleep(wait)
+
+            finally:
+                # 關閉連線失敗（quit 失敗常見於 send_message 成功「之後」
+                # 對方主動斷線）不代表信沒送出去，這裡永遠不讓它影響上面
+                # 的成功/失敗判斷，也不會讓例外往外傳。
+                if server is not None:
+                    try:
+                        server.quit()
+                    except Exception:
+                        try:
+                            server.close()
+                        except Exception:
+                            pass
+
+            if sent:
+                logger.info(f"✅ Email 發送成功（第 {attempt} 次嘗試）")
+                return True
+
+            logger.warning(
+                f"⚠️  Email 發送失敗（第 {attempt}/{max_attempts} 次）: {last_error}"
+            )
+            if attempt < max_attempts:
+                wait = cfg.SEND_RETRY_WAIT_SEC * attempt
+                logger.info(f"    ⏳ {wait} 秒後重試...")
+                time.sleep(wait)
 
         traceback.print_exc()
         raise EmailSendError(

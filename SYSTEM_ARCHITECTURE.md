@@ -137,4 +137,4 @@ PUBLIC MARITIME SOURCES
 | `scripts/backup_data.py` | 資料庫備份。 |
 | `scripts/final_acceptance_test.py` | 完全離線的端對端驗收測試。 |
 
-詳細檔案清單見 `FINAL_ARCHITECTURE_AUDIT.md`；環境變數詳見 `CONFIGURATION_REFERENCE.md`；資料流向詳見 `DATA_FLOW.md`。
+詳細檔案清單見 `docs/history/FINAL_ARCHITECTURE_AUDIT.md`；環境變數詳見 `CONFIGURATION_REFERENCE.md`；資料流向詳見 `DATA_FLOW.md`。
